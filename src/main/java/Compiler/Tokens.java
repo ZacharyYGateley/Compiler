@@ -2,6 +2,11 @@ package Compiler;
 
 import java.util.ArrayDeque;
 
+enum Token {
+	EMPTY,
+	NOT_EMPTY;
+}
+
 public class Tokens {
 	 private ArrayDeque<Token> __tokens__;
 	 private int __len__;
