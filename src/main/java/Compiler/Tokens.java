@@ -36,6 +36,15 @@ public class Tokens {
 	     return next;
 	 }
 	 
+	 public Token contains(Token t) {
+		 for (Token token : this.__tokens__) {
+			 if (token.equals(t)) {
+				 return token;
+			 }
+		 }
+		 return t;
+	 }
+	 
 	 public boolean isEmpty() {
 	     return this.__len__ == this.__pos__;
 	 }
