@@ -7,7 +7,7 @@ import java.util.Arrays;
 
 public class Parser {
 	 // First characters in each production rule
-	 public final static Rules __rules__ = new Rules("Rules.txt");
+	 //public final static Rules __rules__ = new Rules("Rules.txt");
 	 
 	 public boolean isValid(String s) {
 	     // Speed up string processing

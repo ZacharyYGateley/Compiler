@@ -39,10 +39,10 @@ class Symbol {
 	}
 }
 
-public class SymbolTree {
+public class SymbolTable {
 	private ArrayList<Symbol> symbols;
 	
-	public SymbolTree() {
+	public SymbolTable() {
 		this.symbols = new ArrayList<Symbol>();
 	}
 	
@@ -50,7 +50,7 @@ public class SymbolTree {
 	 * insert
 	 * 
 	 * Starting off simple. Just have names in the 
-	 * symbol tree, not scope or type
+	 * symbol table, not scope or type
 	 * 
 	 * @param name String name of new variable
 	 */
@@ -64,8 +64,8 @@ public class SymbolTree {
 	/**
 	 * find
 	 * 
-	 * Find and return the symbol in the symbol tree.
-	 * If not in symbol tree, return null.
+	 * Find and return the symbol in the symbol table.
+	 * If not in symbol table, return null.
 	 * 
 	 * @param name String name of variable to find
 	 */
@@ -82,7 +82,7 @@ public class SymbolTree {
 	 * contains
 	 * 
 	 * Determine whether symbol exists in the symbol
-	 * tree.
+	 * table.
 	 * 
 	 * @param comparator symbol to check existence
 	 */

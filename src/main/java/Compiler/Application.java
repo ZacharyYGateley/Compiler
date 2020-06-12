@@ -8,8 +8,12 @@ public class Application {
 	 * Call this file with the un-compiled version 
 	 * of your file as a parameter.
 	 * 
-	 * Calls Lexer then Parser
-	 * Then outputs compiled version with ext ".py"
+	 * Front end
+	 * 		Lexes then parses input
+	 * Back end
+	 * 		Symbol table and syntax tree passed to back end
+	 * 		Then outputs "compiled" version with ext ".py"
+	 * 		Long-term goal: MIPS assembly, possibly
 	 * 
 	 * @param args un-compiled file
 	 */

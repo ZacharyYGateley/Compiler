@@ -4,7 +4,19 @@ import java.util.ArrayDeque;
 
 enum Token {
 	EMPTY,
-	NOT_EMPTY;
+	LINE,
+	DEF,
+	EXPR,
+	ECHO,
+	VAR,
+	LITERAL,
+	EQUALS,
+	PARAN_OPEN,
+	PARAN_CLOSE,
+	ASTERISK,
+	SLASH,
+	PLUS,
+	MINUS;
 }
 
 public class Tokens {
