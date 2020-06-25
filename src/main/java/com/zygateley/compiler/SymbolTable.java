@@ -1,4 +1,4 @@
-package Compiler;
+package com.zygateley.compiler;
 
 import java.util.ArrayList;
 
@@ -69,7 +69,7 @@ public class SymbolTable {
 	 * 
 	 * @param name String name of variable to find
 	 */
-	private Symbol find(String name) {
+	public Symbol find(String name) {
 		for (Symbol symbol : this.symbols) {
 			if (symbol.getName().equals(name)) {
 				return symbol;

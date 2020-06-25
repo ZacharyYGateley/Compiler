@@ -1,11 +1,10 @@
-package Compiler;
+package com.zygateley.compiler;
 
-import Compiler.SymbolTable;
 import java.io.InputStream;
 
 public class Lexer {
 	private InputStream input;
-	private Tokens output;
+	private TokenStream output;
 	
 	/**
 	 * Lexer
@@ -16,8 +15,10 @@ public class Lexer {
 	 * @param stream input stream to process for tokens
 	 * @param tokens Tokens output deque
 	 */
-	public Lexer(InputStream input, Tokens output) {
+	public Lexer(InputStream input, TokenStream output) {
 		this.input = input;
 		this.output = output;
+		System.out.println(this.input);
+		System.out.println(this.output);
 	}
 }

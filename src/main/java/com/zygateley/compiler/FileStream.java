@@ -1,4 +1,4 @@
-package Compiler;
+package com.zygateley.compiler;
 
 import java.io.InputStream;
 import java.io.IOException;

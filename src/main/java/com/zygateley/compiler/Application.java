@@ -1,6 +1,7 @@
-package Compiler;
+package com.zygateley.compiler;
 
 public class Application {
+	private static Rules rules;
 	
 	/**
 	 * main
@@ -18,8 +19,9 @@ public class Application {
 	 * @param args un-compiled file
 	 */
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-
+		// Build rules object
+		rules = new Rules();
+		System.out.println(rules);
 	}
 
 }
