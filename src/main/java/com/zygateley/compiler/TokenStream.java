@@ -2,37 +2,17 @@ package com.zygateley.compiler;
 
 import java.util.*;
 
-enum Token {
-	EMPTY 		(""),
-	VAR			("r\\d"),
-	ECHO 		("echo"),
-	EOF			("\\$"),
-	INT 		("\\d"),
-	EQUALS 		("="),
-	PARAN_OPEN	("\\("),
-	PARAN_CLOSE ("\\)"),
-	ASTERISK 	("*"),
-	SLASH 		("/"),
-	PLUS  		("\\+"),
-	MINUS 		("-");
-
-	public final String regex;
-	
-	private Token(String regex) {
-		this.regex = regex;
-	}
-}
 
 class TokenSymbol {
-	public final Token token;
+	public final Terminal token;
 	public final Symbol symbol;
-	public static final TokenSymbol EMPTY = new TokenSymbol(Token.EMPTY);
+	public static final TokenSymbol EMPTY = new TokenSymbol(Terminal.EMPTY);
 	
-	public TokenSymbol(Token token) {
+	public TokenSymbol(Terminal token) {
 		this.token = token;
 		this.symbol = null;
 	}
-	public TokenSymbol(Token token, Symbol symbol) {
+	public TokenSymbol(Terminal token, Symbol symbol) {
 		this.token = token;
 		this.symbol = symbol;
 	}
@@ -50,6 +30,11 @@ public class TokenStream {
 	private int len;
 	private int pos = 0;
 	 
+	public TokenStream() {
+		this.tokens = new ArrayList<TokenSymbol>();
+		this.len = 0;
+		this.pos = 0;
+	}
 	public TokenStream(ArrayList<TokenSymbol> tokens) {
 		this.tokens = tokens;
 	    this.len = tokens.size();
@@ -64,25 +49,24 @@ public class TokenStream {
 	}
 	 
 	
-	public void addtoken(Token token, Symbol symbol) {
+	public void addtoken(Terminal token, Symbol symbol) {
 		this.tokens.add(new TokenSymbol(token, symbol));
 		this.len++;
 	}
 	 
 	public TokenSymbol gettoken() {
 	    TokenSymbol next = this.peek();
-	    if (next.token == Token.EMPTY) return next;
 	    this.pos++;
 	    return next;
 	}
 	
 	public void ungettoken() {
-		if (this.pos > -1) {
+		if (this.pos > 0) {
 			this.pos--;
 		}
 	}
 	 
-	public boolean contains(Token t) {
+	public boolean contains(Terminal t) {
 		for (TokenSymbol tp : this.tokens) {
 			if (tp.token.equals(t)) {
 				return true;

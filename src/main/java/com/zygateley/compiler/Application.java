@@ -1,8 +1,9 @@
 package com.zygateley.compiler;
 
+import java.io.IOException;
+import java.io.StringReader;
+
 public class Application {
-	private static Rules rules;
-	
 	/**
 	 * main
 	 * 
@@ -17,11 +18,24 @@ public class Application {
 	 * 		Long-term goal: MIPS assembly, possibly
 	 * 
 	 * @param args un-compiled file
+	 * @throws IOException 
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
+		// TESTING
+		StringReader sr = new StringReader("abc = 33; echo 44;");
+		
+		// Objects passed to Parser
+		SymbolTable st = new SymbolTable();
+		TokenStream ts = new TokenStream();
+		
+		// First lex the string
+		Lexer l = new Lexer(sr, ts);
+		l.lex(st);
+		
 		// Build rules object
-		rules = new Rules();
-		System.out.println(rules);
+		//Parser p = new Parser(ts, rules);
+		//String output = p.parse();
+		System.out.println(l);
 	}
 
 }

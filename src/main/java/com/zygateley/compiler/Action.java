@@ -10,16 +10,28 @@ import java.util.function.Function;
  * @author Zachary Gateley
  *
  */
-public class Action implements Function<TokenStream, String> {
-	public static String echo(TokenStream t) {
-		
-		
-		return "";
+public class Action implements Function<Parser, String> {
+	private final Function<Parser, String> which;
+	
+	public Action(Function<Parser, String> which) {
+		this.which = which;
+	}
+	
+	public static String echo(Parser p) {
+		p.tokenStream.gettoken();
+		TokenSymbol ts = p.tokenStream.gettoken();
+		return "System.out.println(" + ts.symbol.getName() + ");";
 	}
 
 	@Override
-	public String apply(TokenStream t) {
+	public String apply(Parser p) {
 		// TODO Auto-generated method stub
+		try {
+			return this.which.apply(p);
+		}
+		catch (Exception e) {
+			System.err.println("Fatal parse error.");
+		}
 		return null;
 	}
 }

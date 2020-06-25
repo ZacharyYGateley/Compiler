@@ -54,10 +54,14 @@ public class SymbolTable {
 	 * 
 	 * @param name String name of new variable
 	 */
-	public void insert(String name) {
+	public Symbol insert(String name) {
 		Symbol newSymbol = new Symbol(name);
 		if (!this.contains(newSymbol)) {
 			this.symbols.add(newSymbol);
+			return newSymbol;
+		}
+		else {
+			return null;
 		}
 	}
 	
