@@ -2,6 +2,8 @@ package com.zygateley.compiler;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 
 public class Application {
 	/**
@@ -22,20 +24,26 @@ public class Application {
 	 */
 	public static void main(String[] args) throws IOException {
 		// TESTING
-		StringReader sr = new StringReader("abc = 33; echo 44;");
+		StringReader sr = new StringReader("abc = 3; df = 5; echo + abc + * 6 df 1;");
 		
 		// Objects passed to Parser
 		SymbolTable st = new SymbolTable();
 		TokenStream ts = new TokenStream();
 		
-		// First lex the string
+		// Break down into tokens 
+		// and populate symbol tree
 		Lexer l = new Lexer(sr, ts);
 		l.lex(st);
 		
-		// Build rules object
-		//Parser p = new Parser(ts, rules);
-		//String output = p.parse();
-		System.out.println(l);
+		// Build parse tree
+		Parser p = new Parser(ts);
+		ArrayList<ParseNode> parseTrees = p.parse();
+		System.out.println(parseTrees);
+		
+		// Run backend into appropriate language
+		Backend be = new Backend(parseTrees);
+		String output = be.python();
+		System.out.println(output);
 	}
 
 }

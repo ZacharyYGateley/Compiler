@@ -5,9 +5,10 @@ import java.util.regex.Pattern;
 public interface Token {
 	// Non-terminals
 	public final static int 
-		STMT = 100,
-		DEF = 101,
-		EXPR = 102;
+		_STMT_ = 100,
+		_DEF_ = 101,
+		_ECHO_ = 102,
+		_EXPR_ = 103;
 	
 	// Terminals
 	public final static int 
@@ -23,6 +24,13 @@ public interface Token {
 		SLASH = 9,
 		PLUS = 10,
 		MINUS = 11;
+	
+	public static boolean isNonTerminal(int tokenValue) {
+		return tokenValue >= 100;
+	}
+	public static boolean isTerminal(int tokenValue) {
+		return tokenValue < 100;
+	}
 }
 
 enum Terminal implements Token {
@@ -33,8 +41,8 @@ enum Terminal implements Token {
 	VAR			(Token.VAR, "[\\w|_][\\w|\\d|_]*"),
 	INT 		(Token.INT, "\\d"),
 	EQUALS 		(Token.EQUALS, "="),
-	PARAN_OPEN	(Token.PAREN_OPEN, "\\("),
-	PARAN_CLOSE (Token.PAREN_CLOSE, "\\)"),
+	PAREN_OPEN	(Token.PAREN_OPEN, "\\("),
+	PAREN_CLOSE (Token.PAREN_CLOSE, "\\)"),
 	ASTERISK 	(Token.ASTERISK, "\\*"),
 	SLASH 		(Token.SLASH, "/"),
 	PLUS  		(Token.PLUS, "\\+"),
@@ -55,87 +63,111 @@ enum NonTerminal implements Token {
 	//		FIRST_1: PATTERN_1
 	//		...
 	//		FOLLOW
-	STMT		(Token.STMT,
+	_STMT_		(Token._STMT_,
 				 // FIRST : PATTERN
-				 new int[][] {{Token.VAR}, {Token.DEF}},
-				 new int[][] {{Token.ECHO}, {Token.ECHO, Token.EXPR}},
-				 new int[][] {{Token.EMPTY}, {Token.EMPTY}},
+				 new int[][] {{Token.VAR}, {Token._DEF_, Token.EOF_STMT}},
+				 new int[][] {{Token.ECHO}, {Token._ECHO_, Token.EOF_STMT}},
+				 new int[][] {{Token.EMPTY}, {Token.EMPTY, Token.EOF_STMT}},
+				 // FOLLOW
+				 new int[][] {{}}),
+	
+	_DEF_		(Token._DEF_,
+				 // FIRST : PATTERN
+				 new int[][] {{Token.VAR}, {Token.VAR, Token.EQUALS, Token._EXPR_}},
 				 // FOLLOW
 				 new int[][] {{Token.EOF_STMT}}),
 	
-	DEF			(Token.DEF,
+	_ECHO_		(Token._ECHO_,
 				 // FIRST : PATTERN
-				 new int[][] {{Token.VAR}, {Token.VAR, Token.EQUALS, Token.EXPR}},
+				 new int[][] {{Token.ECHO}, {Token.ECHO, Token._EXPR_}},
 				 // FOLLOW
 				 new int[][] {{Token.EOF_STMT}}),
 	
-	EXPR		(Token.EXPR,
+	_EXPR_		(Token._EXPR_,
 				 // FIRST : PATTERN
-				 new int[][] {{Token.PAREN_OPEN}, {Token.EXPR, Token.PLUS, Token.EXPR}},
-				 new int[][] {{Token.PAREN_OPEN}, {Token.EXPR, Token.MINUS, Token.EXPR}},
-				 new int[][] {{Token.PAREN_OPEN}, {Token.EXPR, Token.PLUS, Token.EXPR}},
-				 new int[][] {{Token.PAREN_OPEN}, {Token.EXPR, Token.ASTERISK, Token.EXPR}},
-				 new int[][] {{Token.PAREN_OPEN}, {Token.EXPR, Token.SLASH, Token.EXPR}},
-				 new int[][] {{Token.PAREN_OPEN}, {Token.PAREN_OPEN, Token.EXPR, Token.PAREN_CLOSE}},
+				 new int[][] {{Token.PLUS}, {Token.PLUS, Token._EXPR_, Token._EXPR_}},
+				 new int[][] {{Token.MINUS}, {Token.MINUS, Token._EXPR_, Token._EXPR_}},
+				 new int[][] {{Token.ASTERISK}, {Token.ASTERISK, Token._EXPR_, Token._EXPR_}},
+				 new int[][] {{Token.SLASH}, {Token.SLASH, Token._EXPR_, Token._EXPR_}},
+				 new int[][] {{Token.PAREN_OPEN}, {Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE}},
 				 new int[][] {{Token.VAR}, {Token.VAR}},
 				 new int[][] {{Token.INT}, {Token.INT}},
 				 // FOLLOW
-	 			 new int[][] {{Token.EOF_STMT, Token.PLUS, Token.MINUS, Token.ASTERISK, Token.SLASH, Token.PAREN_CLOSE}});
+	 			 new int[][] {{Token.EOF_STMT, Token.PLUS, Token.MINUS, Token.ASTERISK, Token.SLASH, Token.PAREN_OPEN, Token.PAREN_CLOSE, Token.VAR, Token.INT}});
 	
-	private class Pattern{
+	public class Pattern{
 		public final int[] FIRST;
 		public final int[] PATTERN;
-		public final int[] FOLLOW;
 		
-		public Pattern(int[] first, int[] pattern, int[] follow) {
+		public Pattern(int[] first, int[] pattern) {
 			this.FIRST = first;
 			this.PATTERN = pattern;
-			this.FOLLOW = follow;
+		}
+		
+		public int indexInFirst(Terminal t) {
+			return indexInFirst(t.tokenValue);
+		}
+		public int indexInFirst(int t) {
+			for (int i = 0; i < this.FIRST.length; i++) {
+				if (this.FIRST[i] == t) {
+					return i;
+				}
+			}
+			return -1;
 		}
 	}
 	
 	public final int tokenValue;
 	public final Pattern[] patterns;
+	public final int[] FOLLOW;
 	
 	private NonTerminal(int tokenValue, int[][]... patterns) {
 		this.tokenValue = tokenValue;
 		this.patterns = new Pattern[patterns.length - 1];
-		// Last array is FOLLOW
-		// Store ahead of time
-		int[] follow = patterns[patterns.length - 1][0];
 		// Therefore, skip last item
 		for (int i = 0; i < patterns.length - 1; i++) {
-			Pattern p = new Pattern(patterns[i][0], patterns[i][1], follow);
+			Pattern p = new Pattern(patterns[i][0], patterns[i][1]);
 			// Add FIRST / PATTERN sets
 			this.patterns[i] = p;
 		}
+		// Last array is FOLLOW
+		this.FOLLOW = patterns[patterns.length - 1][0];
 	}
 	
-	public boolean inFirst(Terminal t) {
-		return inFirst(t.tokenValue);
+	public int indexInFirst(Terminal t) {
+		return indexInFirst(t.tokenValue);
 	}
-	public boolean inFirst(int t) {
-		for (Pattern p : this.patterns) {
-			for (int item : p.FIRST) {
+	public int indexInFirst(int t) {
+		for (int i_p = 0; i_p < this.patterns.length; i_p++) {
+			for (int item : this.patterns[i_p].FIRST) {
 				if (t == item) {
-					return true;
+					return i_p;
 				}
 			}
+			
 		}
-		return false;
+		return -1;
 	}
 	
 	public boolean inFollow(Terminal t) {
 		return inFollow(t.tokenValue);
 	}
 	public boolean inFollow(int t) {
-		for (Pattern p : this.patterns) {
-			for (int item : p.FOLLOW) {
-				if (t == item) {
-					return true;
-				}
+		for (int i = 0; i < this.FOLLOW.length; i++) {
+			if (t == this.FOLLOW[i]) {
+				return true;
 			}
 		}
 		return false;
+	}
+	
+	public static NonTerminal getNonTerminal(int tokenValue) {
+		NonTerminal[] all = NonTerminal.values();
+		for (NonTerminal nt : all) {
+			if (nt.tokenValue == tokenValue) {
+				return nt;
+			}
+		}
+		return null;
 	}
 }
