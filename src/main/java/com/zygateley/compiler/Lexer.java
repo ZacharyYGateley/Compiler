@@ -28,53 +28,68 @@ public class Lexer {
 	
 	public void lex(SymbolTable st) throws IOException {
 		// All available token types
-		Terminal[] tokens = Terminal.values();
+		Terminal[] tokenRules = Terminal.values();
 		// Current token
-		StringBuilder token = new StringBuilder();
+		StringBuilder buildToken = new StringBuilder();
 		// Next character
-		int read;
-		char next;
-		while ((read = input.read()) > -1) {
-			next = (char) read;
+		int readIn;
+		char nextIn;
+		while ((readIn = input.read()) > -1) {
+			nextIn = (char) readIn;
 			
 			// At end of current token, determine what kind of token it is
-			if (eofToken.matcher("" + next).matches()) {
+			if (eofToken.matcher("" + nextIn).matches()) {
 				// Save time & space by converting to string now
 				// Will compare against a handful of regular expressions
-				String thisToken = token.toString();
+				String thisToken = buildToken.toString();
 				if (thisToken.length() > 0) {
 					// Current token in the works
 					// Figure out what kind of token it is
 					// Get first match
-					for (Terminal t : tokens) {
-						Matcher m = t.regex.matcher(thisToken);
+					for (Terminal tokenRule : tokenRules) {
+						Matcher m = tokenRule.regexToken.matcher(thisToken);
 						if (m.matches()) {
-							Symbol s = null;
-							// Create new symbol if necessary
-							switch (t) {
-							case VAR:
-							case INT:
-								s = st.insert(thisToken);
-								break;
-							default:									
+							// regexEnd indicates 
+							// that this token can outlast white space
+							if (tokenRule.regexEnd != null) {
+								try {
+									int _readIn;
+									char _nextIn;
+									do {
+										_readIn = input.read();
+										_nextIn = (char) _readIn;
+										buildToken.append(_nextIn);
+									} while (!tokenRule.regexEnd.matcher("" + _nextIn).matches());
+								}
+								catch (Exception err) {
+									System.err.println("Fatal error: Incorrect syntax at token " + tokenRule);
+								}
+								finally {
+									thisToken = buildToken.toString();
+								}
 							}
-							output.addtoken(t, s);
+							
+							Symbol symbol = null;
+							if (tokenRule.symbolType != null) {
+								symbol = st.insert(thisToken, tokenRule.symbolType);
+							}
+							output.addtoken(tokenRule, symbol);
 							break;
 						}
 					}
 				}
 				
 				// Is end of statement as well?
-				if (Terminal.EOF_STMT.regex.matcher("" + next).matches()) {
+				if (Terminal.EOF_STMT.regexToken.matcher("" + nextIn).matches()) {
 					output.addtoken(Terminal.EOF_STMT, null);
 				}
 				
 				// Reset string builder to empty and continue
-				token.setLength(0);
+				buildToken.setLength(0);
 				continue;
 			}
 			
-			token.append(next);
+			buildToken.append(nextIn);
 		}
 		return;
 	}

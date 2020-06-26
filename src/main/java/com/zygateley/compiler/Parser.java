@@ -109,7 +109,9 @@ public class Parser {
 		
 		// Get rules in order
 		// If any of the rules is a NonTerminal, recur
-		for (int tokenValue : pattern) {
+		for (int i = 0; i < pattern.length; i++) {
+			int tokenValue = pattern[i];
+			
 			ParseNode next;
 			// Terminal
 			// These are immediately added to the parse tree

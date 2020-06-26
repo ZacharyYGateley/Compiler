@@ -97,6 +97,7 @@ public class Backend {
 			break;
 		case VAR:
 		case INT:
+		case LITERAL:
 			sb.append(pn.getSymbol().name);
 			break;
 		case EQUALS:
@@ -208,6 +209,7 @@ public class Backend {
 			break;
 		case VAR:
 		case INT:
+		case LITERAL:
 			sb.append(pn.getSymbol().name);
 			break;
 		case EQUALS:

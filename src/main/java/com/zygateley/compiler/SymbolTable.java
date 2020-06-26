@@ -3,10 +3,19 @@ package com.zygateley.compiler;
 import java.util.ArrayList;
 
 class Symbol {
-	protected String name;
+	public enum Type {
+		VAR,
+		BOOLEAN,
+		INT,
+		STRING		
+	}
 	
-	public Symbol(String name) {
+	protected final String name;
+	protected final Type type;
+	
+	public Symbol(String name, Type type) {
 		this.name = name;
+		this.type = type;
 	}
 	
 	public String getName() {
@@ -22,8 +31,8 @@ class Symbol {
 	 * @param name
 	 * @return boolean equivalent
 	 */
-	public boolean equals(String name) {
-		return this.name == name;
+	public boolean equals(String name, Type type) {
+		return this.name == name && this.type == type;
 	}
 	/**
 	 * equals
@@ -34,8 +43,8 @@ class Symbol {
 	 * @param s comparator symbol
 	 * @return boolean equivalent
 	 */
-	public boolean equals(Symbol s) {
-		return this.name == s.name;
+	public boolean equals(Symbol s, Type type) {
+		return this.name == s.name && this.type == type;
 	}
 }
 
@@ -54,8 +63,8 @@ public class SymbolTable {
 	 * 
 	 * @param name String name of new variable
 	 */
-	public Symbol insert(String name) {
-		Symbol newSymbol = new Symbol(name);
+	public Symbol insert(String name, Symbol.Type type) {
+		Symbol newSymbol = new Symbol(name, type);
 		if (!this.contains(newSymbol)) {
 			this.symbols.add(newSymbol);
 			return newSymbol;

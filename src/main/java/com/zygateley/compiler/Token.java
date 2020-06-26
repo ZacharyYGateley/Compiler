@@ -4,11 +4,13 @@ import java.util.regex.Pattern;
 
 public interface Token {
 	// Non-terminals
-	public final static int 
-		_STMT_ = 100,
-		_DEF_ = 101,
-		_ECHO_ = 102,
-		_EXPR_ = 103;
+	public final static int
+		_BLOCK_ = 100,
+		_STMT_ = 110,
+		_DEF_ = 111,
+		_ECHO_ = 112,
+		_EXPR_ = 113,
+		_ANY_ = 114;
 	
 	// Terminals
 	public final static int 
@@ -23,7 +25,12 @@ public interface Token {
 		ASTERISK = 8,
 		SLASH = 9,
 		PLUS = 10,
-		MINUS = 11;
+		MINUS = 11,
+		LITERAL = 12,
+		TRUE = 13,
+		FALSE = 14,
+		CURLY_OPEN = 15,
+		CURLY_CLOSE = 16;
 	
 	public static boolean isNonTerminal(int tokenValue) {
 		return tokenValue >= 100;
@@ -35,29 +42,53 @@ public interface Token {
 
 enum Terminal implements Token {
 	// Terminals
-	EMPTY 		(Token.EMPTY, "\\s"),
-	EOF_STMT	(Token.EOF_STMT, ";"),
-	ECHO 		(Token.ECHO, "echo"),
-	VAR			(Token.VAR, "[\\w|_][\\w|\\d|_]*"),
-	INT 		(Token.INT, "\\d"),
-	EQUALS 		(Token.EQUALS, "="),
-	PAREN_OPEN	(Token.PAREN_OPEN, "\\("),
-	PAREN_CLOSE (Token.PAREN_CLOSE, "\\)"),
-	ASTERISK 	(Token.ASTERISK, "\\*"),
-	SLASH 		(Token.SLASH, "/"),
-	PLUS  		(Token.PLUS, "\\+"),
-	MINUS 		(Token.MINUS, "\\-");
-
-	public final int tokenValue;
-	public final Pattern regex;
+	EMPTY 		(Token.EMPTY, ("\\s")),
+	EOF_STMT	(Token.EOF_STMT, (";")),
+	ECHO 		(Token.ECHO, ("echo")),
+	VAR			(Token.VAR, ("[a-z|A-Z|_][a-z|A-Z|\\d|_]*"), Symbol.Type.VAR),
+	INT 		(Token.INT, ("\\d"), Symbol.Type.INT),
+	EQUALS 		(Token.EQUALS, ("=")),
+	PAREN_OPEN	(Token.PAREN_OPEN, ("\\(")),
+	PAREN_CLOSE (Token.PAREN_CLOSE, ("\\)")),
+	ASTERISK 	(Token.ASTERISK, ("\\*")),
+	SLASH 		(Token.SLASH, ("/")),
+	PLUS  		(Token.PLUS, ("\\+")),
+	MINUS 		(Token.MINUS, ("\\-")),
+	LITERAL     (Token.LITERAL, ("\".*"), ("\""), Symbol.Type.STRING),
+	TRUE		(Token.TRUE, ("true"), Symbol.Type.BOOLEAN),
+	FALSE		(Token.FALSE, ("false"), Symbol.Type.BOOLEAN),
+	CURLY_OPEN  (Token.CURLY_CLOSE, ("\\{")),
+	CURLY_CLOSE (Token.CURLY_CLOSE, ("\\}"));
 	
+	public final int tokenValue;
+	public final Pattern regexToken;
+	public final Pattern regexEnd;
+	public final Symbol.Type symbolType;
+
 	private Terminal(int tokenValue, String regex) {
 		this.tokenValue = tokenValue;
-		this.regex = Pattern.compile(regex);
+		this.regexToken = Pattern.compile(regex);
+		this.regexEnd = null;
+		this.symbolType = null;
+	}
+	private Terminal(int tokenValue, String regex, Symbol.Type symbolType) {
+		this.tokenValue = tokenValue;
+		this.regexToken = Pattern.compile(regex);
+		this.regexEnd = null;
+		this.symbolType = symbolType;
+	}
+	private Terminal(int tokenValue, String regexStart, String regexEnd, Symbol.Type symbolType) {
+		this.tokenValue = tokenValue;
+		this.regexToken = Pattern.compile(regexStart);
+		this.regexEnd = Pattern.compile(regexEnd);
+		this.symbolType = symbolType;
 	}
 }
 
 enum NonTerminal implements Token {
+	_BLOCK_		(Token._BLOCK_,
+				 firstTerminalAndPattern(Token.CURLY_OPEN, Token.CURLY_OPEN, Token._STMT_, Token.CURLY_CLOSE),
+				 follow()),
 	_STMT_		(Token._STMT_,
 				 firstTerminalAndPattern(Token.VAR, Token._DEF_, Token.EOF_STMT),
 				 firstTerminalAndPattern(Token.ECHO, Token._ECHO_, Token.EOF_STMT),
@@ -80,6 +111,7 @@ enum NonTerminal implements Token {
 				 firstTerminalAndPattern(Token.PAREN_OPEN, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE),
 				 firstTerminalAndPattern(Token.VAR, Token.VAR),
 				 firstTerminalAndPattern(Token.INT, Token.INT),
+				 firstTerminalAndPattern(Token.LITERAL, Token.LITERAL),
 	 			 follow(
 	 					 Token.EOF_STMT, 
 	 					 Token.PLUS, Token.MINUS, 
