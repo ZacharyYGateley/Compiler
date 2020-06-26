@@ -101,7 +101,7 @@ public class Backend {
 			break;
 		case VAR:
 		case INT:
-		case LITERAL:
+		case STRING:
 			sb.append(pn.getSymbol().name);
 			break;
 		case EQUALS:
@@ -155,6 +155,7 @@ public class Backend {
 			case _DEF_:
 			case _OP_EXPR_:
 			case _OP_:
+			case _LITERAL_:
 				__pythonParseList__(params);
 				break;
 			case _BLOCK_:
@@ -192,9 +193,15 @@ public class Backend {
 		case ECHO:
 			// This handled by _ECHO_
 			break;
+		case TRUE:
+			add("True");
+			break;
+		case FALSE:
+			add("False");
+			break;
 		case VAR:
 		case INT:
-		case LITERAL:
+		case STRING:
 			add(pn.getSymbol().name);
 			break;
 		case EQUALS:

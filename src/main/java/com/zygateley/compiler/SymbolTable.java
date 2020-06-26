@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 class Symbol {
 	public enum Type {
+		NULL,
 		VAR,
 		BOOLEAN,
 		INT,
@@ -20,6 +21,10 @@ class Symbol {
 	
 	public String getName() {
 		return this.name;
+	}
+	
+	public Type getType() {
+		return this.type;
 	}
 	
 	/**

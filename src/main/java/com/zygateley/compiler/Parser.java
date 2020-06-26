@@ -108,8 +108,14 @@ public class Parser {
 				if (verbose) {
 					StringBuilder tokenName = new StringBuilder(ts.token + "          ");
 					tokenName.setLength(10);
-					String symbolName = (ts.symbol != null) ? ts.symbol.getName() : "";
-					System.out.print("\t" + tokenName + "\t" + symbolName);
+					String symbolString;
+					if (ts.symbol != null) {
+						symbolString = "(" + ts.symbol.getType() + ") " + ts.symbol.getName();
+					}
+					else {
+						symbolString = "";
+					}
+					System.out.print("\t" + tokenName + "\t" + symbolString);
 				}
 				next = new ParseNode(ts.token, ts.symbol);
 			}

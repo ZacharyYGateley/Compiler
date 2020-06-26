@@ -113,7 +113,9 @@ public class Lexer {
 					output.addtoken(tokenRule, symbol);
 					
 					if (verbose) {
-						System.out.println("Lexer: " + tokenRule + " ("+ token + ")");
+						StringBuilder sbtr = new StringBuilder(tokenRule + "         ");
+						sbtr.setLength(10);
+						System.out.println("Lexer: " + sbtr.toString() + "\t("+ token + ")");
 					}
 					break;
 				}

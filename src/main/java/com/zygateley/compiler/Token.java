@@ -20,7 +20,10 @@ public interface Token {
 		SEMICOLON = 	id.next(),
 		ECHO = 			id.next(),
 		VAR = 			id.next(),
+		TRUE = 			id.next(),
+		FALSE = 		id.next(),
 		INT = 			id.next(),
+		STRING = 		id.next(),
 		EQUALS = 		id.next(),
 		PAREN_OPEN = 	id.next(),
 		PAREN_CLOSE = 	id.next(),
@@ -28,14 +31,11 @@ public interface Token {
 		SLASH = 		id.next(),
 		PLUS = 			id.next(),
 		MINUS = 		id.next(),
-		LITERAL = 		id.next(),
-		TRUE = 			id.next(),
-		FALSE = 		id.next(),
 		CURLY_OPEN = 	id.next(),
 		CURLY_CLOSE = 	id.next(),
 		EOF = 			id.next();
 	
-	public final static int barrier = id.id;
+	public final static int partition = id.id;
 	
 	// Non-terminals
 	// Actual value does not matter, referred to as if enum
@@ -48,7 +48,8 @@ public interface Token {
 		_ECHO_ = 		id.next(),
 		_EXPR_ = 		id.next(),
 		_OP_EXPR_ = 	id.next(),
-		_OP_ = 			id.next();
+		_OP_ = 			id.next(),
+		_LITERAL_ = 	id.next();
 
 	
 	// List of all operators for ease of access in rule definitions
@@ -59,8 +60,10 @@ public interface Token {
 		Token.SLASH
 	};
 	public static final int[] primitives = {
+			TRUE,
+			FALSE,
 			INT,
-			LITERAL
+			STRING
 	};
 	/**
 	 * Return integer array of operators and passed tokens
@@ -80,10 +83,10 @@ public interface Token {
 	}
 	
 	public static boolean isNonTerminal(int tokenValue) {
-		return tokenValue >= barrier;
+		return tokenValue >= partition;
 	}
 	public static boolean isTerminal(int tokenValue) {
-		return tokenValue < barrier;
+		return tokenValue < partition;
 	}
 }
 
@@ -92,6 +95,10 @@ enum Terminal implements Token {
 	EMPTY 		(Token.EMPTY, 		("\\s")),
 	SEMICOLON	(Token.SEMICOLON, 	(";")),
 	ECHO 		(Token.ECHO, 		("echo")),
+	TRUE		(Token.TRUE, 		("true"), 
+					Symbol.Type.BOOLEAN),
+	FALSE		(Token.FALSE, 		("false"), 
+					Symbol.Type.BOOLEAN),
 	VAR			(Token.VAR, 		("[a-z|A-Z|_][a-z|A-Z|\\d|_]*"), 
 					Symbol.Type.VAR),
 	INT 		(Token.INT, 		("\\d*"), 
@@ -107,12 +114,8 @@ enum Terminal implements Token {
 					'+'),
 	MINUS 		(Token.MINUS, 		("\\-"), 
 					'-'),
-	LITERAL     (Token.LITERAL, 	("\".*"), 
+	STRING      (Token.STRING, 	("\".*"), 
 					("\""), Symbol.Type.STRING),
-	TRUE		(Token.TRUE, 		("true"), 
-					Symbol.Type.BOOLEAN),
-	FALSE		(Token.FALSE, 		("false"), 
-					Symbol.Type.BOOLEAN),
 	CURLY_OPEN  (Token.CURLY_OPEN, ("\\{")),
 	CURLY_CLOSE (Token.CURLY_CLOSE, ("\\}"));
 	
@@ -184,8 +187,7 @@ enum NonTerminal implements Token {
 	_EXPR_		(Token._EXPR_,
 				 firstTerminalAndPattern(Token.PAREN_OPEN, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE),
 				 firstTerminalAndPattern(Token.VAR, Token.VAR, Token._OP_EXPR_),
-				 firstTerminalAndPattern(Token.INT, Token.INT, Token._OP_EXPR_),
-				 firstTerminalAndPattern(Token.LITERAL, Token.LITERAL, Token._OP_EXPR_),
+				 firstTerminalAndPattern(Token.primitives, Token._LITERAL_, Token._OP_EXPR_),
 	 			 follow(new int[] {Token.SEMICOLON, Token.PAREN_CLOSE})),
 	
 	_OP_EXPR_	(Token._OP_EXPR_,
@@ -198,7 +200,15 @@ enum NonTerminal implements Token {
 				 firstTerminalAndPattern(Token.MINUS, Token.MINUS),
 				 firstTerminalAndPattern(Token.ASTERISK, Token.ASTERISK),
 				 firstTerminalAndPattern(Token.SLASH, Token.SLASH),
-				 follow(Token.combineArrays(Token.primitives, Token.VAR, Token.PAREN_OPEN)));
+				 follow(Token.combineArrays(Token.primitives, Token.VAR, Token.PAREN_OPEN))),
+	
+	_LITERAL_	(Token._LITERAL_,
+				 firstTerminalAndPattern(Token.TRUE, Token.TRUE),
+				 firstTerminalAndPattern(Token.FALSE, Token.FALSE),
+				 firstTerminalAndPattern(Token.INT, Token.INT),
+				 firstTerminalAndPattern(Token.STRING, Token.STRING),
+				 firstTerminalAndPattern(Token.EMPTY, Token.EMPTY),
+				 follow(new int[] {Token.SEMICOLON, Token.PAREN_CLOSE}));
 	
 	/**
 	 * Internal class for NonTerminals

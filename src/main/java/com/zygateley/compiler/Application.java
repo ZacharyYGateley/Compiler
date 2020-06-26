@@ -24,7 +24,7 @@ public class Application {
 	 */
 	public static void main(String[] args) throws IOException {
 		// TESTING
-		StringReader sr = new StringReader("{abc = 5; df = 5; echo abc + df * 6;} echo \"The man with the plan is yo mamma\"; {echo 123;}");
+		StringReader sr = new StringReader("{abc = 5; df = 5; echo abc + df * 6;} echo \"The man with the plan is yo mamma\"; {echo true;}");
 		
 		// Objects passed to Parser
 		SymbolTable st = new SymbolTable();
