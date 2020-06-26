@@ -4,11 +4,13 @@ import java.util.*;
 
 public class Backend {
 	private StringBuilder sb;
-	private  ArrayList<ParseNode> parseTrees;
+	private ParseNode parseTree;
+	private int currentIndent;
+	private boolean newLine;
 	
-	public Backend(ArrayList<ParseNode> parseTrees) {
+	public Backend(ParseNode parseTree) {
 		this.sb = new StringBuilder();
-		this.parseTrees = parseTrees;
+		this.parseTree = parseTree;
 	}
 	
 	/**
@@ -18,7 +20,9 @@ public class Backend {
 	public String java() {
 		// Restart string builder if some parse method has already been called
 		sb.setLength(0);
-		__java__all__(parseTrees);
+		ArrayList<ParseNode> top = new ArrayList<ParseNode>();
+		top.add(parseTree);
+		__java__all__(top);
 		return sb.toString();
 	}
 	private void __java__all__(ArrayList<ParseNode> parseTrees) {
@@ -130,70 +134,51 @@ public class Backend {
 	public String python() {
 		// Restart string builder if some parse method has already been called
 		sb.setLength(0);
-		__python__all__(parseTrees);
+		currentIndent = 0;
+		__pythonParseNode__(parseTree);
 		return sb.toString();
 	}
-	private void __python__all__(ArrayList<ParseNode> parseTrees) {
+	private void __pythonParseList__(ArrayList<ParseNode> parseTrees) {
 		for (ParseNode pn : parseTrees) {
-			__python__(pn);
+			__pythonParseNode__(pn);
 		}
 	}
-	private void __python__(ParseNode pn) {
+	private void __pythonParseNode__(ParseNode pn) {
 		ArrayList<ParseNode> params = pn.getParam();
 		
 		// Try NonTerminal
 		NonTerminal nt = pn.getRule();
 		if (nt != null) {
 			switch (nt) {
-			case _STMT_:
-				__python__all__(params);
-				sb.append("\r\n");
-				break;
+			case _PROGRAM_:
+			case _STMTS_:
 			case _DEF_:
-				__python__all__(params);
+			case _OP_EXPR_:
+			case _OP_:
+				__pythonParseList__(params);
+				break;
+			case _BLOCK_:
+				endLine();
+				addLine("if True:");
+				currentIndent++;
+				__pythonParseList__(params);
+				currentIndent--;
+				endLine();
+				break;
+			case _STMT_:
+				__pythonParseList__(params);
+				endLine();
 				break;
 			case _ECHO_:
-				sb.append("print (");
-				__python__all__(params);
-				sb.append(")");
+				// Expressions all enclosed in parentheses,
+				// So no need to place them here
+				add("print");
+				__pythonParseList__(params);
 				break;
 			case _EXPR_:
-				// Does the expression correspond to arithmetic?
-				ParseNode firstChild = params.get(0);
-				Terminal nextToken = firstChild.getToken();
-				char action = ' ';
-				switch (nextToken) {
-				case PLUS:
-					action = '+';
-					break;
-				case MINUS:
-					action = '-';
-					break;
-				case ASTERISK:
-					action = '*';
-					break;
-				case SLASH:
-					action = '/';
-					break;
-				default:
-				}
-				
-				// Arithmetic -> Switch order
-				// + a b -> a + b
-				if (action != ' ') {
-					sb.append(" (");
-					__python__(params.get(1));
-					sb.append(action);
-					__python__(params.get(2));
-					sb.append(") ");
-				}
-				
-				// Otherwise, nothing out of the ordinary
-				else {
-					sb.append(" (");
-					__python__all__(params);
-					sb.append(") ");
-				}
+				add(" (");
+				__pythonParseList__(params);
+				add(") ");
 				break;
 			default:
 				break;
@@ -210,27 +195,43 @@ public class Backend {
 		case VAR:
 		case INT:
 		case LITERAL:
-			sb.append(pn.getSymbol().name);
+			add(pn.getSymbol().name);
 			break;
 		case EQUALS:
-			sb.append(" =");
+			add(" =");
 			break;
 		case PAREN_OPEN:
-			sb.append(" (");
+			add(" (");
 			break;
 		case PAREN_CLOSE:
-			sb.append(") ");
+			add(") ");
 			break;
 		case ASTERISK:
 		case SLASH:
 		case PLUS:
 		case MINUS:
-			// This handled by _EXPR_
+			add(" " + pn.getToken().outputChar);
 			break;
 		default:
 			// Do nothing
 		}
 		
 		return;
+	}
+	
+	private void add(String output) {
+		if (newLine) {
+			sb.append("    ".repeat(currentIndent));
+			newLine = false;
+		}
+		sb.append(output);
+	}
+	private void addLine(String output) {
+		newLine = true;
+		sb.append(output);
+		sb.append("\r\n");
+	}
+	private void endLine() {
+		addLine("");
 	}
 }

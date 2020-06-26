@@ -1,4 +1,3 @@
-Code block
 Control structures
 Scope?
 Combine backend functions into NonTerminal rule declarations if possible (and clean)
@@ -7,3 +6,4 @@ Adding strings
 Subtracting strings...? i.e. type checking
 Read from file
 Output to assembly?
+LITERAL -> STRING, create _LITERAL_ -> boolean, int, string

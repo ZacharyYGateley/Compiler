@@ -2,123 +2,203 @@ package com.zygateley.compiler;
 
 import java.util.regex.Pattern;
 
+class id {
+	public static int id = 0;
+	public static int next() {
+		return id++;
+	}
+}
+
+// This created before NonTerminals
+// So that NonTerminal rules can reference rules
+// that have not yet been defined
 public interface Token {
-	// Non-terminals
-	public final static int
-		_BLOCK_ = 100,
-		_STMT_ = 110,
-		_DEF_ = 111,
-		_ECHO_ = 112,
-		_EXPR_ = 113,
-		_ANY_ = 114;
-	
 	// Terminals
+	// Actual value does not matter, referred to as if enum
 	public final static int 
-		EMPTY = 0, 
-		EOF_STMT = 1,
-		ECHO = 2,
-		VAR = 3,
-		INT = 4,
-		EQUALS = 5,
-		PAREN_OPEN = 6,
-		PAREN_CLOSE = 7,
-		ASTERISK = 8,
-		SLASH = 9,
-		PLUS = 10,
-		MINUS = 11,
-		LITERAL = 12,
-		TRUE = 13,
-		FALSE = 14,
-		CURLY_OPEN = 15,
-		CURLY_CLOSE = 16;
+		EMPTY = 		id.next(), 
+		SEMICOLON = 	id.next(),
+		ECHO = 			id.next(),
+		VAR = 			id.next(),
+		INT = 			id.next(),
+		EQUALS = 		id.next(),
+		PAREN_OPEN = 	id.next(),
+		PAREN_CLOSE = 	id.next(),
+		ASTERISK = 		id.next(),
+		SLASH = 		id.next(),
+		PLUS = 			id.next(),
+		MINUS = 		id.next(),
+		LITERAL = 		id.next(),
+		TRUE = 			id.next(),
+		FALSE = 		id.next(),
+		CURLY_OPEN = 	id.next(),
+		CURLY_CLOSE = 	id.next(),
+		EOF = 			id.next();
+	
+	public final static int barrier = id.id;
+	
+	// Non-terminals
+	// Actual value does not matter, referred to as if enum
+	public final static int
+		_PROGRAM_ = 	id.next(),
+		_STMTS_ = 		id.next(),
+		_BLOCK_ = 		id.next(),
+		_STMT_ = 		id.next(),
+		_DEF_ = 		id.next(),
+		_ECHO_ = 		id.next(),
+		_EXPR_ = 		id.next(),
+		_OP_EXPR_ = 	id.next(),
+		_OP_ = 			id.next();
+
+	
+	// List of all operators for ease of access in rule definitions
+	public final static int[] operators = {
+		Token.PLUS,
+		Token.MINUS,
+		Token.ASTERISK,
+		Token.SLASH
+	};
+	public static final int[] primitives = {
+			INT,
+			LITERAL
+	};
+	/**
+	 * Return integer array of operators and passed tokens
+	 * @param additionalTokens tokens to include with operators
+	 * @return integer array of all operators and passed tokens
+	 */
+	public static int[] combineArrays(int[] firstArray, int... additionalTokens) {
+		int index = 0; 
+		int[] array = new int[firstArray.length + additionalTokens.length];
+		for (; index < firstArray.length; index++) {
+			array[index] = firstArray[index];
+		}
+		for (int i = 0; i < additionalTokens.length; i++, index++) {
+			array[index] = additionalTokens[i];
+		}
+		return array;
+	}
 	
 	public static boolean isNonTerminal(int tokenValue) {
-		return tokenValue >= 100;
+		return tokenValue >= barrier;
 	}
 	public static boolean isTerminal(int tokenValue) {
-		return tokenValue < 100;
+		return tokenValue < barrier;
 	}
 }
 
 enum Terminal implements Token {
 	// Terminals
-	EMPTY 		(Token.EMPTY, ("\\s")),
-	EOF_STMT	(Token.EOF_STMT, (";")),
-	ECHO 		(Token.ECHO, ("echo")),
-	VAR			(Token.VAR, ("[a-z|A-Z|_][a-z|A-Z|\\d|_]*"), Symbol.Type.VAR),
-	INT 		(Token.INT, ("\\d"), Symbol.Type.INT),
-	EQUALS 		(Token.EQUALS, ("=")),
-	PAREN_OPEN	(Token.PAREN_OPEN, ("\\(")),
+	EMPTY 		(Token.EMPTY, 		("\\s")),
+	SEMICOLON	(Token.SEMICOLON, 	(";")),
+	ECHO 		(Token.ECHO, 		("echo")),
+	VAR			(Token.VAR, 		("[a-z|A-Z|_][a-z|A-Z|\\d|_]*"), 
+					Symbol.Type.VAR),
+	INT 		(Token.INT, 		("\\d*"), 
+					Symbol.Type.INT),
+	EQUALS 		(Token.EQUALS, 		("=")),
+	PAREN_OPEN	(Token.PAREN_OPEN, 	("\\(")),
 	PAREN_CLOSE (Token.PAREN_CLOSE, ("\\)")),
-	ASTERISK 	(Token.ASTERISK, ("\\*")),
-	SLASH 		(Token.SLASH, ("/")),
-	PLUS  		(Token.PLUS, ("\\+")),
-	MINUS 		(Token.MINUS, ("\\-")),
-	LITERAL     (Token.LITERAL, ("\".*"), ("\""), Symbol.Type.STRING),
-	TRUE		(Token.TRUE, ("true"), Symbol.Type.BOOLEAN),
-	FALSE		(Token.FALSE, ("false"), Symbol.Type.BOOLEAN),
-	CURLY_OPEN  (Token.CURLY_CLOSE, ("\\{")),
+	ASTERISK 	(Token.ASTERISK, 	("\\*"), 
+					'*'),
+	SLASH 		(Token.SLASH, 		("/"), 
+					'/'),
+	PLUS  		(Token.PLUS, 		("\\+"), 
+					'+'),
+	MINUS 		(Token.MINUS, 		("\\-"), 
+					'-'),
+	LITERAL     (Token.LITERAL, 	("\".*"), 
+					("\""), Symbol.Type.STRING),
+	TRUE		(Token.TRUE, 		("true"), 
+					Symbol.Type.BOOLEAN),
+	FALSE		(Token.FALSE, 		("false"), 
+					Symbol.Type.BOOLEAN),
+	CURLY_OPEN  (Token.CURLY_OPEN, ("\\{")),
 	CURLY_CLOSE (Token.CURLY_CLOSE, ("\\}"));
 	
 	public final int tokenValue;
 	public final Pattern regexToken;
 	public final Pattern regexEnd;
 	public final Symbol.Type symbolType;
+	public final char outputChar;
 
 	private Terminal(int tokenValue, String regex) {
 		this.tokenValue = tokenValue;
 		this.regexToken = Pattern.compile(regex);
 		this.regexEnd = null;
 		this.symbolType = null;
+		this.outputChar = ' ';
 	}
 	private Terminal(int tokenValue, String regex, Symbol.Type symbolType) {
 		this.tokenValue = tokenValue;
 		this.regexToken = Pattern.compile(regex);
 		this.regexEnd = null;
 		this.symbolType = symbolType;
+		this.outputChar = ' ';
 	}
 	private Terminal(int tokenValue, String regexStart, String regexEnd, Symbol.Type symbolType) {
 		this.tokenValue = tokenValue;
 		this.regexToken = Pattern.compile(regexStart);
 		this.regexEnd = Pattern.compile(regexEnd);
 		this.symbolType = symbolType;
+		this.outputChar = ' ';
+	}	
+	private Terminal(int tokenValue, String regex, char outputChar) {
+		this.tokenValue = tokenValue;
+		this.regexToken = Pattern.compile(regex);
+		this.regexEnd = null;
+		this.symbolType = null;
+		this.outputChar = outputChar;
 	}
 }
 
 enum NonTerminal implements Token {
+	_PROGRAM_	(Token._PROGRAM_,
+				 firstTerminalAndPattern(new int[] { Token.CURLY_OPEN, Token.VAR, Token.ECHO }, Token._STMTS_),
+				 firstTerminalAndPattern(Token.EMPTY, Token.EMPTY),
+				 follow(Token.EOF)),
+	
+	_STMTS_		(Token._STMTS_,
+				 firstTerminalAndPattern(Token.CURLY_OPEN, Token._BLOCK_, Token._STMTS_),
+				 firstTerminalAndPattern(new int[] { Token.VAR, Token.ECHO }, Token._STMT_, Token._STMTS_),
+				 firstTerminalAndPattern(Token.EMPTY, Token.EMPTY),
+				 follow(new int[] {Token.EOF, Token.CURLY_CLOSE})),
+	
 	_BLOCK_		(Token._BLOCK_,
-				 firstTerminalAndPattern(Token.CURLY_OPEN, Token.CURLY_OPEN, Token._STMT_, Token.CURLY_CLOSE),
-				 follow()),
+				 firstTerminalAndPattern(Token.CURLY_OPEN, Token.CURLY_OPEN, Token._STMTS_, Token.CURLY_CLOSE),
+				 follow(new int[] {Token.EOF, Token.CURLY_OPEN, Token.VAR, Token.ECHO})),
+	
 	_STMT_		(Token._STMT_,
-				 firstTerminalAndPattern(Token.VAR, Token._DEF_, Token.EOF_STMT),
-				 firstTerminalAndPattern(Token.ECHO, Token._ECHO_, Token.EOF_STMT),
-				 firstTerminalAndPattern(Token.EMPTY, Token.EMPTY, Token.EOF_STMT),
-				 follow()),
+				 firstTerminalAndPattern(Token.VAR, Token._DEF_, Token.SEMICOLON),
+				 firstTerminalAndPattern(Token.ECHO, Token._ECHO_, Token.SEMICOLON),
+				 follow(new int[] {Token.EOF, Token.CURLY_OPEN, Token.VAR, Token.ECHO})),
 	
 	_DEF_		(Token._DEF_,
 				 firstTerminalAndPattern(Token.VAR, Token.VAR, Token.EQUALS, Token._EXPR_),
-				 follow(Token.EOF_STMT)),
+				 follow(Token.SEMICOLON)),
 	
 	_ECHO_		(Token._ECHO_,
 				 firstTerminalAndPattern(Token.ECHO, Token.ECHO, Token._EXPR_),
-				 follow(Token.EOF_STMT)),
+				 follow(Token.SEMICOLON)),
 	
 	_EXPR_		(Token._EXPR_,
-			     firstTerminalAndPattern(Token.PLUS, Token.PLUS, Token._EXPR_, Token._EXPR_),
-				 firstTerminalAndPattern(Token.MINUS, Token.MINUS, Token._EXPR_, Token._EXPR_),
-				 firstTerminalAndPattern(Token.ASTERISK, Token.ASTERISK, Token._EXPR_, Token._EXPR_),
-				 firstTerminalAndPattern(Token.SLASH, Token.SLASH, Token._EXPR_, Token._EXPR_),
 				 firstTerminalAndPattern(Token.PAREN_OPEN, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE),
-				 firstTerminalAndPattern(Token.VAR, Token.VAR),
-				 firstTerminalAndPattern(Token.INT, Token.INT),
-				 firstTerminalAndPattern(Token.LITERAL, Token.LITERAL),
-	 			 follow(
-	 					 Token.EOF_STMT, 
-	 					 Token.PLUS, Token.MINUS, 
-	 					 Token.ASTERISK, Token.SLASH, 
-	 					 Token.PAREN_OPEN, Token.PAREN_CLOSE, 
-	 					 Token.VAR, Token.INT
-	 					 ));
+				 firstTerminalAndPattern(Token.VAR, Token.VAR, Token._OP_EXPR_),
+				 firstTerminalAndPattern(Token.INT, Token.INT, Token._OP_EXPR_),
+				 firstTerminalAndPattern(Token.LITERAL, Token.LITERAL, Token._OP_EXPR_),
+	 			 follow(new int[] {Token.SEMICOLON, Token.PAREN_CLOSE})),
+	
+	_OP_EXPR_	(Token._OP_EXPR_,
+				 firstTerminalAndPattern(Token.operators, Token._OP_, Token._EXPR_),
+				 firstTerminalAndPattern(Token.EMPTY, Token.EMPTY),
+	 			 follow(new int[] {Token.SEMICOLON, Token.PAREN_CLOSE})),
+	
+	_OP_		(Token._OP_,
+				 firstTerminalAndPattern(Token.PLUS, Token.PLUS),
+				 firstTerminalAndPattern(Token.MINUS, Token.MINUS),
+				 firstTerminalAndPattern(Token.ASTERISK, Token.ASTERISK),
+				 firstTerminalAndPattern(Token.SLASH, Token.SLASH),
+				 follow(Token.combineArrays(Token.primitives, Token.VAR, Token.PAREN_OPEN)));
 	
 	/**
 	 * Internal class for NonTerminals
@@ -204,22 +284,25 @@ enum NonTerminal implements Token {
 			
 		}
 		return -1;
-	}
-	
-	/*
-	 * It appears this is not used
+	}	
+	/**
+	 * Search this rule to see if the given terminal
+	 * is part of the follow set.
+	 * 
+	 * @param t token to search for in FOLLOW set for this rule
+	 * @return boolean true / false
+	 */
 	public boolean inFollow(Terminal t) {
 		return inFollow(t.tokenValue);
 	}
 	public boolean inFollow(int t) {
-		for (int i = 0; i < this.FOLLOW.length; i++) {
-			if (t == this.FOLLOW[i]) {
+		for (int item : this.FOLLOW) {
+			if (t == item) {
 				return true;
-			}
+			}	
 		}
 		return false;
 	}
-	*/
 	
 	/**
 	 * Get NonTerminal by its tokenValue 

@@ -45,56 +45,30 @@ class ParseNode {
 
 
 public class Parser {
-	// Make accessible from same package
-	StringBuilder output;
-	// Current rule, recursive by stack
-	ArrayDeque<NonTerminal> rule;
-	TokenStream tokenStream;
-	ArrayList<ParseNode> parseTree;
+	private TokenStream tokenStream;
+	private boolean verbose;
 	
 	public Parser(TokenStream ts) {
-		this.output = new StringBuilder();
-		this.rule = new ArrayDeque<NonTerminal>();
 		this.tokenStream = ts;
-		this.parseTree = new ArrayList<ParseNode>();
 	}
 	
-	public ArrayList<ParseNode> parse() {
-	    // Get token and consume stream until stream is empty
-	    NEXT_TOKEN: while (tokenStream.length() > 0) {
-	        // Peek next token
-	    	// Does not consume stream
-	        Terminal t = tokenStream.peek().token;
-	         
-	        // Find first applicable rule
-	        for (NonTerminal rule : NonTerminal.values()) {
-	        	int indexInFirst = rule.indexOfMatchFirst(t);
-	        	boolean isThisRule = indexInFirst > -1;
-	        	
-	        	// MATCH!
-	        	if (isThisRule) {
-	        		// Create parse tree at this top-level rule
-	        		// Starting at this location in the token stream
-	        		ParseNode pn = parseRule(rule);
-	        		if (pn != null) {
-	        			this.parseTree.add(pn);
-	        		}
-	        		
-	        		// When match is found and processed, keep going
-	        		continue NEXT_TOKEN;
-	        	}
-	        }
-	        
-	        // No match
-	        // Invalid syntax
-	        System.err.println("Syntax error: Rule not found starting with " + t);
-	        tokenStream.gettoken();
-	    }
-	     
-	    return this.parseTree;
+	public ParseNode parse(boolean verbose) {
+		this.verbose = verbose;
+		return parse();
+	}
+	public ParseNode parse() {
+		// Top-level of parseTree should only contain first rule
+		NonTerminal firstRule = NonTerminal.values()[0];
+		return parseRule(firstRule);
 	}
 	
 	private ParseNode parseRule(NonTerminal rule) {
+		if (verbose) {
+			StringBuilder nameBuilder = new StringBuilder(rule + "          ");
+			nameBuilder.setLength(10); 
+			System.out.print("\nParsing " + nameBuilder.toString());
+		}
+		// New non-terminal node
 		ParseNode pn = new ParseNode(rule);
 		
 		Terminal t = tokenStream.peek().token;
@@ -102,8 +76,18 @@ public class Parser {
 		// Get pattern to work with
     	int indexInFirst = rule.indexOfMatchFirst(t);
     	if (indexInFirst < 0) {
-    		System.err.println("Fatal error: Production Rule terminated prematurely.");
-    		return null;
+    		boolean hasEpsilon = (rule.indexOfMatchFirst(NonTerminal.EMPTY) > -1);
+        	boolean inFollow = rule.inFollow(t);
+        	if (hasEpsilon && inFollow) {
+        		// Empty string has been utilized for this rule
+        		// Return rule with empty node parameter
+        		pn.addParam(new ParseNode(Terminal.EMPTY, null));
+        		return pn;
+        	}
+        	else {
+        		System.err.println("Fatal error: Production Rule terminated prematurely.");
+        		return null;
+        	}
     	}
 		int[] pattern = rule.patterns[indexInFirst].PATTERN;
 		
@@ -120,6 +104,12 @@ public class Parser {
 				if (ts.token.tokenValue != tokenValue) {
 					System.err.println("Fatal error: incorrect syntax.");
 					return null;
+				}
+				if (verbose) {
+					StringBuilder tokenName = new StringBuilder(ts.token + "          ");
+					tokenName.setLength(10);
+					String symbolName = (ts.symbol != null) ? ts.symbol.getName() : "";
+					System.out.print("\t" + tokenName + "\t" + symbolName);
 				}
 				next = new ParseNode(ts.token, ts.symbol);
 			}

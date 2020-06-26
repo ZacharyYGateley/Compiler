@@ -24,7 +24,7 @@ public class Application {
 	 */
 	public static void main(String[] args) throws IOException {
 		// TESTING
-		StringReader sr = new StringReader("abc = \"3 fo five one two\"; df = 5; echo + abc + * 6 df 1;");
+		StringReader sr = new StringReader("{abc = 5; df = 5; echo abc + df * 6;} echo \"The man with the plan is yo mamma\"; {echo 123;}");
 		
 		// Objects passed to Parser
 		SymbolTable st = new SymbolTable();
@@ -33,15 +33,17 @@ public class Application {
 		// Break down into tokens 
 		// and populate symbol tree
 		Lexer l = new Lexer(sr, ts);
-		l.lex(st);
+		l.lex(st, true);
 		
 		// Build parse tree
 		Parser p = new Parser(ts);
-		ArrayList<ParseNode> parseTrees = p.parse();
-		System.out.println(parseTrees);
+		ParseNode parseTree = p.parse(true);
+		if (parseTree == null) {
+			return;
+		}
 		
 		// Run backend into appropriate language
-		Backend be = new Backend(parseTrees);
+		Backend be = new Backend(parseTree);
 		String output = be.python();
 		System.out.println(output);
 	}
