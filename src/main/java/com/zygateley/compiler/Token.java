@@ -98,78 +98,50 @@ public interface Token {
 
 enum Terminal implements Token {
 	// Terminals
-	EMPTY 		(Token.EMPTY, 		("\\s")),
-	SEMICOLON	(Token.SEMICOLON, 	(";")),
-	ECHO 		(Token.ECHO, 		("echo")),
-	TRUE		(Token.TRUE, 		("true"), 
-					Symbol.Type.BOOLEAN),
-	FALSE		(Token.FALSE, 		("false"), 
-					Symbol.Type.BOOLEAN),
-	VAR			(Token.VAR, 		("[a-z|A-Z|_][a-z|A-Z|\\d|_]*"), 
-					Symbol.Type.VAR),
-	INT 		(Token.INT, 		("\\d*"), 
-					Symbol.Type.INT),
-	DEF 		(Token.DEF, 		("=")),
-	PAREN_OPEN	(Token.PAREN_OPEN, 	("\\(")),
-	PAREN_CLOSE (Token.PAREN_CLOSE, ("\\)")),
-	ASTERISK 	(Token.ASTERISK, 	("\\*"), 
-					'*'),
-	SLASH 		(Token.SLASH, 		("/"), 
-					'/'),
-	PLUS  		(Token.PLUS, 		("\\+"), 
-					'+'),
-	MINUS 		(Token.MINUS, 		("\\-"), 
-					'-'),
-	NEQ  		(Token.PLUS, 		("\\+"), 
-					'!', '='),
-	LTEQ 		(Token.MINUS, 		("\\-"), 
-					'<', '='),
-	GTEQ  		(Token.PLUS, 		("\\+"), 
-					'>', '='),
-	LT 			(Token.MINUS, 		("\\-"), 
-					'<'),
-	GT  		(Token.PLUS, 		("\\+"), 
-					'>'),
-	EQ 			(Token.MINUS, 		("\\-"), 
-					'=', '='),
-	STRING      (Token.STRING, 	("\".*"), 
-					("\""), Symbol.Type.STRING),
-	CURLY_OPEN  (Token.CURLY_OPEN, ("\\{")),
-	CURLY_CLOSE (Token.CURLY_CLOSE, ("\\}"));
+	EMPTY 		(Token.EMPTY, "", "\\s"),
+	SEMICOLON	(Token.SEMICOLON, ";"),
+	ECHO 		(Token.ECHO, "echo"),
+	TRUE		(Token.TRUE, Symbol.Type.BOOLEAN, "true"),
+	FALSE		(Token.FALSE, Symbol.Type.BOOLEAN, "false"),
+	INT 		(Token.INT, Symbol.Type.INT, "", ("\\d*")),
+	STRING      (Token.STRING, Symbol.Type.STRING, "", ("\".*"), ("[^[^\\](\\\\)*\\]\"")),
+	VAR			(Token.VAR, Symbol.Type.VAR, "", ("[a-z|A-Z|_][a-z|A-Z|\\d|_]*")),
+	DEF 		(Token.DEF, "="),
+	PAREN_OPEN	(Token.PAREN_OPEN, "("),
+	PAREN_CLOSE (Token.PAREN_CLOSE, ")"),
+	ASTERISK 	(Token.ASTERISK, "*"),
+	SLASH 		(Token.SLASH, "/"),
+	PLUS  		(Token.PLUS, "+"),
+	MINUS 		(Token.MINUS, "-"),
+	NEQ  		(Token.NEQ, "!="),
+	LTEQ 		(Token.LTEQ, "<="),
+	GTEQ  		(Token.GTEQ, ">="),
+	LT 			(Token.LT, "<"),
+	GT  		(Token.GT, ">"),
+	EQ 			(Token.EQ, "=="),
+	CURLY_OPEN  (Token.CURLY_OPEN, "{"),
+	CURLY_CLOSE (Token.CURLY_CLOSE, "}"),
+	EOF 		(Token.EOF, Character.toString((char) 0));
 	
 	public final int tokenValue;
-	public final Pattern regexToken;
+	public final String exactString;
+	public final Pattern regexStart;
 	public final Pattern regexEnd;
 	public final Symbol.Type symbolType;
-	public final String outputString;
 
-	private Terminal(int tokenValue, String regex) {
+	private Terminal(int tokenValue, String... matching) {
 		this.tokenValue = tokenValue;
-		this.regexToken = Pattern.compile(regex);
-		this.regexEnd = null;
 		this.symbolType = null;
-		this.outputString = "";
+		this.exactString = (matching.length > 0) ? matching[0] : "";
+		this.regexStart = (matching.length > 1) ? Pattern.compile(matching[1]) : null;
+		this.regexEnd = (matching.length > 2) ? Pattern.compile(matching[2]) : null;
 	}
-	private Terminal(int tokenValue, String regex, Symbol.Type symbolType) {
+	private Terminal(int tokenValue, Symbol.Type symbolType, String... matching) {
 		this.tokenValue = tokenValue;
-		this.regexToken = Pattern.compile(regex);
-		this.regexEnd = null;
 		this.symbolType = symbolType;
-		this.outputString = "";
-	}
-	private Terminal(int tokenValue, String regexStart, String regexEnd, Symbol.Type symbolType) {
-		this.tokenValue = tokenValue;
-		this.regexToken = Pattern.compile(regexStart);
-		this.regexEnd = Pattern.compile(regexEnd);
-		this.symbolType = symbolType;
-		this.outputString = "";
-	}	
-	private Terminal(int tokenValue, String regex, char... outputChar) {
-		this.tokenValue = tokenValue;
-		this.regexToken = Pattern.compile(regex);
-		this.regexEnd = null;
-		this.symbolType = null;
-		this.outputString = new String(outputChar);
+		this.exactString = (matching.length > 0) ? matching[0] : "";
+		this.regexStart = (matching.length > 1) ? Pattern.compile(matching[1]) : null;
+		this.regexEnd = (matching.length > 2) ? Pattern.compile(matching[2]) : null;
 	}
 }
 

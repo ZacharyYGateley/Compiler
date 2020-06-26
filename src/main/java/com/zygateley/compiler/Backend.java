@@ -223,7 +223,7 @@ public class Backend {
 		case LT:
 		case GT:
 		case EQ:
-			add(" " + pn.getToken().outputString);
+			add(" " + pn.getToken().exactString);
 			break;
 		default:
 			// Do nothing
