@@ -68,7 +68,7 @@ public class Parser {
 	         
 	        // Find first applicable rule
 	        for (NonTerminal rule : NonTerminal.values()) {
-	        	int indexInFirst = rule.indexInFirst(t);
+	        	int indexInFirst = rule.indexOfMatchFirst(t);
 	        	boolean isThisRule = indexInFirst > -1;
 	        	
 	        	// MATCH!
@@ -100,7 +100,7 @@ public class Parser {
 		Terminal t = tokenStream.peek().token;
 
 		// Get pattern to work with
-    	int indexInFirst = rule.indexInFirst(t);
+    	int indexInFirst = rule.indexOfMatchFirst(t);
     	if (indexInFirst < 0) {
     		System.err.println("Fatal error: Production Rule terminated prematurely.");
     		return null;

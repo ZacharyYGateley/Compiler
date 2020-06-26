@@ -58,52 +58,57 @@ enum Terminal implements Token {
 }
 
 enum NonTerminal implements Token {
-	// Non-terminals
-	//		FIRST_0: PATTERN_0
-	//		FIRST_1: PATTERN_1
-	//		...
-	//		FOLLOW
 	_STMT_		(Token._STMT_,
-				 // FIRST : PATTERN
-				 new int[][] {{Token.VAR}, {Token._DEF_, Token.EOF_STMT}},
-				 new int[][] {{Token.ECHO}, {Token._ECHO_, Token.EOF_STMT}},
-				 new int[][] {{Token.EMPTY}, {Token.EMPTY, Token.EOF_STMT}},
-				 // FOLLOW
-				 new int[][] {{}}),
+				 firstTerminalAndPattern(Token.VAR, Token._DEF_, Token.EOF_STMT),
+				 firstTerminalAndPattern(Token.ECHO, Token._ECHO_, Token.EOF_STMT),
+				 firstTerminalAndPattern(Token.EMPTY, Token.EMPTY, Token.EOF_STMT),
+				 follow()),
 	
 	_DEF_		(Token._DEF_,
-				 // FIRST : PATTERN
-				 new int[][] {{Token.VAR}, {Token.VAR, Token.EQUALS, Token._EXPR_}},
-				 // FOLLOW
-				 new int[][] {{Token.EOF_STMT}}),
+				 firstTerminalAndPattern(Token.VAR, Token.VAR, Token.EQUALS, Token._EXPR_),
+				 follow(Token.EOF_STMT)),
 	
 	_ECHO_		(Token._ECHO_,
-				 // FIRST : PATTERN
-				 new int[][] {{Token.ECHO}, {Token.ECHO, Token._EXPR_}},
-				 // FOLLOW
-				 new int[][] {{Token.EOF_STMT}}),
+				 firstTerminalAndPattern(Token.ECHO, Token.ECHO, Token._EXPR_),
+				 follow(Token.EOF_STMT)),
 	
 	_EXPR_		(Token._EXPR_,
-				 // FIRST : PATTERN
-				 new int[][] {{Token.PLUS}, {Token.PLUS, Token._EXPR_, Token._EXPR_}},
-				 new int[][] {{Token.MINUS}, {Token.MINUS, Token._EXPR_, Token._EXPR_}},
-				 new int[][] {{Token.ASTERISK}, {Token.ASTERISK, Token._EXPR_, Token._EXPR_}},
-				 new int[][] {{Token.SLASH}, {Token.SLASH, Token._EXPR_, Token._EXPR_}},
-				 new int[][] {{Token.PAREN_OPEN}, {Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE}},
-				 new int[][] {{Token.VAR}, {Token.VAR}},
-				 new int[][] {{Token.INT}, {Token.INT}},
-				 // FOLLOW
-	 			 new int[][] {{Token.EOF_STMT, Token.PLUS, Token.MINUS, Token.ASTERISK, Token.SLASH, Token.PAREN_OPEN, Token.PAREN_CLOSE, Token.VAR, Token.INT}});
+			     firstTerminalAndPattern(Token.PLUS, Token.PLUS, Token._EXPR_, Token._EXPR_),
+				 firstTerminalAndPattern(Token.MINUS, Token.MINUS, Token._EXPR_, Token._EXPR_),
+				 firstTerminalAndPattern(Token.ASTERISK, Token.ASTERISK, Token._EXPR_, Token._EXPR_),
+				 firstTerminalAndPattern(Token.SLASH, Token.SLASH, Token._EXPR_, Token._EXPR_),
+				 firstTerminalAndPattern(Token.PAREN_OPEN, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE),
+				 firstTerminalAndPattern(Token.VAR, Token.VAR),
+				 firstTerminalAndPattern(Token.INT, Token.INT),
+	 			 follow(
+	 					 Token.EOF_STMT, 
+	 					 Token.PLUS, Token.MINUS, 
+	 					 Token.ASTERISK, Token.SLASH, 
+	 					 Token.PAREN_OPEN, Token.PAREN_CLOSE, 
+	 					 Token.VAR, Token.INT
+	 					 ));
 	
+	/**
+	 * Internal class for NonTerminals
+	 * 
+	 * FIRST: the terminal(.tokenValue) that indicates the start of this pattern
+	 * PATTERN: the respective pattern, including FIRST
+	 * 
+	 * @author Zachary Gateley
+	 *
+	 */
 	public class Pattern{
 		public final int[] FIRST;
 		public final int[] PATTERN;
 		
-		public Pattern(int[] first, int[] pattern) {
+		public Pattern(int[] first, int... pattern) {
 			this.FIRST = first;
 			this.PATTERN = pattern;
 		}
 		
+		/*
+		 * It appears this is unused.
+		 * 
 		public int indexInFirst(Terminal t) {
 			return indexInFirst(t.tokenValue);
 		}
@@ -115,12 +120,23 @@ enum NonTerminal implements Token {
 			}
 			return -1;
 		}
+		*/
 	}
 	
 	public final int tokenValue;
 	public final Pattern[] patterns;
 	public final int[] FOLLOW;
 	
+	/**
+	 * Constructor 
+	 * 
+	 * @param tokenValue value from Token.* that corresponds to this NonTerminal 
+	 * @param patterns
+	 * 		// Sequence of  
+	 * 		firstTerminalAndPattern()...
+	 * 		// Followed by one single
+	 * 		follow()
+	 */
 	private NonTerminal(int tokenValue, int[][]... patterns) {
 		this.tokenValue = tokenValue;
 		this.patterns = new Pattern[patterns.length - 1];
@@ -134,10 +150,19 @@ enum NonTerminal implements Token {
 		this.FOLLOW = patterns[patterns.length - 1][0];
 	}
 	
-	public int indexInFirst(Terminal t) {
-		return indexInFirst(t.tokenValue);
+	/**
+	 * Search this rule to see if the given terminal
+	 * indicates the start of one of this rule's patterns.
+	 * If it exists, return the index within the patterns array list.
+	 * Otherwise, return -1.
+	 * 
+	 * @param t token to search for in FIRST sets for this rule
+	 * @return index in patterns or -1 for not found
+	 */
+	public int indexOfMatchFirst(Terminal t) {
+		return indexOfMatchFirst(t.tokenValue);
 	}
-	public int indexInFirst(int t) {
+	public int indexOfMatchFirst(int t) {
 		for (int i_p = 0; i_p < this.patterns.length; i_p++) {
 			for (int item : this.patterns[i_p].FIRST) {
 				if (t == item) {
@@ -149,6 +174,8 @@ enum NonTerminal implements Token {
 		return -1;
 	}
 	
+	/*
+	 * It appears this is not used
 	public boolean inFollow(Terminal t) {
 		return inFollow(t.tokenValue);
 	}
@@ -160,7 +187,15 @@ enum NonTerminal implements Token {
 		}
 		return false;
 	}
+	*/
 	
+	/**
+	 * Get NonTerminal by its tokenValue 
+	 * (Token.* or NonTerminal.tokenValue)
+	 * 
+	 * @param tokenValue NonTerminal.tokenValue to find
+	 * @return NonTerminal with matching tokenValue or null
+	 */
 	public static NonTerminal getNonTerminal(int tokenValue) {
 		NonTerminal[] all = NonTerminal.values();
 		for (NonTerminal nt : all) {
@@ -169,5 +204,32 @@ enum NonTerminal implements Token {
 			}
 		}
 		return null;
+	}
+	
+	/**
+	 * firstTerminalAndPattern
+	 * 
+	 * The first argument is the Terminal.tokenValue that indicates the start of this rule
+	 * The following arguments indicate the sequence of Terminals and NonTerminals in the pattern
+	 * 		(Represented as *.tokenValue each)
+	 * 
+	 * @param first Terminal tokenValue
+	 * @param pattern Sequence of {Terminal, NonTerminal} as *.tokenValue
+	 * @return respective input for NonTerminal constructor
+	 */
+	public static int[][] firstTerminalAndPattern(int first, int... pattern) {
+		return new int[][] { { first }, pattern };
+	}
+	public static int[][] firstTerminalAndPattern(int[] first, int... pattern) {
+		return new int[][] { first, pattern };
+	}
+	/**
+	 * follow
+	 * 
+	 * @param follow set of Terminals that indicate the end of parsing this rule 
+	 * @return respective input for NonTerminal constructor
+	 */
+	public static int[][] follow(int... follow) {
+		return new int[][] { follow };
 	}
 }
