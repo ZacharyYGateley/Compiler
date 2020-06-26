@@ -2,6 +2,7 @@ package com.zygateley.compiler;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.*;
 import java.util.regex.*;
 
 public class Lexer {
@@ -12,10 +13,22 @@ public class Lexer {
 	// When a token is complete, buildToken is reset
 	private StringBuilder buildToken;
 	// Run on only one character at a time
-	private static final Pattern singleToken = Pattern.compile("[\\{|\\}|\\(|\\)|;]");
-	private static final Pattern whiteSpace = Pattern.compile("\\s");
+	private static final Pattern singleToken = Pattern.compile("[\\{|\\}|\\[|\\]|\\(|\\)|;]");
+	private static final Pattern whiteSpace = Pattern.compile("[\\s]");
 	
-	private static Terminal[] tokenRules = Terminal.values();
+	class TokenMatch {
+		public Terminal token;
+		public boolean match = false;
+	}
+	private static TokenMatch[] tokenRules = new TokenMatch[Terminal.values().length];
+	{
+		Terminal[] tokens = Terminal.values();
+		for (int i = 0; i < tokens.length; i++) {
+			TokenMatch tm = new TokenMatch();
+			tm.token = tokens[i];
+			tokenRules[i] = tm;
+		}
+	}
 	
 	/**
 	 * Lexer
@@ -81,7 +94,8 @@ public class Lexer {
 			// Current token in the works
 			// Figure out what kind of token it is
 			// Get first match
-			for (Terminal tokenRule : tokenRules) {
+			for (TokenMatch tokenMatch : tokenRules) {
+				Terminal tokenRule = tokenMatch.token;
 				Matcher m = tokenRule.regexToken.matcher(token);
 				if (m.matches()) {
 					// regexEnd indicates 

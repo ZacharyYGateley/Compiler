@@ -104,7 +104,7 @@ public class Backend {
 		case STRING:
 			sb.append(pn.getSymbol().name);
 			break;
-		case EQUALS:
+		case DEF:
 			sb.append(" =");
 			break;
 		case PAREN_OPEN:
@@ -204,7 +204,7 @@ public class Backend {
 		case STRING:
 			add(pn.getSymbol().name);
 			break;
-		case EQUALS:
+		case DEF:
 			add(" =");
 			break;
 		case PAREN_OPEN:
@@ -217,7 +217,13 @@ public class Backend {
 		case SLASH:
 		case PLUS:
 		case MINUS:
-			add(" " + pn.getToken().outputChar);
+		case NEQ:
+		case LTEQ:
+		case GTEQ:
+		case LT:
+		case GT:
+		case EQ:
+			add(" " + pn.getToken().outputString);
 			break;
 		default:
 			// Do nothing

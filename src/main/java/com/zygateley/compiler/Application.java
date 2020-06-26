@@ -2,8 +2,6 @@ package com.zygateley.compiler;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
 
 public class Application {
 	/**

@@ -24,13 +24,19 @@ public interface Token {
 		FALSE = 		id.next(),
 		INT = 			id.next(),
 		STRING = 		id.next(),
-		EQUALS = 		id.next(),
+		DEF = 			id.next(),
 		PAREN_OPEN = 	id.next(),
 		PAREN_CLOSE = 	id.next(),
 		ASTERISK = 		id.next(),
 		SLASH = 		id.next(),
 		PLUS = 			id.next(),
 		MINUS = 		id.next(),
+		NEQ = 			id.next(),
+		LTEQ = 			id.next(),
+		GTEQ = 			id.next(),
+		LT = 			id.next(),
+		GT = 			id.next(),
+		EQ = 			id.next(),
 		CURLY_OPEN = 	id.next(),
 		CURLY_CLOSE = 	id.next(),
 		EOF = 			id.next();
@@ -103,7 +109,7 @@ enum Terminal implements Token {
 					Symbol.Type.VAR),
 	INT 		(Token.INT, 		("\\d*"), 
 					Symbol.Type.INT),
-	EQUALS 		(Token.EQUALS, 		("=")),
+	DEF 		(Token.DEF, 		("=")),
 	PAREN_OPEN	(Token.PAREN_OPEN, 	("\\(")),
 	PAREN_CLOSE (Token.PAREN_CLOSE, ("\\)")),
 	ASTERISK 	(Token.ASTERISK, 	("\\*"), 
@@ -114,6 +120,18 @@ enum Terminal implements Token {
 					'+'),
 	MINUS 		(Token.MINUS, 		("\\-"), 
 					'-'),
+	NEQ  		(Token.PLUS, 		("\\+"), 
+					'!', '='),
+	LTEQ 		(Token.MINUS, 		("\\-"), 
+					'<', '='),
+	GTEQ  		(Token.PLUS, 		("\\+"), 
+					'>', '='),
+	LT 			(Token.MINUS, 		("\\-"), 
+					'<'),
+	GT  		(Token.PLUS, 		("\\+"), 
+					'>'),
+	EQ 			(Token.MINUS, 		("\\-"), 
+					'=', '='),
 	STRING      (Token.STRING, 	("\".*"), 
 					("\""), Symbol.Type.STRING),
 	CURLY_OPEN  (Token.CURLY_OPEN, ("\\{")),
@@ -123,35 +141,35 @@ enum Terminal implements Token {
 	public final Pattern regexToken;
 	public final Pattern regexEnd;
 	public final Symbol.Type symbolType;
-	public final char outputChar;
+	public final String outputString;
 
 	private Terminal(int tokenValue, String regex) {
 		this.tokenValue = tokenValue;
 		this.regexToken = Pattern.compile(regex);
 		this.regexEnd = null;
 		this.symbolType = null;
-		this.outputChar = ' ';
+		this.outputString = "";
 	}
 	private Terminal(int tokenValue, String regex, Symbol.Type symbolType) {
 		this.tokenValue = tokenValue;
 		this.regexToken = Pattern.compile(regex);
 		this.regexEnd = null;
 		this.symbolType = symbolType;
-		this.outputChar = ' ';
+		this.outputString = "";
 	}
 	private Terminal(int tokenValue, String regexStart, String regexEnd, Symbol.Type symbolType) {
 		this.tokenValue = tokenValue;
 		this.regexToken = Pattern.compile(regexStart);
 		this.regexEnd = Pattern.compile(regexEnd);
 		this.symbolType = symbolType;
-		this.outputChar = ' ';
+		this.outputString = "";
 	}	
-	private Terminal(int tokenValue, String regex, char outputChar) {
+	private Terminal(int tokenValue, String regex, char... outputChar) {
 		this.tokenValue = tokenValue;
 		this.regexToken = Pattern.compile(regex);
 		this.regexEnd = null;
 		this.symbolType = null;
-		this.outputChar = outputChar;
+		this.outputString = new String(outputChar);
 	}
 }
 
@@ -177,7 +195,7 @@ enum NonTerminal implements Token {
 				 follow(new int[] {Token.EOF, Token.CURLY_OPEN, Token.VAR, Token.ECHO})),
 	
 	_DEF_		(Token._DEF_,
-				 firstTerminalAndPattern(Token.VAR, Token.VAR, Token.EQUALS, Token._EXPR_),
+				 firstTerminalAndPattern(Token.VAR, Token.VAR, Token.DEF, Token._EXPR_),
 				 follow(Token.SEMICOLON)),
 	
 	_ECHO_		(Token._ECHO_,

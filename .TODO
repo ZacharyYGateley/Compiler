@@ -7,3 +7,4 @@ Subtracting strings...? i.e. type checking
 Read from file
 Output to assembly?
 LITERAL -> STRING, create _LITERAL_ -> boolean, int, string
+Lexer combining tokens without white space, e.g. abc=3; or de==f;
