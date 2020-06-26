@@ -2,7 +2,6 @@ package com.zygateley.compiler;
 
 import java.io.IOException;
 import java.io.PushbackReader;
-import java.util.regex.*;
 
 public class Lexer {
 	private boolean verbose;
@@ -15,7 +14,8 @@ public class Lexer {
 	
 	class TerminalAndMatch {
 		public Terminal terminal;
-		public boolean isMatch = true;
+		public boolean isPossibleMatch = true;
+		public boolean isFullMatch = true;
 	}
 	private static TerminalAndMatch[] thisRoundMatches = new TerminalAndMatch[Terminal.values().length];
 	private static TerminalAndMatch[] lastRoundMatches = new TerminalAndMatch[thisRoundMatches.length];
@@ -25,13 +25,15 @@ public class Lexer {
 			// This time token matches
 			TerminalAndMatch tm = new TerminalAndMatch();
 			tm.terminal = tokens[i];
-			tm.isMatch = true;
+			tm.isPossibleMatch = true;
+			tm.isFullMatch = true;
 			thisRoundMatches[i] = tm;
 			
 			// Last time token matches
 			tm = new TerminalAndMatch();
 			tm.terminal = tokens[i];
-			tm.isMatch = false;
+			tm.isPossibleMatch = false;
+			tm.isFullMatch = false;
 			lastRoundMatches[i] = tm;
 		}
 	}
@@ -59,7 +61,7 @@ public class Lexer {
 	public void lex() throws IOException {
 		// Next character
 		boolean isEOF = false;
-		do {
+		do { // while !isEof
 			int readIn = stringReaderIn.read();
 			String nextIn;
 			if (readIn < 0) {
@@ -108,22 +110,22 @@ public class Lexer {
 				if (readIn > -1) {
 					stringReaderIn.unread(readIn);
 				}
+				currentToken = currentToken.substring(0, currentToken.length() - 1);
 				tokenBuilder.setLength(0);
 				
 				// Find the which terminal type this is
-				// It will be the first match in the ordered set TerminalAndMatch (from Terminal.values())
-				Terminal thisRule = getTerminalRuleFromLast();
+				// It will be the first (full) match  
+				// in the ordered set Terminal
+				Terminal thisRule = getTerminalRuleFromLast(currentToken);
 				
 				// Ignore EMPTY terminals
 				// They would only take up unnecessary space at this point
 				if (thisRule == Terminal.EMPTY) {
-					continue;
+					// pass
 				}
-				
-				
 				// If there is no match at all,
 				// there is an invalid character
-				if (thisRule == null) {
+				else if (thisRule == null) {
 					System.err.println("Lexical error at " + currentToken);
 					return;
 				}
@@ -156,25 +158,62 @@ public class Lexer {
 		//			ensures we do not incorrectly assume match 
 		//			when there are no matches on first character
 		for (int i = 0; i < thisRoundMatches.length; i++) {
-			thisRoundMatches[i].isMatch 	= true;
-			lastRoundMatches[i].isMatch 	= false;
+			// Reset this round matches
+			TerminalAndMatch thisTm = thisRoundMatches[i];
+			thisTm.isPossibleMatch 	= true;
+			thisTm.isFullMatch 		= false;
+
+			// Reset last round matches
+			TerminalAndMatch lastTm = lastRoundMatches[i];
+			lastTm.isPossibleMatch 	= false;
+			lastTm.isFullMatch 		= false;
 		}
 	}
 	
-	private int getMatchCount(String token) {
+	/**
+	 * Find how many Terminals this (partial) token
+	 * might fit.
+	 * @param token
+	 * @return
+	 */
+	private int getMatchCount(String partialToken) {
 		int matchCount = 0;
-		for (TerminalAndMatch tm : thisRoundMatches) {
+		for (int i = 0; i < thisRoundMatches.length; i++) {
+			TerminalAndMatch tm = thisRoundMatches[i];
 			// Consider only those that still match
 			// First character: all matches set to true
-			if (tm.isMatch) {					
+			if (tm.isPossibleMatch) {
 				Terminal tokenRule = tm.terminal;
-				Matcher m = tokenRule.regexStart.matcher(token);
-				if (m.matches()) {
+
+				// Check for partial match
+				boolean isPartialMatch = tokenRule.isMatch(partialToken, false);
+				
+				// Some tokens require "full matches" 
+				// and might only full-match ONCE e.g. string
+				// In these cases, partial match is not enough
+				// e.g. String will return partial match until EOF
+				if (isPartialMatch && tokenRule.requiresFullMatch()) {
+					boolean isFullMatch = tokenRule.isMatch(partialToken, true);
+					if (isFullMatch) {
+						tm.isFullMatch = true;
+					}
+					else {
+						TerminalAndMatch lastTm = lastRoundMatches[i];
+						if (lastTm.isFullMatch) {
+							// Had full match
+							// No longer have full match!
+							// we have reached the end of this token
+							isPartialMatch = false;
+						}
+					}
+				}
+				
+				if (isPartialMatch) {
 					// Keep match as true
 					matchCount++;
 				}
 				else {
-					tm.isMatch = false;
+					tm.isPossibleMatch = false;
 				}
 			}
 		}
@@ -190,7 +229,8 @@ public class Lexer {
 		for (int i = 0; i < thisRoundMatches.length; i++) {
 			TerminalAndMatch thisMatch = thisRoundMatches[i];
 			TerminalAndMatch lastMatch = lastRoundMatches[i];
-			lastMatch.isMatch = thisMatch.isMatch;
+			lastMatch.isPossibleMatch = thisMatch.isPossibleMatch;
+			lastMatch.isFullMatch	  = thisMatch.isFullMatch;
 		}
 	}
 	
@@ -199,14 +239,14 @@ public class Lexer {
 	 * Calling this implies that there is no match in the current match set (thisRoundMatches)
 	 * @return Terminal first matching rule (priority by order)
 	 */
-	private Terminal getTerminalRuleFromLast() {
-		Terminal thisRule = null;
+	private Terminal getTerminalRuleFromLast(String fullToken) {
 		for (TerminalAndMatch tm : lastRoundMatches) {
-			if (tm.isMatch) {
-				thisRule = tm.terminal;
+			if (tm.isPossibleMatch) {
+				boolean isFullMatch = tm.terminal.isMatch(fullToken, true);
+				if (isFullMatch) return tm.terminal;
 			}
 		}
-		return thisRule;
+		return null;
 	}
 	
 	private void createAddToken(String newToken, Terminal thisRule) {
@@ -222,58 +262,4 @@ public class Lexer {
 			System.out.println("Lexer: " + sbtr.toString() + "\t("+ newToken + ")");
 		}
 	}
-		
-	/*
-	private boolean findAndAddToken(String token, char thisChar, SymbolTable st) {
-		// All available token types
-		// Save time & space by converting to string now
-		// Will compare against a handful of regular expressions
-		if (token.length() > 0) {
-			// Current token in the works
-			// Figure out what kind of token it is
-			// Get first match
-			for (TerminalAndMatch tokenMatch : thisRoundMatches) {
-				Terminal tokenRule = tokenMatch.terminal;
-				Matcher m = tokenRule.regexToken.matcher(token);
-				if (m.matches()) {
-					// regexEnd indicates 
-					// that this token can outlast white space
-					if (tokenRule.regexEnd != null) {
-						tokenBuilder.append(thisChar);
-						try {
-							int _readIn;
-							char _nextIn;
-							do {
-								_readIn = stringReaderIn.read();
-								_nextIn = (char) _readIn;
-								tokenBuilder.append(_nextIn);
-							} while (!tokenRule.regexEnd.matcher("" + _nextIn).matches());
-						}
-						catch (Exception err) {
-							System.err.println("Fatal error: Incorrect syntax at token " + tokenRule);
-							return false;
-						}
-						finally {
-							token = tokenBuilder.toString();
-						}
-					}
-					
-					Symbol symbol = null;
-					if (tokenRule.symbolType != null) {
-						symbol = st.insert(token, tokenRule.symbolType);
-					}
-					tokenStreamOut.addtoken(tokenRule, symbol);
-					
-					if (verbose) {
-						StringBuilder sbtr = new StringBuilder(tokenRule + "         ");
-						sbtr.setLength(10);
-						System.out.println("Lexer: " + sbtr.toString() + "\t("+ token + ")");
-					}
-					break;
-				}
-			}
-		}
-		return true;
-	}
-	*/
 }

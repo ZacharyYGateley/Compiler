@@ -1,5 +1,6 @@
 package com.zygateley.compiler;
 
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 class id {
@@ -98,14 +99,14 @@ public interface Token {
 
 enum Terminal implements Token {
 	// Terminals
-	EMPTY 		(Token.EMPTY, "", "\\s"),
+	EMPTY 		(Token.EMPTY, "", "^\\s"),
 	SEMICOLON	(Token.SEMICOLON, ";"),
 	ECHO 		(Token.ECHO, "echo"),
 	TRUE		(Token.TRUE, Symbol.Type.BOOLEAN, "true"),
 	FALSE		(Token.FALSE, Symbol.Type.BOOLEAN, "false"),
-	INT 		(Token.INT, Symbol.Type.INT, "", ("\\d*")),
-	STRING      (Token.STRING, Symbol.Type.STRING, "", ("\".*"), ("[^[^\\](\\\\)*\\]\"")),
-	VAR			(Token.VAR, Symbol.Type.VAR, "", ("[a-z|A-Z|_][a-z|A-Z|\\d|_]*")),
+	INT 		(Token.INT, Symbol.Type.INT, "", ("^\\d*")),
+	STRING      (Token.STRING, Symbol.Type.STRING, "", ("^\".*"), ("[^\\\\]{2,}(?:\\\\\\\\)*\"$")),
+	VAR			(Token.VAR, Symbol.Type.VAR, "", ("^[a-z|A-Z|_][a-z|A-Z|\\d|_]*")),
 	DEF 		(Token.DEF, "="),
 	PAREN_OPEN	(Token.PAREN_OPEN, "("),
 	PAREN_CLOSE (Token.PAREN_CLOSE, ")"),
@@ -142,6 +143,43 @@ enum Terminal implements Token {
 		this.exactString = (matching.length > 0) ? matching[0] : "";
 		this.regexStart = (matching.length > 1) ? Pattern.compile(matching[1]) : null;
 		this.regexEnd = (matching.length > 2) ? Pattern.compile(matching[2]) : null;
+	}
+	
+	/**
+	 * fullMatch == false: looks for partial match with token
+	 * fullMatch == true:  looks for full match with token
+	 * @param token String token to compare against
+	 * @param fullMatch whether to look for true: full match or false: partial match
+	 * @return true: matches according to passed arguments
+	 */
+	public boolean isMatch(String token, boolean fullMatch) {
+		boolean isMatch = false;
+		if (this.regexStart != null) {
+			Matcher m = this.regexStart.matcher(token);
+			isMatch = (m.matches());
+			
+			// If you want only a partial match, 
+			// only have to compare against starting regular expression ^^^ (above)
+			// If you want a full match,
+			// you must check against both starting and ending regular expressions
+			if (fullMatch && this.regexEnd != null) {
+				m = this.regexEnd.matcher(token);
+				isMatch &= m.matches();
+			}
+		}
+		else if (this.exactString.length() >= token.length()) {
+			if (fullMatch) {
+				isMatch = this.exactString.contentEquals(token);
+			}
+			else {
+				isMatch = this.exactString.substring(0, token.length()).equals(token);
+			}
+		}
+		return isMatch;
+	}
+	
+	public boolean requiresFullMatch() {
+		return (this.regexEnd != null);
 	}
 }
 

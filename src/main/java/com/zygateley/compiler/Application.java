@@ -23,7 +23,10 @@ public class Application {
 	 */
 	public static void main(String[] args) throws IOException {
 		// TESTING
-		PushbackReader sr = new PushbackReader(new StringReader("{abc = 5; df = 5; echo abc + df * 6;} echo \"The man with the plan is yo mamma\"; {echo true;}"));
+		PushbackReader sr = new PushbackReader(new StringReader(
+				"{abc = 5; df = 5; echo abc + df * 6;} echo \"The man with the plan is yo mamma\"; {echo true;}"
+				//"a=\"a\";"
+				));
 		
 		// Objects passed to Parser
 		SymbolTable st = new SymbolTable();
