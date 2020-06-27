@@ -1,4 +1,4 @@
-Control structures
+More control structures
 Scope?
 Combine backend functions into NonTerminal rule declarations? if possible and clean
 Type checking for addition
@@ -7,3 +7,4 @@ Subtracting strings...? i.e. type checking
 Read from file
 Output to assembly?
 Build basic readme. Make repository public.
+Fix the double indent in python compile for if / then

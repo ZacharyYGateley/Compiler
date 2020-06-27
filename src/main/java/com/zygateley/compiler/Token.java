@@ -40,6 +40,9 @@ public interface Token {
 		EQ = 			id.next(),
 		CURLY_OPEN = 	id.next(),
 		CURLY_CLOSE = 	id.next(),
+		IF = 			id.next(),
+		ELSEIF = 		id.next(),
+		ELSE = 			id.next(),
 		EOF = 			id.next();
 	
 	public final static int partition = id.id;
@@ -50,30 +53,24 @@ public interface Token {
 		_PROGRAM_ = 	id.next(),
 		_STMTS_ = 		id.next(),
 		_BLOCK_ = 		id.next(),
+		_IF_ =			id.next(),
+		_THEN_ = 		id.next(),
+		_ELSEIF_ = 		id.next(),
+		_ELSE_ = 		id.next(),
+		_ELSETHEN_ = 	id.next(),
 		_STMT_ = 		id.next(),
 		_DEF_ = 		id.next(),
 		_ECHO_ = 		id.next(),
 		_EXPR_ = 		id.next(),
-		_OP_EXPR_ = 	id.next(),
+		_OPEXPR_ = 	id.next(),
 		_OP_ = 			id.next(),
 		_LITERAL_ = 	id.next();
 
 	
-	// List of all operators for ease of access in rule definitions
-	public final static int[] operators = {
-		Token.PLUS,
-		Token.MINUS,
-		Token.ASTERISK,
-		Token.SLASH
-	};
-	public static final int[] primitives = {
-			TRUE,
-			FALSE,
-			INT,
-			STRING
-	};
+
 	/**
 	 * Return integer array of operators and passed tokens
+	 * Use the static integer arrays below this definition
 	 * @param additionalTokens tokens to include with operators
 	 * @return integer array of all operators and passed tokens
 	 */
@@ -88,6 +85,36 @@ public interface Token {
 		}
 		return array;
 	}
+	public final static int[] operatorSet = {
+		Token.PLUS,
+		Token.MINUS,
+		Token.ASTERISK,
+		Token.SLASH,
+		Token.NEQ,
+		Token.LTEQ,
+		Token.GTEQ,
+		Token.LT,
+		Token.GT,
+		Token.EQ
+	};
+	public static final int[] primitiveSet = {
+			TRUE,
+			FALSE,
+			INT,
+			STRING
+	};
+	public static final int[] statementFirstSet = {
+			VAR,
+			ECHO
+	};
+	public static final int[] commonFollow0 = {
+			EOF,
+			CURLY_OPEN,
+			CURLY_CLOSE,
+			IF,
+	};
+	public static final int[] commonFollow1 = combineArrays(commonFollow0, statementFirstSet);
+	public static final int[] commonFollow2 = combineArrays(commonFollow1, ELSEIF, ELSE);
 	
 	public static boolean isNonTerminal(int tokenValue) {
 		return tokenValue >= partition;
@@ -101,6 +128,10 @@ enum Terminal implements Token {
 	// Terminals
 	EMPTY 		(Token.EMPTY, "", "^\\s"),
 	SEMICOLON	(Token.SEMICOLON, ";"),
+	// Any reserved words must be declared before VAR
+	IF			(Token.IF, "if"),
+	ELSEIF		(Token.ELSEIF, "elseif"),
+	ELSE		(Token.ELSE, "else"),
 	ECHO 		(Token.ECHO, "echo"),
 	TRUE		(Token.TRUE, Symbol.Type.BOOLEAN, "true"),
 	FALSE		(Token.FALSE, Symbol.Type.BOOLEAN, "false"),
@@ -185,24 +216,50 @@ enum Terminal implements Token {
 
 enum NonTerminal implements Token {
 	_PROGRAM_	(Token._PROGRAM_,
-				 firstTerminalAndPattern(new int[] { Token.CURLY_OPEN, Token.VAR, Token.ECHO }, Token._STMTS_),
+				 firstTerminalAndPattern(new int[] { Token.CURLY_OPEN, Token.IF, Token.VAR, Token.ECHO }, Token._STMTS_),
 				 firstTerminalAndPattern(Token.EMPTY, Token.EMPTY),
 				 follow(Token.EOF)),
 	
 	_STMTS_		(Token._STMTS_,
 				 firstTerminalAndPattern(Token.CURLY_OPEN, Token._BLOCK_, Token._STMTS_),
-				 firstTerminalAndPattern(new int[] { Token.VAR, Token.ECHO }, Token._STMT_, Token._STMTS_),
+				 firstTerminalAndPattern(Token.IF, Token._IF_, Token._STMTS_),
+				 firstTerminalAndPattern(Token.statementFirstSet, Token._STMT_, Token._STMTS_),
 				 firstTerminalAndPattern(Token.EMPTY, Token.EMPTY),
 				 follow(new int[] {Token.EOF, Token.CURLY_CLOSE})),
 	
 	_BLOCK_		(Token._BLOCK_,
 				 firstTerminalAndPattern(Token.CURLY_OPEN, Token.CURLY_OPEN, Token._STMTS_, Token.CURLY_CLOSE),
-				 follow(new int[] {Token.EOF, Token.CURLY_OPEN, Token.VAR, Token.ECHO})),
+				 follow(Token.commonFollow2)),
+	
+	_IF_		(Token._IF_,
+			 	 firstTerminalAndPattern(Token.IF, Token.IF, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE, Token._THEN_),
+			 	 follow(Token.commonFollow1)),
+	
+	_THEN_		(Token._THEN_,
+				 firstTerminalAndPattern(Token.CURLY_OPEN, Token._BLOCK_, Token._ELSEIF_),
+			 	 firstTerminalAndPattern(Token.statementFirstSet, Token._STMT_, Token._ELSEIF_),
+			 	 follow(Token.commonFollow1)),
+	
+	_ELSEIF_	(Token._ELSEIF_,
+				 firstTerminalAndPattern(Token.ELSEIF, Token.ELSEIF, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE, Token._THEN_),
+				 firstTerminalAndPattern(Token.ELSE, Token._ELSE_),
+			 	 firstTerminalAndPattern(Token.EMPTY, Token.EMPTY),
+			 	 follow(Token.commonFollow1)),
+	
+	_ELSE_		(Token._ELSE_,
+			 	 firstTerminalAndPattern(Token.ELSE, Token.ELSE, Token._ELSETHEN_),
+			 	 firstTerminalAndPattern(Token.EMPTY, Token.EMPTY),
+			 	 follow(Token.commonFollow1)),
+	
+	_ELSETHEN_  (Token._ELSETHEN_,
+			 	 firstTerminalAndPattern(Token.CURLY_OPEN, Token._BLOCK_),
+			 	 firstTerminalAndPattern(Token.statementFirstSet, Token._STMT_),
+			 	 follow(Token.commonFollow1)),
 	
 	_STMT_		(Token._STMT_,
 				 firstTerminalAndPattern(Token.VAR, Token._DEF_, Token.SEMICOLON),
 				 firstTerminalAndPattern(Token.ECHO, Token._ECHO_, Token.SEMICOLON),
-				 follow(new int[] {Token.EOF, Token.CURLY_OPEN, Token.VAR, Token.ECHO})),
+				 follow(Token.commonFollow2)),
 	
 	_DEF_		(Token._DEF_,
 				 firstTerminalAndPattern(Token.VAR, Token.VAR, Token.DEF, Token._EXPR_),
@@ -214,12 +271,12 @@ enum NonTerminal implements Token {
 	
 	_EXPR_		(Token._EXPR_,
 				 firstTerminalAndPattern(Token.PAREN_OPEN, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE),
-				 firstTerminalAndPattern(Token.VAR, Token.VAR, Token._OP_EXPR_),
-				 firstTerminalAndPattern(Token.primitives, Token._LITERAL_, Token._OP_EXPR_),
+				 firstTerminalAndPattern(Token.VAR, Token.VAR, Token._OPEXPR_),
+				 firstTerminalAndPattern(Token.primitiveSet, Token._LITERAL_, Token._OPEXPR_),
 	 			 follow(new int[] {Token.SEMICOLON, Token.PAREN_CLOSE})),
 	
-	_OP_EXPR_	(Token._OP_EXPR_,
-				 firstTerminalAndPattern(Token.operators, Token._OP_, Token._EXPR_),
+	_OPEXPR_	(Token._OPEXPR_,
+				 firstTerminalAndPattern(Token.operatorSet, Token._OP_, Token._EXPR_),
 				 firstTerminalAndPattern(Token.EMPTY, Token.EMPTY),
 	 			 follow(new int[] {Token.SEMICOLON, Token.PAREN_CLOSE})),
 	
@@ -228,7 +285,13 @@ enum NonTerminal implements Token {
 				 firstTerminalAndPattern(Token.MINUS, Token.MINUS),
 				 firstTerminalAndPattern(Token.ASTERISK, Token.ASTERISK),
 				 firstTerminalAndPattern(Token.SLASH, Token.SLASH),
-				 follow(Token.combineArrays(Token.primitives, Token.VAR, Token.PAREN_OPEN))),
+				 firstTerminalAndPattern(Token.NEQ, Token.NEQ),
+				 firstTerminalAndPattern(Token.LTEQ, Token.LTEQ),
+				 firstTerminalAndPattern(Token.GTEQ, Token.GTEQ),
+				 firstTerminalAndPattern(Token.LT, Token.LT),
+				 firstTerminalAndPattern(Token.GT, Token.GT),
+				 firstTerminalAndPattern(Token.EQ, Token.EQ),
+				 follow(Token.combineArrays(Token.primitiveSet, Token.VAR, Token.PAREN_OPEN))),
 	
 	_LITERAL_	(Token._LITERAL_,
 				 firstTerminalAndPattern(Token.TRUE, Token.TRUE),

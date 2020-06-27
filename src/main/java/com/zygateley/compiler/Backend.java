@@ -148,12 +148,15 @@ public class Backend {
 		
 		// Try NonTerminal
 		NonTerminal nt = pn.getRule();
+		ParseNode firstChild;
 		if (nt != null) {
 			switch (nt) {
 			case _PROGRAM_:
 			case _STMTS_:
+			case _THEN_:
+			case _ELSETHEN_:
 			case _DEF_:
-			case _OP_EXPR_:
+			case _OPEXPR_:
 			case _OP_:
 			case _LITERAL_:
 				__pythonParseList__(params);
@@ -165,6 +168,50 @@ public class Backend {
 				__pythonParseList__(params);
 				currentIndent--;
 				endLine();
+				break;
+			case _IF_:
+				endLine();
+				add("if");
+				// Expression
+				__pythonParseNode__(params.get(2));
+				addLine(":");
+				currentIndent++;
+				__pythonParseNode__(params.get(4));
+				currentIndent--;
+				endLine();
+				break;
+			case _ELSEIF_:
+				// Can go into elseif 
+				// or into nonterminal else
+				// or be empty
+				firstChild = params.get(0);
+				if (firstChild.getToken() == Terminal.ELSEIF) {
+					// Else if condition exists
+					endLine();
+					currentIndent--;
+					add("elif");
+					__pythonParseNode__(params.get(2));
+					addLine(":");
+					currentIndent++;
+					__pythonParseNode__(params.get(4));
+				}
+				else {
+					// May be else condition
+					// or may be empty string
+					__pythonParseList__(params);
+				}
+				break;
+			case _ELSE_:
+				firstChild = params.get(0);
+				if (firstChild.getToken() == Terminal.ELSE) {
+					// Else condition exists
+					endLine();
+					currentIndent--;
+					addLine("else:");
+					currentIndent++;
+					__pythonParseNode__(params.get(1));
+				}
+				// Otherwise, empty string. Ignore
 				break;
 			case _STMT_:
 				__pythonParseList__(params);
@@ -240,9 +287,9 @@ public class Backend {
 		sb.append(output);
 	}
 	private void addLine(String output) {
-		newLine = true;
-		sb.append(output);
+		add(output);
 		sb.append("\r\n");
+		newLine = true;
 	}
 	private void endLine() {
 		addLine("");
