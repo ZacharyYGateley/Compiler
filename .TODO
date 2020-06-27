@@ -1,10 +1,9 @@
 Control structures
 Scope?
-Combine backend functions into NonTerminal rule declarations if possible (and clean)
+Combine backend functions into NonTerminal rule declarations? if possible and clean
 Type checking for addition
 Adding strings
 Subtracting strings...? i.e. type checking
 Read from file
 Output to assembly?
-LITERAL -> STRING, create _LITERAL_ -> boolean, int, string
-Lexer combining tokens without white space, e.g. abc=3; or de==f;
+Build basic readme. Make repository public.

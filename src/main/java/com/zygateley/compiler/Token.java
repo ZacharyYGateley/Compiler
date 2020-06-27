@@ -255,22 +255,6 @@ enum NonTerminal implements Token {
 			this.FIRST = first;
 			this.PATTERN = pattern;
 		}
-		
-		/*
-		 * It appears this is unused.
-		 * 
-		public int indexInFirst(Terminal t) {
-			return indexInFirst(t.tokenValue);
-		}
-		public int indexInFirst(int t) {
-			for (int i = 0; i < this.FIRST.length; i++) {
-				if (this.FIRST[i] == t) {
-					return i;
-				}
-			}
-			return -1;
-		}
-		*/
 	}
 	
 	public final int tokenValue;
