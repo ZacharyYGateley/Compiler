@@ -1,8 +1,30 @@
+/**
+ * Token.java
+ * 
+ * At com.zygateley.compiler run time,
+ * the language CFG is built up  using the rules herein.
+ * 
+ * Note: Token stores an integer value for each Terminal, NonTerminal
+ * (Terminal implements Token) references Token values
+ * (NonTerminal implements Token) references Token values
+ * That is to say that each Terminal has a reference in Token and Terminal
+ * and each NonTerminal has a reference in Token and NonTerminal.
+ * These values are interlinked.
+ * 
+ * @author Zachary Gateley
+ * 
+ */
 package com.zygateley.compiler;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Quick way to create unique, auto-incrementing Token values
+ * 
+ * @author Zachary Gateley
+ *
+ */
 class id {
 	public static int id = 0;
 	public static int next() {
@@ -10,24 +32,38 @@ class id {
 	}
 }
 
-// This created before NonTerminals
-// So that NonTerminal rules can reference rules
-// that have not yet been defined
+/**
+ * Token has a reference for every Terminal and every NonTerminal.
+ * This is created specifically before NonTerminals
+ * so that NonTerminal rules can reference NonTerminals 
+ * that have not yet been defined.
+ * @author Zachary Gateley
+ *
+ */
 public interface Token {
 	// Terminals
-	// Actual value does not matter, referred to as if enum
 	public final static int 
-		EMPTY = 		id.next(), 
+		EMPTY = 		id.next(),
 		SEMICOLON = 	id.next(),
-		ECHO = 			id.next(),
-		VAR = 			id.next(),
+		COMMA = 		id.next(),
+		VARDEF = 		id.next(),
+		PAREN_OPEN = 	id.next(),
+		PAREN_CLOSE = 	id.next(),
+		CURLY_OPEN = 	id.next(),
+		CURLY_CLOSE = 	id.next(),
+		
 		TRUE = 			id.next(),
 		FALSE = 		id.next(),
 		INT = 			id.next(),
-		STRING = 		id.next(),
-		DEF = 			id.next(),
-		PAREN_OPEN = 	id.next(),
-		PAREN_CLOSE = 	id.next(),
+		STRING = 		id.next(), 
+
+		FUNCTION = 		id.next(),
+		IF = 			id.next(),
+		ELSEIF = 		id.next(),
+		ELSE = 			id.next(),
+		ECHO = 			id.next(),
+		VAR = 			id.next(),
+		
 		ASTERISK = 		id.next(),
 		SLASH = 		id.next(),
 		PLUS = 			id.next(),
@@ -38,17 +74,14 @@ public interface Token {
 		LT = 			id.next(),
 		GT = 			id.next(),
 		EQ = 			id.next(),
-		CURLY_OPEN = 	id.next(),
-		CURLY_CLOSE = 	id.next(),
-		IF = 			id.next(),
-		ELSEIF = 		id.next(),
-		ELSE = 			id.next(),
+		
 		EOF = 			id.next();
 	
+	// All Terminals have id < partition
+	// All NonTerminals have id >= partition
 	public final static int partition = id.id;
 	
 	// Non-terminals
-	// Actual value does not matter, referred to as if enum
 	public final static int
 		_PROGRAM_ = 	id.next(),
 		_STMTS_ = 		id.next(),
@@ -128,19 +161,31 @@ enum Terminal implements Token {
 	// Terminals
 	EMPTY 		(Token.EMPTY, "", "^\\s"),
 	SEMICOLON	(Token.SEMICOLON, ";"),
-	// Any reserved words must be declared before VAR
-	IF			(Token.IF, "if"),
-	ELSEIF		(Token.ELSEIF, "elseif"),
-	ELSE		(Token.ELSE, "else"),
-	ECHO 		(Token.ECHO, "echo"),
+	COMMA		(Token.COMMA, ","),
+	VARDEF 		(Token.VARDEF, "="),
+	PAREN_OPEN	(Token.PAREN_OPEN, "("),
+	PAREN_CLOSE (Token.PAREN_CLOSE, ")"),
+	CURLY_OPEN  (Token.CURLY_OPEN, "{"),
+	CURLY_CLOSE (Token.CURLY_CLOSE, "}"),
+	
+	// PRIMITIVES
 	TRUE		(Token.TRUE, Symbol.Type.BOOLEAN, "true"),
 	FALSE		(Token.FALSE, Symbol.Type.BOOLEAN, "false"),
 	INT 		(Token.INT, Symbol.Type.INT, "", ("^\\d*")),
 	STRING      (Token.STRING, Symbol.Type.STRING, "", ("^\".*"), ("[^\\\\]{2,}(?:\\\\\\\\)*\"$")),
+	
+	// Other reserved words
+	FUNCTION	(Token.FUNCTION, "function"),
+	IF			(Token.IF, "if"),
+	ELSEIF		(Token.ELSEIF, "elseif"),
+	ELSE		(Token.ELSE, "else"),
+	
+	// Defined as <stmts> in CFG.xlsx
+	ECHO 		(Token.ECHO, "echo"),
 	VAR			(Token.VAR, Symbol.Type.VAR, "", ("^[a-z|A-Z|_][a-z|A-Z|\\d|_]*")),
-	DEF 		(Token.DEF, "="),
-	PAREN_OPEN	(Token.PAREN_OPEN, "("),
-	PAREN_CLOSE (Token.PAREN_CLOSE, ")"),
+	// Any reserved words must be declared before VAR
+	
+	// Defined as <ops> in CFG.xlsx
 	ASTERISK 	(Token.ASTERISK, "*"),
 	SLASH 		(Token.SLASH, "/"),
 	PLUS  		(Token.PLUS, "+"),
@@ -151,8 +196,7 @@ enum Terminal implements Token {
 	LT 			(Token.LT, "<"),
 	GT  		(Token.GT, ">"),
 	EQ 			(Token.EQ, "=="),
-	CURLY_OPEN  (Token.CURLY_OPEN, "{"),
-	CURLY_CLOSE (Token.CURLY_CLOSE, "}"),
+	
 	EOF 		(Token.EOF, Character.toString((char) 0));
 	
 	public final int tokenValue;
@@ -262,7 +306,7 @@ enum NonTerminal implements Token {
 				 follow(Token.commonFollow2)),
 	
 	_DEF_		(Token._DEF_,
-				 firstTerminalAndPattern(Token.VAR, Token.VAR, Token.DEF, Token._EXPR_),
+				 firstTerminalAndPattern(Token.VAR, Token.VAR, Token.VARDEF, Token._EXPR_),
 				 follow(Token.SEMICOLON)),
 	
 	_ECHO_		(Token._ECHO_,

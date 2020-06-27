@@ -104,7 +104,7 @@ public class Backend {
 		case STRING:
 			sb.append(pn.getSymbol().name);
 			break;
-		case DEF:
+		case VARDEF:
 			sb.append(" =");
 			break;
 		case PAREN_OPEN:
@@ -251,7 +251,7 @@ public class Backend {
 		case STRING:
 			add(pn.getSymbol().name);
 			break;
-		case DEF:
+		case VARDEF:
 			add(" =");
 			break;
 		case PAREN_OPEN:
