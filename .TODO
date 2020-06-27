@@ -1,10 +1,12 @@
-More control structures
-Scope?
-Combine backend functions into NonTerminal rule declarations? if possible and clean
-Type checking for addition
-Adding strings
-Subtracting strings...? i.e. type checking
-Read from file
-Output to assembly?
-Build basic readme. Make repository public.
 Fix the double indent in python compile for if / then
+Functions
+Read from file
+Combine backend functions into NonTerminal rule declarations? if possible and is clean
+Build basic readme. Make repository public.
+Better lexical and parse failure messages
+input
+
+Long term
+	Scope?
+	Type checking for addition - Adding strings - Subtracting strings...? i.e. type checking
+	Output to assembly?
