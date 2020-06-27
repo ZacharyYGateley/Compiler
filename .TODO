@@ -1,3 +1,7 @@
+EOF parseRule, if params.size() == 0, set params to null
+For ease of debugging, add _name_ to parsenode with either TOKEN or RULE name
+
+boolean operators (&& || !)
 Fix the double indent in python compile for if / then
 Functions
 Read from file

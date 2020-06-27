@@ -46,12 +46,13 @@ public interface Token {
 		EMPTY = 		id.next(),
 		SEMICOLON = 	id.next(),
 		COMMA = 		id.next(),
-		VARDEF = 		id.next(),
+		EQ = 		id.next(),
 		PAREN_OPEN = 	id.next(),
 		PAREN_CLOSE = 	id.next(),
 		CURLY_OPEN = 	id.next(),
 		CURLY_CLOSE = 	id.next(),
 		
+		// Primitive set
 		TRUE = 			id.next(),
 		FALSE = 		id.next(),
 		INT = 			id.next(),
@@ -61,9 +62,12 @@ public interface Token {
 		IF = 			id.next(),
 		ELSEIF = 		id.next(),
 		ELSE = 			id.next(),
+		
+		// Statement FIRST set
 		ECHO = 			id.next(),
 		VAR = 			id.next(),
 		
+		// Operator set
 		ASTERISK = 		id.next(),
 		SLASH = 		id.next(),
 		PLUS = 			id.next(),
@@ -73,7 +77,7 @@ public interface Token {
 		GTEQ = 			id.next(),
 		LT = 			id.next(),
 		GT = 			id.next(),
-		EQ = 			id.next(),
+		EQEQ = 			id.next(),
 		
 		EOF = 			id.next();
 	
@@ -85,18 +89,27 @@ public interface Token {
 	public final static int
 		_PROGRAM_ = 	id.next(),
 		_STMTS_ = 		id.next(),
-		_BLOCK_ = 		id.next(),
+		_FUNCDEF_ = 	id.next(),
+		_PARAMS0_ = 	id.next(),
+		_PARAMS1_ = 	id.next(),
 		_IF_ =			id.next(),
 		_THEN_ = 		id.next(),
 		_ELSEIF_ = 		id.next(),
-		_ELSE_ = 		id.next(),
-		_ELSETHEN_ = 	id.next(),
+		_BLOCKSTMT_ = 	id.next(),
+		_BLOCK_ = 		id.next(),
 		_STMT_ = 		id.next(),
-		_DEF_ = 		id.next(),
 		_ECHO_ = 		id.next(),
+		_VARSTMT_ =		id.next(),
+		_VARDEF_ = 		id.next(),
 		_EXPR_ = 		id.next(),
-		_OPEXPR_ = 	id.next(),
+		_OPEXPR_ = 		id.next(),
 		_OP_ = 			id.next(),
+		_VALUE_ = 		id.next(),
+		_VAR_ = 		id.next(),
+		_VAREXPR_ = 	id.next(),
+		_FUNCCALL_ = 	id.next(),
+		_ARGS0_ = 		id.next(),
+		_ARGS1_ = 		id.next(),
 		_LITERAL_ = 	id.next();
 
 	
@@ -118,17 +131,28 @@ public interface Token {
 		}
 		return array;
 	}
+	public static final int[] _STMTS_FIRST = {
+			FUNCTION,
+			IF,
+			CURLY_OPEN,
+			VAR,
+			ECHO
+	};
+	public static final int[] _STMT_FIRST = {
+			VAR,
+			ECHO
+	};
 	public final static int[] operatorSet = {
-		Token.PLUS,
-		Token.MINUS,
-		Token.ASTERISK,
-		Token.SLASH,
-		Token.NEQ,
-		Token.LTEQ,
-		Token.GTEQ,
-		Token.LT,
-		Token.GT,
-		Token.EQ
+			PLUS,
+			MINUS,
+			ASTERISK,
+			SLASH,
+			NEQ,
+			LTEQ,
+			GTEQ,
+			LT,
+			GT,
+			EQEQ
 	};
 	public static final int[] primitiveSet = {
 			TRUE,
@@ -136,18 +160,9 @@ public interface Token {
 			INT,
 			STRING
 	};
-	public static final int[] statementFirstSet = {
-			VAR,
-			ECHO
-	};
-	public static final int[] commonFollow0 = {
-			EOF,
-			CURLY_OPEN,
-			CURLY_CLOSE,
-			IF,
-	};
-	public static final int[] commonFollow1 = combineArrays(commonFollow0, statementFirstSet);
-	public static final int[] commonFollow2 = combineArrays(commonFollow1, ELSEIF, ELSE);
+	public static final int[][] commonFollow1 = new int[][] { combineArrays(_STMT_FIRST, EOF) };
+	public static final int[][] commonFollow2 = new int[][] { combineArrays(_STMT_FIRST, EOF, ELSEIF, ELSE) };
+	public static final int[][] commonFollow3 = new int[][] { combineArrays(operatorSet, SEMICOLON, COMMA, PAREN_CLOSE) };
 	
 	public static boolean isNonTerminal(int tokenValue) {
 		return tokenValue >= partition;
@@ -162,7 +177,7 @@ enum Terminal implements Token {
 	EMPTY 		(Token.EMPTY, "", "^\\s"),
 	SEMICOLON	(Token.SEMICOLON, ";"),
 	COMMA		(Token.COMMA, ","),
-	VARDEF 		(Token.VARDEF, "="),
+	EQ 			(Token.EQ, "="),
 	PAREN_OPEN	(Token.PAREN_OPEN, "("),
 	PAREN_CLOSE (Token.PAREN_CLOSE, ")"),
 	CURLY_OPEN  (Token.CURLY_OPEN, "{"),
@@ -195,7 +210,7 @@ enum Terminal implements Token {
 	GTEQ  		(Token.GTEQ, ">="),
 	LT 			(Token.LT, "<"),
 	GT  		(Token.GT, ">"),
-	EQ 			(Token.EQ, "=="),
+	EQEQ		(Token.EQEQ, "=="),
 	
 	EOF 		(Token.EOF, Character.toString((char) 0));
 	
@@ -260,90 +275,124 @@ enum Terminal implements Token {
 
 enum NonTerminal implements Token {
 	_PROGRAM_	(Token._PROGRAM_,
-				 firstTerminalAndPattern(new int[] { Token.CURLY_OPEN, Token.IF, Token.VAR, Token.ECHO }, Token._STMTS_),
-				 firstTerminalAndPattern(Token.EMPTY, Token.EMPTY),
+				 firstTerminalsAndPattern(Token.combineArrays(new int[] { Token.FUNCTION, Token.IF, Token.CURLY_OPEN }, Token._STMT_FIRST), Token._STMTS_),
+				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
 				 follow(Token.EOF)),
 	
 	_STMTS_		(Token._STMTS_,
-				 firstTerminalAndPattern(Token.CURLY_OPEN, Token._BLOCK_, Token._STMTS_),
-				 firstTerminalAndPattern(Token.IF, Token._IF_, Token._STMTS_),
-				 firstTerminalAndPattern(Token.statementFirstSet, Token._STMT_, Token._STMTS_),
-				 firstTerminalAndPattern(Token.EMPTY, Token.EMPTY),
+				 firstTerminalsAndPattern(Token.FUNCTION, Token._FUNCDEF_, Token._STMTS_),
+				 firstTerminalsAndPattern(Token.IF, Token._IF_, Token._STMTS_),
+				 firstTerminalsAndPattern(Token.combineArrays(Token._STMT_FIRST, Token.CURLY_OPEN), Token._BLOCKSTMT_, Token._STMTS_),
+				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
 				 follow(new int[] {Token.EOF, Token.CURLY_CLOSE})),
 	
-	_BLOCK_		(Token._BLOCK_,
-				 firstTerminalAndPattern(Token.CURLY_OPEN, Token.CURLY_OPEN, Token._STMTS_, Token.CURLY_CLOSE),
-				 follow(Token.commonFollow2)),
+	_FUNCDEF_	(Token._FUNCDEF_,
+				 firstTerminalsAndPattern(Token.FUNCTION, Token.FUNCTION, Token.VAR, Token.PAREN_OPEN, Token._PARAMS0_, Token.PAREN_CLOSE, Token._BLOCKSTMT_),
+				 Token.commonFollow1),
+	
+	_PARAMS0_	(Token._PARAMS0_,
+				 firstTerminalsAndPattern(Token.VAR, Token.VAR, Token._PARAMS1_),
+				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
+				 follow(Token.PAREN_CLOSE)),
+	
+	_PARAMS1_	(Token._PARAMS1_,
+				 firstTerminalsAndPattern(Token.COMMA, Token.COMMA, Token.VAR, Token._PARAMS1_),
+				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
+				 follow(Token.PAREN_CLOSE)),
 	
 	_IF_		(Token._IF_,
-			 	 firstTerminalAndPattern(Token.IF, Token.IF, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE, Token._THEN_),
-			 	 follow(Token.commonFollow1)),
+			 	 firstTerminalsAndPattern(Token.IF, Token.IF, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE, Token._THEN_),
+			 	 Token.commonFollow1),
 	
 	_THEN_		(Token._THEN_,
-				 firstTerminalAndPattern(Token.CURLY_OPEN, Token._BLOCK_, Token._ELSEIF_),
-			 	 firstTerminalAndPattern(Token.statementFirstSet, Token._STMT_, Token._ELSEIF_),
-			 	 follow(Token.commonFollow1)),
+				 firstTerminalsAndPattern(Token.CURLY_OPEN, Token._BLOCK_, Token._ELSEIF_),
+			 	 firstTerminalsAndPattern(Token._STMT_FIRST, Token._STMT_, Token._ELSEIF_),
+			 	 Token.commonFollow1),
 	
 	_ELSEIF_	(Token._ELSEIF_,
-				 firstTerminalAndPattern(Token.ELSEIF, Token.ELSEIF, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE, Token._THEN_),
-				 firstTerminalAndPattern(Token.ELSE, Token._ELSE_),
-			 	 firstTerminalAndPattern(Token.EMPTY, Token.EMPTY),
-			 	 follow(Token.commonFollow1)),
+				 firstTerminalsAndPattern(Token.ELSEIF, Token.ELSEIF, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE, Token._THEN_),
+			 	 firstTerminalsAndPattern(Token.ELSE, Token.ELSE, Token._BLOCKSTMT_),
+			 	 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
+			 	 Token.commonFollow1),
 	
-	_ELSE_		(Token._ELSE_,
-			 	 firstTerminalAndPattern(Token.ELSE, Token.ELSE, Token._ELSETHEN_),
-			 	 firstTerminalAndPattern(Token.EMPTY, Token.EMPTY),
-			 	 follow(Token.commonFollow1)),
+	_BLOCKSTMT_	(Token._BLOCKSTMT_,
+			 	 firstTerminalsAndPattern(Token.CURLY_OPEN, Token._BLOCK_),
+			 	 firstTerminalsAndPattern(Token._STMT_FIRST, Token._STMT_),
+			 	 Token.commonFollow2),
 	
-	_ELSETHEN_  (Token._ELSETHEN_,
-			 	 firstTerminalAndPattern(Token.CURLY_OPEN, Token._BLOCK_),
-			 	 firstTerminalAndPattern(Token.statementFirstSet, Token._STMT_),
-			 	 follow(Token.commonFollow1)),
+	_BLOCK_		(Token._BLOCK_,
+				 firstTerminalsAndPattern(Token.CURLY_OPEN, Token.CURLY_OPEN, Token._STMTS_, Token.CURLY_CLOSE),
+				 Token.commonFollow2),
 	
 	_STMT_		(Token._STMT_,
-				 firstTerminalAndPattern(Token.VAR, Token._DEF_, Token.SEMICOLON),
-				 firstTerminalAndPattern(Token.ECHO, Token._ECHO_, Token.SEMICOLON),
-				 follow(Token.commonFollow2)),
-	
-	_DEF_		(Token._DEF_,
-				 firstTerminalAndPattern(Token.VAR, Token.VAR, Token.VARDEF, Token._EXPR_),
-				 follow(Token.SEMICOLON)),
+			 	 firstTerminalsAndPattern(Token.ECHO, Token._ECHO_, Token.SEMICOLON),
+				 firstTerminalsAndPattern(Token.VAR, Token.VAR, Token._VARSTMT_, Token.SEMICOLON),
+				 Token.commonFollow2),
 	
 	_ECHO_		(Token._ECHO_,
-				 firstTerminalAndPattern(Token.ECHO, Token.ECHO, Token._EXPR_),
+		 	 	 firstTerminalsAndPattern(Token.ECHO, Token.ECHO, Token._EXPR_),
+				 follow(Token.SEMICOLON)),
+
+	_VARSTMT_	(Token._VARSTMT_,
+				 firstTerminalsAndPattern(Token.EQ, Token._VARDEF_),
+				 firstTerminalsAndPattern(Token.PAREN_OPEN, Token._FUNCCALL_),
+				 follow(Token.SEMICOLON)),
+	
+	_VARDEF_	(Token._VARDEF_,
+				 firstTerminalsAndPattern(Token.EQ, Token.EQ, Token._EXPR_),
 				 follow(Token.SEMICOLON)),
 	
 	_EXPR_		(Token._EXPR_,
-				 firstTerminalAndPattern(Token.PAREN_OPEN, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE),
-				 firstTerminalAndPattern(Token.VAR, Token.VAR, Token._OPEXPR_),
-				 firstTerminalAndPattern(Token.primitiveSet, Token._LITERAL_, Token._OPEXPR_),
+				 firstTerminalsAndPattern(Token.PAREN_OPEN, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE),
+				 firstTerminalsAndPattern(Token.combineArrays(Token.primitiveSet, Token.VAR), Token._VALUE_, Token._OPEXPR_),
 	 			 follow(new int[] {Token.SEMICOLON, Token.PAREN_CLOSE})),
 	
 	_OPEXPR_	(Token._OPEXPR_,
-				 firstTerminalAndPattern(Token.operatorSet, Token._OP_, Token._EXPR_),
-				 firstTerminalAndPattern(Token.EMPTY, Token.EMPTY),
+				 firstTerminalsAndPattern(Token.operatorSet, Token._OP_, Token._EXPR_),
+				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
 	 			 follow(new int[] {Token.SEMICOLON, Token.PAREN_CLOSE})),
 	
 	_OP_		(Token._OP_,
-				 firstTerminalAndPattern(Token.PLUS, Token.PLUS),
-				 firstTerminalAndPattern(Token.MINUS, Token.MINUS),
-				 firstTerminalAndPattern(Token.ASTERISK, Token.ASTERISK),
-				 firstTerminalAndPattern(Token.SLASH, Token.SLASH),
-				 firstTerminalAndPattern(Token.NEQ, Token.NEQ),
-				 firstTerminalAndPattern(Token.LTEQ, Token.LTEQ),
-				 firstTerminalAndPattern(Token.GTEQ, Token.GTEQ),
-				 firstTerminalAndPattern(Token.LT, Token.LT),
-				 firstTerminalAndPattern(Token.GT, Token.GT),
-				 firstTerminalAndPattern(Token.EQ, Token.EQ),
-				 follow(Token.combineArrays(Token.primitiveSet, Token.VAR, Token.PAREN_OPEN))),
+				 singleTerminalsPatternsAndFollow(
+						 Token.operatorSet, 
+						 follow(Token.combineArrays(Token.primitiveSet, Token.VAR, Token.PAREN_OPEN))
+						 )
+				 ),
+	
+	_VALUE_		(Token._VALUE_,
+				 firstTerminalsAndPattern(Token.VAR, Token._VAR_),
+				 firstTerminalsAndPattern(Token.primitiveSet, Token._LITERAL_),
+				 Token.commonFollow3),
+	
+	_VAR_		(Token._VAR_,
+				 firstTerminalsAndPattern(Token.VAR, Token.VAR, Token._VAREXPR_),
+				 Token.commonFollow3),
+	
+	_VAREXPR_	(Token._VAREXPR_,
+				 firstTerminalsAndPattern(Token.PAREN_OPEN, Token._FUNCCALL_),
+				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
+				 Token.commonFollow3),
+	
+	_FUNCCALL_	(Token._FUNCCALL_,
+				 firstTerminalsAndPattern(Token.PAREN_OPEN, Token.PAREN_OPEN, Token._ARGS0_, Token.PAREN_CLOSE),
+				 Token.commonFollow3),
+	
+	_ARGS0_		(Token._ARGS0_,
+				 firstTerminalsAndPattern(Token.combineArrays(Token.combineArrays(Token.operatorSet, Token.VAR), Token.primitiveSet), Token._VALUE_, Token._ARGS1_),
+				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
+				 follow(Token.PAREN_CLOSE)),
+	
+	_ARGS1_		(Token._ARGS1_,
+				 firstTerminalsAndPattern(Token.COMMA, Token.COMMA, Token._VALUE_, Token._ARGS1_),
+				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
+				 follow(Token.PAREN_CLOSE)),
 	
 	_LITERAL_	(Token._LITERAL_,
-				 firstTerminalAndPattern(Token.TRUE, Token.TRUE),
-				 firstTerminalAndPattern(Token.FALSE, Token.FALSE),
-				 firstTerminalAndPattern(Token.INT, Token.INT),
-				 firstTerminalAndPattern(Token.STRING, Token.STRING),
-				 firstTerminalAndPattern(Token.EMPTY, Token.EMPTY),
-				 follow(new int[] {Token.SEMICOLON, Token.PAREN_CLOSE}));
+				 singleTerminalsPatternsAndFollow(
+						 Token.primitiveSet, 
+						 Token.commonFollow3
+						 )
+				 );
 	
 	/**
 	 * Internal class for NonTerminals
@@ -461,11 +510,37 @@ enum NonTerminal implements Token {
 	 * @param pattern Sequence of {Terminal, NonTerminal} as *.tokenValue
 	 * @return respective input for NonTerminal constructor
 	 */
-	public static int[][] firstTerminalAndPattern(int first, int... pattern) {
+	public static int[][] firstTerminalsAndPattern(int first, int... pattern) {
 		return new int[][] { { first }, pattern };
 	}
-	public static int[][] firstTerminalAndPattern(int[] first, int... pattern) {
+	public static int[][] firstTerminalsAndPattern(int[] first, int... pattern) {
 		return new int[][] { first, pattern };
+	}
+	/**
+	 * patternsOfSingleTerminals
+	 * 
+	 * Stand-in for firstTerminalsAndPattern
+	 * where each terminal in the argument array outputs to itself
+	 * 
+	 * @param terminalSet list of terminals that output to themselves only
+	 * @param
+	 * @returns array of firstTerminalsAndPattern sets ending with followSet
+	 * 		{ 
+	 * 			firstTerminalsAndPattern,
+	 * 			firstTerminalsAndPattern,
+	 * 			...,
+	 * 			follow
+	 * 		}
+	 */
+	public static int[][][] singleTerminalsPatternsAndFollow(int[] terminalSet, int[][] followSet) {
+		int[][][] firstPatternFollow = new int[terminalSet.length + 1][][];
+		int i = 0;
+		for (; i < terminalSet.length; i++) {
+			int terminal = terminalSet[i];
+			firstPatternFollow[i] = firstTerminalsAndPattern(terminal, terminal);
+		}
+		firstPatternFollow[i] = followSet;
+		return firstPatternFollow;
 	}
 	/**
 	 * follow

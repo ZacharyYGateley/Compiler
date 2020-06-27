@@ -59,6 +59,10 @@ public class Lexer {
 		lex();
 	}
 	public void lex() throws IOException {
+		if (verbose) {
+			System.out.println("<!-- Lexer started -->\n");
+		}
+		
 		// Next character
 		boolean isEOF = false;
 		do { // while !isEof
@@ -139,6 +143,10 @@ public class Lexer {
 		
 		// Finished, add EOF
 		createAddToken(Character.toString((char) 0), Terminal.EOF);
+		
+		if (verbose) {
+			System.out.println("\n<!-- Lexer finished -->\n\n");
+		}
 		
 		return;
 	}
@@ -259,7 +267,7 @@ public class Lexer {
 		if (verbose) {
 			StringBuilder sbtr = new StringBuilder(thisRule + "         ");
 			sbtr.setLength(10);
-			System.out.println("Lexer: " + sbtr.toString() + "\t("+ newToken + ")");
+			System.out.println("Lexer: " + sbtr.toString() + "\t( "+ newToken + " )");
 		}
 	}
 }

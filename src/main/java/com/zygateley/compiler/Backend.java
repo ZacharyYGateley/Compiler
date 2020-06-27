@@ -14,120 +14,6 @@ public class Backend {
 	}
 	
 	/**
-	 * "Compile" code into Java 
-	 * @return compiled code
-	 */
-	public String java() {
-		// Restart string builder if some parse method has already been called
-		sb.setLength(0);
-		ArrayList<ParseNode> top = new ArrayList<ParseNode>();
-		top.add(parseTree);
-		__java__all__(top);
-		return sb.toString();
-	}
-	private void __java__all__(ArrayList<ParseNode> parseTrees) {
-		for (ParseNode pn : parseTrees) {
-			__java__(pn);
-		}
-	}
-	private void __java__(ParseNode pn) {
-		ArrayList<ParseNode> params = pn.getParam();
-		
-		// Try NonTerminal
-		NonTerminal nt = pn.getRule();
-		if (nt != null) {
-			switch (nt) {
-			case _STMT_:
-				__java__all__(params);
-				sb.append(";\r\n");
-				break;
-			case _DEF_:
-				__java__all__(params);
-				break;
-			case _ECHO_:
-				sb.append("System.out.println(");
-				__java__all__(params);
-				sb.append(")");
-				break;
-			case _EXPR_:
-				// Does the expression correspond to arithmetic?
-				ParseNode firstChild = params.get(0);
-				Terminal nextToken = firstChild.getToken();
-				char action = ' ';
-				switch (nextToken) {
-				case PLUS:
-					action = '+';
-					break;
-				case MINUS:
-					action = '-';
-					break;
-				case ASTERISK:
-					action = '*';
-					break;
-				case SLASH:
-					action = '/';
-					break;
-				default:
-				}
-				
-				// Arithmetic -> Switch order
-				// + a b -> a + b
-				if (action != ' ') {
-					sb.append("(");
-					__java__(params.get(1));
-					sb.append(action);
-					__java__(params.get(2));
-					sb.append(")");
-				}
-				
-				// Otherwise, nothing out of the ordinary
-				else {
-					sb.append("(");
-					__java__all__(params);
-					sb.append(")");
-				}
-				break;
-			default:
-				break;
-			}
-			return;
-		}
-		
-		// Try Terminal
-		Terminal t = pn.getToken();
-		switch (t) {
-		case ECHO:
-			// This handled by _ECHO_
-			break;
-		case VAR:
-		case INT:
-		case STRING:
-			sb.append(pn.getSymbol().name);
-			break;
-		case VARDEF:
-			sb.append(" =");
-			break;
-		case PAREN_OPEN:
-			sb.append(" (");
-			break;
-		case PAREN_CLOSE:
-			sb.append(") ");
-			break;
-		case ASTERISK:
-		case SLASH:
-		case PLUS:
-		case MINUS:
-			// This handled by _EXPR_
-			break;
-		default:
-			// Do nothing
-		}
-		
-		return;
-	}
-	
-
-	/**
 	 * "Compile" code into Python 
 	 * @return compiled code
 	 */
@@ -151,21 +37,15 @@ public class Backend {
 		ParseNode firstChild;
 		if (nt != null) {
 			switch (nt) {
-			case _PROGRAM_:
-			case _STMTS_:
-			case _THEN_:
-			case _ELSETHEN_:
-			case _DEF_:
-			case _OPEXPR_:
-			case _OP_:
-			case _LITERAL_:
-				__pythonParseList__(params);
-				break;
-			case _BLOCK_:
+			case _FUNCDEF_:
 				endLine();
-				addLine("if True:");
+				add("def ");
+				for (int i = 0; i < params.size() - 1; i++) {
+					__pythonParseNode__(params.get(i));
+				}
+				addLine(":");
 				currentIndent++;
-				__pythonParseList__(params);
+				__pythonParseNode__(params.get(params.size()-1));
 				currentIndent--;
 				endLine();
 				break;
@@ -181,9 +61,9 @@ public class Backend {
 				endLine();
 				break;
 			case _ELSEIF_:
-				// Can go into elseif 
-				// or into nonterminal else
-				// or be empty
+				// Can go into pattern starting with terminal elseif 
+				// or into pattern starting with terminal else
+				// or may be empty
 				firstChild = params.get(0);
 				if (firstChild.getToken() == Terminal.ELSEIF) {
 					// Else if condition exists
@@ -195,15 +75,7 @@ public class Backend {
 					currentIndent++;
 					__pythonParseNode__(params.get(4));
 				}
-				else {
-					// May be else condition
-					// or may be empty string
-					__pythonParseList__(params);
-				}
-				break;
-			case _ELSE_:
-				firstChild = params.get(0);
-				if (firstChild.getToken() == Terminal.ELSE) {
+				else if (firstChild.getToken() == Terminal.ELSE) {
 					// Else condition exists
 					endLine();
 					currentIndent--;
@@ -211,7 +83,14 @@ public class Backend {
 					currentIndent++;
 					__pythonParseNode__(params.get(1));
 				}
-				// Otherwise, empty string. Ignore
+				break;
+			case _BLOCK_:
+				endLine();
+				addLine("if True:");
+				currentIndent++;
+				__pythonParseList__(params);
+				currentIndent--;
+				endLine();
 				break;
 			case _STMT_:
 				__pythonParseList__(params);
@@ -229,6 +108,7 @@ public class Backend {
 				add(") ");
 				break;
 			default:
+				__pythonParseList__(params);
 				break;
 			}
 			return;
@@ -237,8 +117,13 @@ public class Backend {
 		// Try Terminal
 		Terminal t = pn.getToken();
 		switch (t) {
+		case FUNCTION:
 		case ECHO:
-			// This handled by _ECHO_
+		case CURLY_OPEN:
+		case CURLY_CLOSE:
+		case EMPTY:
+		case EOF:
+			// These handled by their wrapping NonTerminals
 			break;
 		case TRUE:
 			add("True");
@@ -251,7 +136,7 @@ public class Backend {
 		case STRING:
 			add(pn.getSymbol().name);
 			break;
-		case VARDEF:
+		case EQ:
 			add(" =");
 			break;
 		case PAREN_OPEN:
@@ -260,20 +145,12 @@ public class Backend {
 		case PAREN_CLOSE:
 			add(") ");
 			break;
-		case ASTERISK:
-		case SLASH:
-		case PLUS:
-		case MINUS:
-		case NEQ:
-		case LTEQ:
-		case GTEQ:
-		case LT:
-		case GT:
-		case EQ:
-			add(" " + pn.getToken().exactString);
+		case COMMA:
+			add(", ");
 			break;
 		default:
-			// Do nothing
+			add(" " + pn.getToken().exactString);
+			break;
 		}
 		
 		return;
