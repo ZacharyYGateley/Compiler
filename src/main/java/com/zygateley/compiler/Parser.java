@@ -3,7 +3,7 @@ package com.zygateley.compiler;
 import java.util.*;
 
 
-class ParseNode {
+class ParseNode implements Iterable<ParseNode> {
 	// Name is used for debugging so that the 
 	// token is clearly understood at first sight
 	private final String _name_;
@@ -56,6 +56,11 @@ class ParseNode {
 	
 	public void addParam(final ParseNode param) {
 		this.param.add(param);
+	}
+	
+	@Override
+	public Iterator<ParseNode> iterator() {
+		return this.param.iterator();
 	}
 }
 

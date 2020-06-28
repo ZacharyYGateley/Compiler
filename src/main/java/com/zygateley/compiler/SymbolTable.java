@@ -8,22 +8,26 @@ class Symbol {
 		VAR,
 		BOOLEAN,
 		INT,
-		STRING		
+		STRING,
+		FUNCTION
 	}
 	
 	private String name;
 	private final String value;
-	private final Type type;
+	private Type type;
+	private ParseNode parseTree;
 	
 	public Symbol(String name) {
 		this.name = name;
 		this.value = null;
 		this.type = null;
+		this.parseTree = null;
 	}
 	public Symbol(String value, Type type) {
 		this.name = null;
 		this.value = value;
 		this.type = type;
+		this.parseTree = null;
 	}
 	
 	public String getName() {
@@ -44,6 +48,15 @@ class Symbol {
 			return true;
 		}
 		return false;
+	}
+	
+	// Need to be able to update VAR to FUNCTION
+	public void setType(Type type) {
+		this.type = type;
+	}
+	
+	public void setParseTree(ParseNode parseTree) {
+		this.parseTree = parseTree;
 	}
 	
 	/**
@@ -102,13 +115,7 @@ public class SymbolTable implements Iterable<Symbol> {
 	 */
 	public Symbol insert(String name) {
 		Symbol newSymbol = new Symbol(name);
-		if (!this.contains(newSymbol)) {
-			this.symbols.add(newSymbol);
-			return newSymbol;
-		}
-		else {
-			return null;
-		}
+		return __insert__(newSymbol);
 	}
 	
 	/**
@@ -121,12 +128,16 @@ public class SymbolTable implements Iterable<Symbol> {
 	 */
 	public Symbol insert(String value, Symbol.Type type) {
 		Symbol newSymbol = new Symbol(value, type);
-		if (!this.contains(newSymbol)) {
-			this.symbols.add(newSymbol);
-			return newSymbol;
+		return __insert__(newSymbol);
+	}
+	
+	public Symbol __insert__(Symbol s) {
+		if (!this.contains(s)) {
+			this.symbols.add(s);
+			return s;
 		}
 		else {
-			return null;
+			return this.find(s);
 		}
 	}
 	
@@ -136,11 +147,11 @@ public class SymbolTable implements Iterable<Symbol> {
 	 * Find and return the symbol in the symbol table.
 	 * If not in symbol table, return null.
 	 * 
-	 * @param name String name of variable to find
+	 * @param Symbol find duplicate of this symbol in the table
 	 */
-	public Symbol find(String name) {
+	public Symbol find(Symbol s) {
 		for (Symbol symbol : this.symbols) {
-			if (symbol.getName().equals(name)) {
+			if (symbol.equals(s)) {
 				return symbol;
 			}
 		}

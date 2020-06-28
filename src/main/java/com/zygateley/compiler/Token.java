@@ -187,9 +187,9 @@ enum Terminal implements Token {
 	CURLY_CLOSE (Token.CURLY_CLOSE, "}"),
 	
 	// PRIMITIVES
-	TRUE		(Token.TRUE, Symbol.Type.BOOLEAN, "true"),
-	FALSE		(Token.FALSE, Symbol.Type.BOOLEAN, "false"),
-	INT 		(Token.INT, Symbol.Type.INT, "", ("^\\d*")),
+	TRUE		(Token.TRUE, "true"),
+	FALSE		(Token.FALSE, "false"),
+	INT 		(Token.INT, "", ("^\\d*")),
 	STRING      (Token.STRING, Symbol.Type.STRING, "", ("^\".*"), ("[^\\\\]{2,}(?:\\\\\\\\)*\"$")),
 	
 	// Other reserved words

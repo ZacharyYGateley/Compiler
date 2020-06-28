@@ -137,7 +137,6 @@ public class Translate {
 			add("False");
 			break;
 		case VAR:
-		case INT:
 		case STRING:
 			add(pn.getSymbol().getName());
 			break;

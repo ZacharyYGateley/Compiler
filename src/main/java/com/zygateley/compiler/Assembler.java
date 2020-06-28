@@ -24,26 +24,64 @@ public class Assembler {
 	
 	public String assemble() {
 		// Create a global string pool
-		createStringPool();
+		createAndOutputStringPool();
 		
 		// Indicate start of program main
 		io.println("");
 		io.println(".text");
 		io.println(".globl main   # Begin program");
 		io.println("main:");
-		
-		// Main program indented
 		io.indent();
+		
+		// Crawl tree
+		// Any function declarations found
+		// will be stored into SymbolTable as type FUNCTION
 		assembleNode(this.parseTree);
 		
 		// Indicate end of program main
 		io.println("");
 		io.println("jr $ra        # EOF program");
 		
+		// Output all functions
+		// All functions are considered global
+		outputFunctions();
+		
 		return this.io.toString();
 	}
 	
 	private void assembleNode(ParseNode pn) {
+		boolean isNonTerminal = (pn.getRule() != null);
+		if (isNonTerminal) {
+			assembleNonTerminal(pn);
+		}
+		else {
+			assembleTerminal(pn);
+		}
+	}
+	
+	private void assembleNonTerminal(ParseNode pn) {
+		NonTerminal rule = pn.getRule();
+		switch (rule) {
+		case _FUNCDEF_:
+			// Save all functions into SymbolTable
+			// To be processed and output at the end of file
+			Symbol symbol = pn.getParam().get(1).getSymbol();
+			symbol.setType(Symbol.Type.FUNCTION);
+			symbol.setParseTree(pn);
+			
+			// Do not parse this tree now
+			return;
+		default:
+			break;
+		}
+		
+		// Iterate
+		for (ParseNode child : pn) {
+			assembleNode(child);
+		}
+	}
+	
+	private void assembleTerminal(ParseNode pn) {
 		
 	}
 	
@@ -55,7 +93,7 @@ public class Assembler {
 	 * naming them along the way. 
 	 *  
 	 */
-	private void createStringPool() {
+	private void createAndOutputStringPool() {
 		io.println(".data         # String pool");
 		
 		// Indent the next block
@@ -72,5 +110,16 @@ public class Assembler {
 		}
 		// Finished this block
 		io.outdent();
+	}
+	
+	/**
+	 * outputFunctions
+	 * 
+	 * All functions are stored in the SymbolTable as type FUNCTION.
+	 * Output all functions at once at the end of the file
+	 * 
+	 */
+	private void outputFunctions() {
+		
 	}
 }
