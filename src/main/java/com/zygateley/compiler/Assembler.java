@@ -4,7 +4,7 @@ import com.zygateley.compiler.MIPS.*;
 import java.util.*;
 
 public class Assembler {
-	private ParseNode parseTree;
+	private Node parseTree;
 	private SymbolTable symbolTable;
 	
 	private HashMap<Symbol, String> stringPool; 
@@ -12,7 +12,7 @@ public class Assembler {
 	private Writer io;
 	private Scope global;
 	
-	public Assembler(ParseNode parseTree, SymbolTable symbolTable) {
+	public Assembler(Node parseTree, SymbolTable symbolTable) {
 		this.parseTree = parseTree;
 		this.symbolTable = symbolTable;
 		
@@ -49,7 +49,7 @@ public class Assembler {
 		return this.io.toString();
 	}
 	
-	private void assembleNode(ParseNode pn) {
+	private void assembleNode(Node pn) {
 		boolean isNonTerminal = (pn.getRule() != null);
 		if (isNonTerminal) {
 			assembleNonTerminal(pn);
@@ -59,7 +59,7 @@ public class Assembler {
 		}
 	}
 	
-	private void assembleNonTerminal(ParseNode pn) {
+	private void assembleNonTerminal(Node pn) {
 		NonTerminal rule = pn.getRule();
 		switch (rule) {
 		case _FUNCDEF_:
@@ -76,12 +76,12 @@ public class Assembler {
 		}
 		
 		// Iterate
-		for (ParseNode child : pn) {
+		for (Node child : pn) {
 			assembleNode(child);
 		}
 	}
 	
-	private void assembleTerminal(ParseNode pn) {
+	private void assembleTerminal(Node pn) {
 		
 	}
 	

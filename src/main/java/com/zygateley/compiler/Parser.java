@@ -3,39 +3,43 @@ package com.zygateley.compiler;
 import java.util.*;
 
 
-class ParseNode implements Iterable<ParseNode> {
+class Node implements Iterable<Node> {
 	// Name is used for debugging so that the 
 	// token is clearly understood at first sight
 	private final String _name_;
 	private final NonTerminal rule;
 	private final Terminal token;
 	private final Symbol symbol;
-	private final ArrayList<ParseNode> param;
+	private final String value;
+	private final ArrayList<Node> param;
 	// Keep one copy of an empty parameter list
 	// Point to it on empty parameter list to limit memory usage
 	// Additionally, this ensures param is never null
-	private static final ArrayList<ParseNode> emptyParam = new ArrayList<ParseNode>();
+	private static final ArrayList<Node> emptyParam = new ArrayList<Node>();
 	
-	public ParseNode(NonTerminal rule) {
+	public Node(NonTerminal rule) {
 		this._name_ = rule+"";
 		this.rule = rule;
 		this.token = null;
 		this.symbol = null;
-		this.param = new ArrayList<ParseNode>();
+		this.value = null;
+		this.param = new ArrayList<Node>();
 	}
-	public ParseNode(Terminal token, Symbol symbol) {
+	public Node(Terminal token, Symbol symbol, String value) {
 		this._name_ = (symbol != null ? "(" + symbol + ") " : "") + token;
 		this.rule = null;
 		this.token = token;
 		this.symbol = symbol;
-		this.param = new ArrayList<ParseNode>();
+		this.value = value;
+		this.param = new ArrayList<Node>();
 	}
-	public ParseNode(final ParseNode pn, boolean emptyParam) {
+	public Node(final Node pn, boolean emptyParam) {
 		this._name_ = pn._name_;
 		this.rule = pn.rule;
 		this.token = pn.token;
 		this.symbol = pn.symbol;
-		this.param = (emptyParam ? ParseNode.emptyParam : pn.param);
+		this.value = pn.value;
+		this.param = (emptyParam ? Node.emptyParam : pn.param);
 	}
 	
 	public NonTerminal getRule() {
@@ -50,16 +54,20 @@ class ParseNode implements Iterable<ParseNode> {
 		return this.symbol;
 	}
 	
-	public ArrayList<ParseNode> getParam() {
+	public String getValue() {
+		return this.value;
+	}
+	
+	public ArrayList<Node> getParam() {
 		return this.param;
 	}
 	
-	public void addParam(final ParseNode param) {
+	public void addParam(final Node param) {
 		this.param.add(param);
 	}
 	
 	@Override
-	public Iterator<ParseNode> iterator() {
+	public Iterator<Node> iterator() {
 		return this.param.iterator();
 	}
 }
@@ -74,11 +82,11 @@ public class Parser {
 		this.tokenStream = ts;
 	}
 	
-	public ParseNode parse(boolean verbose) {
+	public Node parse(boolean verbose) {
 		this.verbose = verbose;
 		return parse();
 	}
-	public ParseNode parse() {
+	public Node parse() {
 		// Reset program depth (for verbose output)
 		depth = 0;
 		
@@ -88,7 +96,7 @@ public class Parser {
 		
 		// Top-level of parseTree should only contain first rule
 		NonTerminal firstRule = NonTerminal.values()[0];
-		ParseNode parseTree = parseRule(firstRule); 
+		Node parseTree = parseRule(firstRule); 
 				
 		if (verbose) {
 			System.out.println("\n<!-- Parser finished -->\n");
@@ -97,9 +105,9 @@ public class Parser {
 		return parseTree;
 	}
 	
-	private ParseNode parseRule(NonTerminal rule) {
+	private Node parseRule(NonTerminal rule) {
 		// New non-terminal node
-		ParseNode pn = new ParseNode(rule);
+		Node pn = new Node(rule);
 		
 		Terminal t = tokenStream.peek().token;
 
@@ -116,9 +124,9 @@ public class Parser {
         		
         		// Empty string has been utilized for this rule
         		// Return rule with empty node parameter
-        		pn.addParam(new ParseNode(Terminal.EMPTY, null));
+        		pn.addParam(new Node(Terminal.EMPTY, null, null));
         		// Strip empty ArrayList from ParseNode
-        		return new ParseNode(pn, true);
+        		return new Node(pn, true);
         	}
         	else {
         		System.err.println("Fatal error: Production Rule terminated prematurely.");
@@ -138,34 +146,38 @@ public class Parser {
 		for (int i = 0; i < pattern.length; i++) {
 			int tokenValue = pattern[i];
 			
-			ParseNode next;
+			Node next;
 			// Terminal
 			// These are immediately added to the parse tree
 			if (Token.isTerminal(tokenValue)) {
-				TokenSymbol ts = tokenStream.gettoken();
-				if (ts.token.tokenValue != tokenValue) {
+				StreamItem item = tokenStream.gettoken();
+				if (item.token.tokenValue != tokenValue) {
 					System.err.println("Fatal error: incorrect syntax.");
 					return null;
 				}
+				
+				// VERBOSE
 				if (verbose) {
 					/*
 					StringBuilder tokenName = new StringBuilder(ts.token + "          ");
 					tokenName.setLength(10);
 					*/
-					String tokenName = ts.token + "";
+					String tokenName = item.token + "";
 					String symbolString = "";
-					if (ts.symbol != null) {
-						String name = ts.symbol.getName();
-						if (name != null) symbolString += "name=\"" + ts.symbol.getName() + "\"";
-						String value = ts.symbol.getValue();
-						if (value != null) symbolString += "value=" + ts.symbol.getName() + "\"";
-						Symbol.Type type = ts.symbol.getType();
+					if (item.symbol != null) {
+						String name = item.symbol.getName();
+						if (name != null) symbolString += " name=\"" + item.symbol.getName() + "\"";
+						String value = item.symbol.getValue();
+						if (value != null) symbolString += " value=" + item.symbol.getName() + "\"";
+						Symbol.Type type = item.symbol.getType();
 						if (type != null) symbolString = " type=\"" + type + "\" ";
 					}
 					for (int j = 0; j < depth; j++) System.out.print("  ");
 					System.out.println("  <Terminal " + tokenName + symbolString + ">");
 				}
-				next = new ParseNode(ts.token, ts.symbol);
+				// VERBOSE
+				
+				next = new Node(item.token, item.symbol, item.value);
 			}
 			// NonTerminals
 			// Recur into parseRule
@@ -189,7 +201,7 @@ public class Parser {
 		
 		// Strip empty ArrayList where applicable
 		if (pn.getParam().size() == 0) {
-			pn = new ParseNode(pn, true);
+			pn = new Node(pn, true);
 		}
 		
 		return pn;

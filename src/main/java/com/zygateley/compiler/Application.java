@@ -24,16 +24,16 @@ public class Application {
 	public static void main(String[] args) throws IOException {
 		// TESTING
 		PushbackReader sr = new PushbackReader(new StringReader(
-				"function printIt (g, m) {echo g;\n" 
+				/*"function printIt (g, m) {echo g;\n" 
 				+ "echo m;}"
 				+ "input abc;\n"
 				+ "rob = 3;\n"
 				+ "if (abc > rob) { printIt(\"abc is bigger than rob\", \"You filthy animal\"); }"
 				+ "elseif (abc == rob) { printIt(\"abc is equal to rob\", \"!\"); }"
 				+ "else printIt(\"abc is less than rob\", \"And don't you forget it\");"
-				
+				*/
 				//"if (false) {abc = 5; df = 5; echo abc + df * 6;}elseif ( 2 == 4) b = 2; else{echo \"My goodness\";}" // echo \"The man with the plan is yo mamma\"; {echo true;}"
-				//"a=\"a\";"
+				"a=(3*2)+4*5;"
 				));
 		
 		// Objects passed to Parser
@@ -47,13 +47,13 @@ public class Application {
 		
 		// Build parse tree
 		Parser p = new Parser(ts);
-		ParseNode parseTree = p.parse(true);
+		Node parseTree = p.parse(true);
 		if (parseTree == null) {
 			return;
 		}
 		
 		// Run backend into appropriate language
-		Translate tr = new Translate(parseTree);
+		Translator tr = new Translator(parseTree);
 		String output = tr.toPython();
 		System.out.println("\n\nGenerated code: \n\n\n" + output);
 		

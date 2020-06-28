@@ -189,7 +189,7 @@ enum Terminal implements Token {
 	// PRIMITIVES
 	TRUE		(Token.TRUE, "true"),
 	FALSE		(Token.FALSE, "false"),
-	INT 		(Token.INT, "", ("^\\d*")),
+	INT 		(Token.INT, Symbol.Type.INT, "", ("^\\d*")),
 	STRING      (Token.STRING, Symbol.Type.STRING, "", ("^\".*"), ("[^\\\\]{2,}(?:\\\\\\\\)*\"$")),
 	
 	// Other reserved words

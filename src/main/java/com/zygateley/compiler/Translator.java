@@ -2,13 +2,13 @@ package com.zygateley.compiler;
 
 import java.util.*;
 
-public class Translate {
+public class Translator {
 	private StringBuilder sb;
-	private ParseNode parseTree;
+	private Node parseTree;
 	private int currentIndent;
 	private boolean newLine;
 	
-	public Translate(ParseNode parseTree) {
+	public Translator(Node parseTree) {
 		this.sb = new StringBuilder();
 		this.parseTree = parseTree;
 	}
@@ -24,17 +24,17 @@ public class Translate {
 		__pythonParseNode__(parseTree);
 		return sb.toString();
 	}
-	private void __pythonParseList__(ArrayList<ParseNode> parseTrees) {
-		for (ParseNode pn : parseTrees) {
+	private void __pythonParseList__(ArrayList<Node> parseTrees) {
+		for (Node pn : parseTrees) {
 			__pythonParseNode__(pn);
 		}
 	}
-	private void __pythonParseNode__(ParseNode pn) {
-		ArrayList<ParseNode> params = pn.getParam();
+	private void __pythonParseNode__(Node pn) {
+		ArrayList<Node> params = pn.getParam();
 		
 		// Try NonTerminal
 		NonTerminal nt = pn.getRule();
-		ParseNode firstChild;
+		Node firstChild;
 		if (nt != null) {
 			switch (nt) {
 			case _FUNCDEF_:
@@ -135,6 +135,9 @@ public class Translate {
 			break;
 		case FALSE:
 			add("False");
+			break;
+		case INT:
+			add(pn.getValue());
 			break;
 		case VAR:
 		case STRING:

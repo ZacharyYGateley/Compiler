@@ -3,18 +3,21 @@ package com.zygateley.compiler;
 import java.util.*;
 
 
-class TokenSymbol {
+class StreamItem {
 	public final Terminal token;
 	public final Symbol symbol;
-	public static final TokenSymbol EMPTY = new TokenSymbol(Terminal.EMPTY);
+	public final String value;
+	public static final StreamItem EMPTY = new StreamItem(Terminal.EMPTY);
 	
-	public TokenSymbol(Terminal token) {
+	public StreamItem(Terminal token) {
 		this.token = token;
 		this.symbol = null;
+		this.value = null;
 	}
-	public TokenSymbol(Terminal token, Symbol symbol) {
+	public StreamItem(Terminal token, Symbol symbol, String value) {
 		this.token = token;
 		this.symbol = symbol;
+		this.value = value;
 	}
 }
 
@@ -26,36 +29,36 @@ class TokenSymbol {
  */
 public class TokenStream {
 	
-	private ArrayList<TokenSymbol> tokens;
+	private ArrayList<StreamItem> tokens;
 	private int len;
 	private int pos = 0;
 	 
 	public TokenStream() {
-		this.tokens = new ArrayList<TokenSymbol>();
+		this.tokens = new ArrayList<StreamItem>();
 		this.len = 0;
 		this.pos = 0;
 	}
-	public TokenStream(ArrayList<TokenSymbol> tokens) {
+	public TokenStream(ArrayList<StreamItem> tokens) {
 		this.tokens = tokens;
 	    this.len = tokens.size();
 	    this.pos = 0;
 	}
 	 
-	public TokenSymbol peek() {
+	public StreamItem peek() {
 	    if (this.isEmpty()) {
-	        return TokenSymbol.EMPTY;
+	        return StreamItem.EMPTY;
 	    }
 	    return this.tokens.get(this.pos);
 	}
 	 
 	
-	public void addtoken(Terminal token, Symbol symbol) {
-		this.tokens.add(new TokenSymbol(token, symbol));
+	public void addtoken(Terminal token, Symbol symbol, String value) {
+		this.tokens.add(new StreamItem(token, symbol, value));
 		this.len++;
 	}
 	 
-	public TokenSymbol gettoken() {
-	    TokenSymbol next = this.peek();
+	public StreamItem gettoken() {
+	    StreamItem next = this.peek();
 	    this.pos++;
 	    return next;
 	}
@@ -67,7 +70,7 @@ public class TokenStream {
 	}
 	 
 	public boolean contains(Terminal t) {
-		for (TokenSymbol tp : this.tokens) {
+		for (StreamItem tp : this.tokens) {
 			if (tp.token.equals(t)) {
 				return true;
 			}

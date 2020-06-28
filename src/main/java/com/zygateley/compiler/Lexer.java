@@ -259,15 +259,20 @@ public class Lexer {
 	
 	private void createAddToken(String newToken, Terminal thisRule) {
 		Symbol symbol = null;
+		String value = null;
 		if (thisRule == Terminal.VAR) {
 			// Variable name
 			symbol = symbolTable.insert(newToken);
 		}
-		else if (thisRule.symbolType != null) {
-			// Value and type
+		else if (thisRule.symbolType == Symbol.Type.STRING) {
+			// Candidates for string pool
 			symbol = symbolTable.insert(newToken, thisRule.symbolType);
 		}
-		tokenStreamOut.addtoken(thisRule, symbol);
+		else if (thisRule.symbolType != null) {
+			// All other literals
+			value = newToken;
+		}
+		tokenStreamOut.addtoken(thisRule, symbol, value);
 		
 		if (verbose) {
 			StringBuilder sbtr = new StringBuilder(thisRule + "         ");
