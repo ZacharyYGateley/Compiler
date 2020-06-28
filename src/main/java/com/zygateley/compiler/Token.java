@@ -65,6 +65,7 @@ public interface Token {
 		
 		// Statement FIRST set
 		ECHO = 			id.next(),
+		INPUT = 		id.next(),
 		VAR = 			id.next(),
 		
 		// Operator set
@@ -99,6 +100,7 @@ public interface Token {
 		_BLOCK_ = 		id.next(),
 		_STMT_ = 		id.next(),
 		_ECHO_ = 		id.next(),
+		_INPUT_ = 		id.next(),
 		_VARSTMT_ =		id.next(),
 		_VARDEF_ = 		id.next(),
 		_EXPR_ = 		id.next(),
@@ -140,6 +142,7 @@ public interface Token {
 	};
 	public static final int[] _STMT_FIRST = {
 			VAR,
+			INPUT,
 			ECHO
 	};
 	public final static int[] operatorSet = {
@@ -197,6 +200,7 @@ enum Terminal implements Token {
 	
 	// Defined as <stmts> in CFG.xlsx
 	ECHO 		(Token.ECHO, "echo"),
+	INPUT		(Token.INPUT, "input"),
 	VAR			(Token.VAR, Symbol.Type.VAR, "", ("^[a-z|A-Z|_][a-z|A-Z|\\d|_]*")),
 	// Any reserved words must be declared before VAR
 	
@@ -326,11 +330,16 @@ enum NonTerminal implements Token {
 	
 	_STMT_		(Token._STMT_,
 			 	 firstTerminalsAndPattern(Token.ECHO, Token._ECHO_, Token.SEMICOLON),
+			 	 firstTerminalsAndPattern(Token.INPUT, Token._INPUT_, Token.SEMICOLON),
 				 firstTerminalsAndPattern(Token.VAR, Token.VAR, Token._VARSTMT_, Token.SEMICOLON),
 				 Token.commonFollow2),
 	
 	_ECHO_		(Token._ECHO_,
 		 	 	 firstTerminalsAndPattern(Token.ECHO, Token.ECHO, Token._EXPR_),
+				 follow(Token.SEMICOLON)),
+	
+	_INPUT_		(Token._INPUT_,
+				 firstTerminalsAndPattern(Token.INPUT, Token.INPUT, Token.VAR),
 				 follow(Token.SEMICOLON)),
 
 	_VARSTMT_	(Token._VARSTMT_,

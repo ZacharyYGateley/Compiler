@@ -102,6 +102,10 @@ public class Backend {
 				add("print");
 				__pythonParseList__(params);
 				break;
+			case _INPUT_:
+				__pythonParseNode__(params.get(1));
+				add(" = input() ");
+				break;
 			case _EXPR_:
 				add(" (");
 				__pythonParseList__(params);
@@ -121,6 +125,7 @@ public class Backend {
 		case ECHO:
 		case CURLY_OPEN:
 		case CURLY_CLOSE:
+		case SEMICOLON:
 		case EMPTY:
 		case EOF:
 			// These handled by their wrapping NonTerminals
