@@ -53,9 +53,13 @@ public class Application {
 		}
 		
 		// Run backend into appropriate language
-		Backend be = new Backend(parseTree);
-		String output = be.python();
+		Translate tr = new Translate(parseTree);
+		String output = tr.toPython();
 		System.out.println("\n\nGenerated code: \n\n\n" + output);
+		
+		Assembler a = new Assembler(parseTree, st);
+		output = a.assemble();
+		System.out.println("\n\nGenerated assembly code: \n\n\n" + output);
 	}
 
 }

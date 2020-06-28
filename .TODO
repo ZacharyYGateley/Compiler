@@ -5,6 +5,8 @@ Combine backend functions into NonTerminal rule declarations? if possible and is
 Build basic readme. Make repository public.
 Better lexical and parse failure messages
 
+SymbolTable types are a little strange.
+
 Long term
 	Scope?
 	Type checking for addition - Adding strings - Subtracting strings...? i.e. type checking

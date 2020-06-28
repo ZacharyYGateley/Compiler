@@ -259,7 +259,12 @@ public class Lexer {
 	
 	private void createAddToken(String newToken, Terminal thisRule) {
 		Symbol symbol = null;
+		if (thisRule == Terminal.VAR) {
+			// Variable name
+			symbol = symbolTable.insert(newToken);
+		}
 		if (thisRule.symbolType != null) {
+			// Value and type
 			symbol = symbolTable.insert(newToken, thisRule.symbolType);
 		}
 		tokenStreamOut.addtoken(thisRule, symbol);

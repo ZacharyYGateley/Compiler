@@ -2,13 +2,13 @@ package com.zygateley.compiler;
 
 import java.util.*;
 
-public class Backend {
+public class Translate {
 	private StringBuilder sb;
 	private ParseNode parseTree;
 	private int currentIndent;
 	private boolean newLine;
 	
-	public Backend(ParseNode parseTree) {
+	public Translate(ParseNode parseTree) {
 		this.sb = new StringBuilder();
 		this.parseTree = parseTree;
 	}
@@ -17,7 +17,7 @@ public class Backend {
 	 * "Compile" code into Python 
 	 * @return compiled code
 	 */
-	public String python() {
+	public String toPython() {
 		// Restart string builder if some parse method has already been called
 		sb.setLength(0);
 		currentIndent = 0;
@@ -139,7 +139,7 @@ public class Backend {
 		case VAR:
 		case INT:
 		case STRING:
-			add(pn.getSymbol().name);
+			add(pn.getSymbol().getName());
 			break;
 		case EQ:
 			add(" =");

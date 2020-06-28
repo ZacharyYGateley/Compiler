@@ -1,6 +1,6 @@
 package com.zygateley.compiler;
 
-import java.util.ArrayList;
+import java.util.*;
 
 class Symbol {
 	public enum Type {
@@ -11,11 +11,18 @@ class Symbol {
 		STRING		
 	}
 	
-	protected final String name;
-	protected final Type type;
+	private String name;
+	private final String value;
+	private final Type type;
 	
-	public Symbol(String name, Type type) {
+	public Symbol(String name) {
 		this.name = name;
+		this.value = null;
+		this.type = null;
+	}
+	public Symbol(String value, Type type) {
+		this.name = null;
+		this.value = value;
 		this.type = type;
 	}
 	
@@ -23,8 +30,20 @@ class Symbol {
 		return this.name;
 	}
 	
+	public String getValue() {
+		return this.value;
+	}
+	
 	public Type getType() {
 		return this.type;
+	}
+	
+	public boolean setName(String newName) {
+		if (this.name == null) {
+			this.name = newName;
+			return true;
+		}
+		return false;
 	}
 	
 	/**
@@ -36,8 +55,20 @@ class Symbol {
 	 * @param name
 	 * @return boolean equivalent
 	 */
-	public boolean equals(String name, Type type) {
-		return this.name == name && this.type == type;
+	public boolean equals(String name, String value, Type type) {
+		boolean equivalent = true;
+		if (this.type == null) {
+			// Variable
+			// Check name only
+			equivalent &= (this.name == name || this.name != null && this.name.equals(name));
+		}
+		else {
+			// Literal
+			// Check type and value
+			equivalent &= (this.value == value || this.value != null && this.value.equals(name));
+			equivalent &= (this.type == type);
+		}
+		return equivalent;
 	}
 	/**
 	 * equals
@@ -48,16 +79,36 @@ class Symbol {
 	 * @param s comparator symbol
 	 * @return boolean equivalent
 	 */
-	public boolean equals(Symbol s, Type type) {
-		return this.name == s.name && this.type == type;
+	public boolean equals(Symbol s) {
+		return this.equals(s.name, s.value, s.type);
 	}
 }
 
-public class SymbolTable {
+public class SymbolTable implements Iterable<Symbol> {
 	private ArrayList<Symbol> symbols;
 	
 	public SymbolTable() {
 		this.symbols = new ArrayList<Symbol>();
+	}
+	
+
+	/**
+	 * insert
+	 * 
+	 * Starting off simple. Just have names in the 
+	 * symbol table, not scope or type
+	 * 
+	 * @param name String name of new variable
+	 */
+	public Symbol insert(String name) {
+		Symbol newSymbol = new Symbol(name);
+		if (!this.contains(newSymbol)) {
+			this.symbols.add(newSymbol);
+			return newSymbol;
+		}
+		else {
+			return null;
+		}
 	}
 	
 	/**
@@ -68,8 +119,8 @@ public class SymbolTable {
 	 * 
 	 * @param name String name of new variable
 	 */
-	public Symbol insert(String name, Symbol.Type type) {
-		Symbol newSymbol = new Symbol(name, type);
+	public Symbol insert(String value, Symbol.Type type) {
+		Symbol newSymbol = new Symbol(value, type);
 		if (!this.contains(newSymbol)) {
 			this.symbols.add(newSymbol);
 			return newSymbol;
@@ -111,5 +162,10 @@ public class SymbolTable {
 			}
 		}
 		return false;
+	}
+	
+	@Override
+	public Iterator<Symbol> iterator() {
+		return this.symbols.iterator();
 	}
 }

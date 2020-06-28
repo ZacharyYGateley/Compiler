@@ -148,19 +148,14 @@ public class Parser {
 					tokenName.setLength(10);
 					*/
 					String tokenName = ts.token + "";
-					String symbolString;
+					String symbolString = "";
 					if (ts.symbol != null) {
+						String name = ts.symbol.getName();
+						if (name != null) symbolString += "name=\"" + ts.symbol.getName() + "\"";
+						String value = ts.symbol.getValue();
+						if (value != null) symbolString += "value=" + ts.symbol.getName() + "\"";
 						Symbol.Type type = ts.symbol.getType();
-						symbolString = " type=\"" + type + "\" ";
-						if (type == Symbol.Type.VAR) {
-							symbolString += "name=\"" + ts.symbol.getName() + "\"";
-						}
-						else {
-							symbolString += "value=" + ts.symbol.getName() + "\""; 
-						}
-					}
-					else {
-						symbolString = "";
+						if (type != null) symbolString = " type=\"" + type + "\" ";
 					}
 					for (int j = 0; j < depth; j++) System.out.print("  ");
 					System.out.println("  <Terminal " + tokenName + symbolString + ">");
