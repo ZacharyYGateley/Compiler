@@ -16,8 +16,8 @@
  */
 package com.zygateley.compiler;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.regex.*;
+import java.util.stream.*;
 
 /**
  * Quick way to create unique, auto-incrementing Token values
@@ -41,16 +41,22 @@ class id {
  *
  */
 public interface Token {
+	// Indication of syntax error
+	public final static int
+		ERROR =			id.next();
+	
 	// Terminals
 	public final static int 
 		EMPTY = 		id.next(),
 		SEMICOLON = 	id.next(),
 		COMMA = 		id.next(),
-		EQ = 		id.next(),
+		EQ = 			id.next(),
 		PAREN_OPEN = 	id.next(),
 		PAREN_CLOSE = 	id.next(),
 		CURLY_OPEN = 	id.next(),
 		CURLY_CLOSE = 	id.next(),
+		SQUARE_OPEN =	id.next(),
+		SQUARE_CLOSE = 	id.next(),
 		
 		// Primitive set
 		TRUE = 			id.next(),
@@ -84,7 +90,7 @@ public interface Token {
 	
 	// All Terminals have id < partition
 	// All NonTerminals have id >= partition
-	public final static int partition = id.id;
+	public final static int firstNonTerminal = id.id;
 	
 	// Non-terminals
 	public final static int
@@ -104,7 +110,7 @@ public interface Token {
 		_VARSTMT_ =		id.next(),
 		_VARDEF_ = 		id.next(),
 		_EXPR_ = 		id.next(),
-		_OPEXPR_ = 		id.next(),
+		//_OPEXPR_ = 		id.next(),
 		_OP_ = 			id.next(),
 		_VALUE_ = 		id.next(),
 		_VAR_ = 		id.next(),
@@ -114,6 +120,15 @@ public interface Token {
 		_ARGS1_ = 		id.next(),
 		_LITERAL_ = 	id.next();
 
+	public final static int firstAmbiguousNonTerminal = id.id;
+	
+	// NonTerminals without FIRST and FOLLOW sets
+	public final static int
+		__WILDCARD__ =	id.next(),
+		__AMBEXPR0__ = id.next(),
+		__AMBEXPR1__ = id.next(),
+		__AMBEXPR2__ = id.next(),
+		__AMBEXPR3__ = id.next();
 	
 
 	/**
@@ -157,6 +172,22 @@ public interface Token {
 			GT,
 			EQEQ
 	};
+	public final static int[] operatorSetRank0 = {
+			PLUS,
+			MINUS
+	};
+	public final static int[] operatorSetRank1 = {
+			ASTERISK,
+			SLASH
+	};
+	public final static int[] operatorSetRank2 = {
+			NEQ,
+			LTEQ,
+			GTEQ,
+			LT,
+			GT,
+			EQEQ
+	};
 	public static final int[] primitiveSet = {
 			TRUE,
 			FALSE,
@@ -168,10 +199,10 @@ public interface Token {
 	public static final int[][] commonFollow3 = new int[][] { combineArrays(operatorSet, SEMICOLON, COMMA, PAREN_CLOSE) };
 	
 	public static boolean isNonTerminal(int tokenValue) {
-		return tokenValue >= partition;
+		return tokenValue >= firstNonTerminal;
 	}
 	public static boolean isTerminal(int tokenValue) {
-		return tokenValue < partition;
+		return tokenValue < firstNonTerminal;
 	}
 }
 
@@ -185,6 +216,8 @@ enum Terminal implements Token {
 	PAREN_CLOSE (Token.PAREN_CLOSE, ")"),
 	CURLY_OPEN  (Token.CURLY_OPEN, "{"),
 	CURLY_CLOSE (Token.CURLY_CLOSE, "}"),
+	SQUARE_OPEN (Token.SQUARE_OPEN, "["),
+	SQUARE_CLOSE(Token.SQUARE_CLOSE, "]"),
 	
 	// PRIMITIVES
 	TRUE		(Token.TRUE, "true"),
@@ -275,6 +308,23 @@ enum Terminal implements Token {
 	public boolean requiresFullMatch() {
 		return (this.regexEnd != null);
 	}
+
+	/**
+	 * Get Terminal by its tokenValue 
+	 * (Token.* or Terminal.tokenValue)
+	 * 
+	 * @param tokenValue Terminal.tokenValue to find
+	 * @return Terminal with matching tokenValue or null
+	 */
+	public static Terminal getNonTerminal(int tokenValue) {
+		Terminal[] all = Terminal.values();
+		for (Terminal nt : all) {
+			if (nt.tokenValue == tokenValue) {
+				return nt;
+			}
+		}
+		return null;
+	}
 }
 
 enum NonTerminal implements Token {
@@ -352,14 +402,19 @@ enum NonTerminal implements Token {
 				 follow(Token.SEMICOLON)),
 	
 	_EXPR_		(Token._EXPR_,
-				 firstTerminalsAndPattern(Token.PAREN_OPEN, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE),
-				 firstTerminalsAndPattern(Token.combineArrays(Token.primitiveSet, Token.VAR), Token._VALUE_, Token._OPEXPR_),
+				 //firstTerminalsAndPattern(Token.PAREN_OPEN, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE),
+				 // On anything else, 
+				 // send to ambiguous branch 
+				 firstTerminalsAndPattern(IntStream.rangeClosed(1, id.id).toArray(), Token.__AMBEXPR0__),
+				 //firstTerminalsAndPattern(Token.combineArrays(Token.primitiveSet, Token.VAR), Token._VALUE_, Token._OPEXPR_),
 	 			 follow(new int[] {Token.SEMICOLON, Token.PAREN_CLOSE})),
 	
+	/*
 	_OPEXPR_	(Token._OPEXPR_,
 				 firstTerminalsAndPattern(Token.operatorSet, Token._OP_, Token._EXPR_),
 				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
 	 			 follow(new int[] {Token.SEMICOLON, Token.PAREN_CLOSE})),
+	 */
 	
 	_OP_		(Token._OP_,
 				 singleTerminalsPatternsAndFollow(
@@ -401,7 +456,26 @@ enum NonTerminal implements Token {
 						 Token.primitiveSet, 
 						 Token.commonFollow3
 						 )
-				 );
+				 ),
+	
+	// Patterns ambiguous by FIRST Terminal set
+	// __EXPR__ enters into ambiguous patterns
+	// __EXPRRANK3__ returns to non-ambiguous patterns
+	
+	/*
+	__EXPR__	(Token.__EXPR__,
+				 firstTerminalsAndPattern(Token.PAREN_OPEN, Token.PAREN_OPEN, Token.__EXPR__, Token.PAREN_CLOSE),
+				 follow(Token.SEMICOLON, Token.PAREN_CLOSE)),
+	*/
+	__AMBEXPR0__(Token.__AMBEXPR0__, ambiguousSplitAt(Token.PAREN_OPEN), Token.__AMBEXPR1__, Token._EXPR_),
+	__AMBEXPR1__(Token.__AMBEXPR1__, ambiguousSplitAt(Token.operatorSetRank0), Token.__AMBEXPR2__, Token._EXPR_),
+	__AMBEXPR2__(Token.__AMBEXPR2__, ambiguousSplitAt(Token.operatorSetRank1), Token.__AMBEXPR3__, Token._EXPR_),
+	__AMBEXPR3__(Token.__AMBEXPR3__, ambiguousSplitAt(Token.operatorSetRank2), Token._VALUE_, Token._EXPR_);
+	/*
+	__EXPRRANK3__(Token.__EXPRRANK3__,
+				  firstTerminalsAndPattern(Token.combineArrays(Token.primitiveSet, Token.VAR), Token._VALUE_),
+				  follow(Token.SEMICOLON, Token.PAREN_CLOSE));
+				  */
 	
 	/**
 	 * Internal class for NonTerminals
@@ -412,7 +486,7 @@ enum NonTerminal implements Token {
 	 * @author Zachary Gateley
 	 *
 	 */
-	public class Pattern{
+	public class Pattern {
 		public final int[] FIRST;
 		public final int[] PATTERN;
 		
@@ -420,14 +494,32 @@ enum NonTerminal implements Token {
 			this.FIRST = first;
 			this.PATTERN = pattern;
 		}
+		public Pattern(int... pattern) {
+			this.FIRST = null;
+			this.PATTERN = pattern;
+		}
+	}
+	public class AmbiguousPattern {
+		public final int[] splitAt;
+		public final int leftRule;
+		public final int rightRule;
+		
+		public AmbiguousPattern(int[] splitAt, int leftRule, int rightRule) {
+			this.splitAt = splitAt;
+			this.leftRule = leftRule;
+			this.rightRule = rightRule;
+		}
 	}
 	
 	public final int tokenValue;
 	public final Pattern[] patterns;
+	public final AmbiguousPattern ambiguousPattern;
 	public final int[] FOLLOW;
 	
 	/**
-	 * Constructor 
+	 * Constructor --> Parse by expediting from FIRST set
+	 * 
+	 * Contains first and follow sets
 	 * 
 	 * @param tokenValue value from Token.* that corresponds to this NonTerminal 
 	 * @param patterns
@@ -445,10 +537,100 @@ enum NonTerminal implements Token {
 			// Add FIRST / PATTERN sets
 			this.patterns[i] = p;
 		}
+		this.ambiguousPattern = null;
 		// Last array is FOLLOW
 		this.FOLLOW = patterns[patterns.length - 1][0];
 	}
+	/**
+	 * Constructor --> Parse by (a) getting top level stream, then by (b) search
+	 * e.g.
+	 * 		(1 * 2 + print( 43 ) * 3)
+	 * 		
+	 * 		a)--> (1 * 2 + _EXPR_ * 3)
+	 * 		b)--> (_EXPRRANK1_ + _EXPRRANK0_)
+	 * 		b)--> ((_EXPRRANK2_ * _EXPRRANK1_) + _EXPRRANK0_)
+	 * 		b)--> ((_VALUE_ * _EXPRRANK1_) + _EXPRRANK0_)
+	 * 		b)--> ((_VALUE_ * _EXPRRANK2_) + _EXPRRANK0_)
+	 * 		b)--> ((_VALUE_ * _VALUE) + _EXPRRANK0_)
+	 * 			...
+	 * 
+	 * Does not contain first and follow sets
+	 * 
+	 * @param tokenValue value from Token.* that corresponds to this NonTerminal
+	 * @param patterns (w/o first set)
+	 * 		e.g. { __EXPRRANK1__, +,  __EXPRRANK0__}
+	 * 			 { __EXPRRANK1__, -,  __EXPRRANK0__}
+	 */
+	private NonTerminal(int tokenValue, int[] splitAt, int leftRule, int rightRule) {
+		this.tokenValue = tokenValue;
+		this.patterns = null;
+		this.ambiguousPattern = new AmbiguousPattern(splitAt, leftRule, rightRule);
+		this.FOLLOW = null;
+	}
+
+	//// CONSTRUCTOR helper methods
+	/**
+	 * firstTerminalAndPattern
+	 * 
+	 * The first argument is the Terminal.tokenValue that indicates the start of this rule
+	 * The following arguments indicate the sequence of Terminals and NonTerminals in the pattern
+	 * 		(Represented as *.tokenValue each)
+	 * 
+	 * @param first Terminal tokenValue
+	 * @param pattern Sequence of {Terminal, NonTerminal} as *.tokenValue
+	 * @return respective input for NonTerminal constructor
+	 */
+	private static int[][] firstTerminalsAndPattern(int first, int... pattern) {
+		return new int[][] { { first }, pattern };
+	}
+	private static int[][] firstTerminalsAndPattern(int[] first, int... pattern) {
+		return new int[][] { first, pattern };
+	}
+	/**
+	 * patternsOfSingleTerminals
+	 * 
+	 * Stand-in for firstTerminalsAndPattern
+	 * where each terminal in the argument array outputs to itself
+	 * 
+	 * @param terminalSet list of terminals that output to themselves only
+	 * @param
+	 * @returns array of firstTerminalsAndPattern sets ending with followSet
+	 * 		{ 
+	 * 			firstTerminalsAndPattern,
+	 * 			firstTerminalsAndPattern,
+	 * 			...,
+	 * 			follow
+	 * 		}
+	 */
+	private static int[][][] singleTerminalsPatternsAndFollow(int[] terminalSet, int[][] followSet) {
+		int[][][] firstPatternFollow = new int[terminalSet.length + 1][][];
+		int i = 0;
+		for (; i < terminalSet.length; i++) {
+			int terminal = terminalSet[i];
+			firstPatternFollow[i] = firstTerminalsAndPattern(terminal, terminal);
+		}
+		firstPatternFollow[i] = followSet;
+		return firstPatternFollow;
+	}
+	/**
+	 * follow
+	 * 
+	 * @param follow set of Terminals that indicate the end of parsing this rule 
+	 * @return respective input for NonTerminal constructor
+	 */
+	private static int[][] follow(int... follow) {
+		return new int[][] { follow };
+	}
+	/**
+	 * 
+	 */
+	private static int[] ambiguousSplitAt(int... tokens) {
+		if (tokens == null) return new int[0];
+		else 				return tokens;
+	}
 	
+	
+	//// PUBLIC methods
 	/**
 	 * Search this rule to see if the given terminal
 	 * indicates the start of one of this rule's patterns.
@@ -508,56 +690,7 @@ enum NonTerminal implements Token {
 		return null;
 	}
 	
-	/**
-	 * firstTerminalAndPattern
-	 * 
-	 * The first argument is the Terminal.tokenValue that indicates the start of this rule
-	 * The following arguments indicate the sequence of Terminals and NonTerminals in the pattern
-	 * 		(Represented as *.tokenValue each)
-	 * 
-	 * @param first Terminal tokenValue
-	 * @param pattern Sequence of {Terminal, NonTerminal} as *.tokenValue
-	 * @return respective input for NonTerminal constructor
-	 */
-	public static int[][] firstTerminalsAndPattern(int first, int... pattern) {
-		return new int[][] { { first }, pattern };
-	}
-	public static int[][] firstTerminalsAndPattern(int[] first, int... pattern) {
-		return new int[][] { first, pattern };
-	}
-	/**
-	 * patternsOfSingleTerminals
-	 * 
-	 * Stand-in for firstTerminalsAndPattern
-	 * where each terminal in the argument array outputs to itself
-	 * 
-	 * @param terminalSet list of terminals that output to themselves only
-	 * @param
-	 * @returns array of firstTerminalsAndPattern sets ending with followSet
-	 * 		{ 
-	 * 			firstTerminalsAndPattern,
-	 * 			firstTerminalsAndPattern,
-	 * 			...,
-	 * 			follow
-	 * 		}
-	 */
-	public static int[][][] singleTerminalsPatternsAndFollow(int[] terminalSet, int[][] followSet) {
-		int[][][] firstPatternFollow = new int[terminalSet.length + 1][][];
-		int i = 0;
-		for (; i < terminalSet.length; i++) {
-			int terminal = terminalSet[i];
-			firstPatternFollow[i] = firstTerminalsAndPattern(terminal, terminal);
-		}
-		firstPatternFollow[i] = followSet;
-		return firstPatternFollow;
-	}
-	/**
-	 * follow
-	 * 
-	 * @param follow set of Terminals that indicate the end of parsing this rule 
-	 * @return respective input for NonTerminal constructor
-	 */
-	public static int[][] follow(int... follow) {
-		return new int[][] { follow };
+	public boolean isAmbiguous() {
+		return (this.ambiguousPattern != null);
 	}
 }

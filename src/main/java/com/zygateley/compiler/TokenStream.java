@@ -19,6 +19,13 @@ class StreamItem {
 		this.symbol = symbol;
 		this.value = value;
 	}
+	
+	@Override
+	public String toString() {
+		return "Token: " + this.token + 
+				(this.symbol != null ? "\n\tSymbol: " + this.symbol : "") + 
+				(this.value != null ? "\n\tValue: " + this.value : ""); 
+	}
 }
 
 /**
@@ -50,10 +57,13 @@ public class TokenStream {
 	    }
 	    return this.tokens.get(this.pos);
 	}
-	 
 	
 	public void addtoken(Terminal token, Symbol symbol, String value) {
 		this.tokens.add(new StreamItem(token, symbol, value));
+		this.len++;
+	}
+	public void addtoken(StreamItem si) {
+		this.tokens.add(si);
 		this.len++;
 	}
 	 
@@ -67,6 +77,17 @@ public class TokenStream {
 		if (this.pos > 0) {
 			this.pos--;
 		}
+	}
+	
+	/**
+	 * For ambiguous streams,
+	 * must remember where we were
+	 */
+	public int getPosition() {
+		return this.pos;
+	}
+	public void setPosition(int position) {
+		this.pos = position;
 	}
 	 
 	public boolean contains(Terminal t) {
@@ -84,5 +105,19 @@ public class TokenStream {
 	 
 	public int length() {
 	    return this.len - this.pos;
+	}
+	
+	@Override
+	public String toString() {
+		return toString(this.len);
+	}
+	public String toString(int limit) {
+		int originalPosition = this.getPosition();
+		StringBuilder sb = new StringBuilder();
+		while (!this.isEmpty() && this.getPosition() < limit) {
+			sb.append(this.gettoken() + "\n");
+		}
+		this.setPosition(originalPosition);
+		return sb.toString();
 	}
 }

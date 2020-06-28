@@ -45,19 +45,19 @@ public class Application {
 		Lexer l = new Lexer(sr, ts, st);
 		l.lex(true);
 		
-		// Build parse tree
+		// Build syntax tree
 		Parser p = new Parser(ts);
-		Node parseTree = p.parse(true);
-		if (parseTree == null) {
+		Node syntaxTree = p.parse(true);
+		if (syntaxTree == null) {
 			return;
 		}
 		
 		// Run backend into appropriate language
-		Translator tr = new Translator(parseTree);
+		Translator tr = new Translator(syntaxTree);
 		String output = tr.toPython();
 		System.out.println("\n\nGenerated code: \n\n\n" + output);
 		
-		Assembler a = new Assembler(parseTree, st);
+		Assembler a = new Assembler(syntaxTree, st);
 		output = a.assemble();
 		System.out.println("\n\nGenerated assembly code: \n\n\n" + output);
 	}

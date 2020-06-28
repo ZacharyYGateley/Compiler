@@ -1,5 +1,9 @@
 Output to assembly
 Oops, order of operations isn't working
+Can make firstTerminalsAndPatterns and follow do the work of the NonTerminal constructor?
+Make Token prettier :'-(
+Should be able to pass EXPR as argument
+TokenStream.peek should return EOF if no tokens, not EMPTY
 
 boolean operators (&& || !)
 Combine backend functions into NonTerminal rule declarations? if possible and is clean

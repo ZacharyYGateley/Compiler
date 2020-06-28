@@ -4,13 +4,13 @@ import java.util.*;
 
 public class Translator {
 	private StringBuilder sb;
-	private Node parseTree;
+	private Node syntaxTree;
 	private int currentIndent;
 	private boolean newLine;
 	
-	public Translator(Node parseTree) {
+	public Translator(Node syntaxTree) {
 		this.sb = new StringBuilder();
-		this.parseTree = parseTree;
+		this.syntaxTree = syntaxTree;
 	}
 	
 	/**
@@ -18,18 +18,18 @@ public class Translator {
 	 * @return compiled code
 	 */
 	public String toPython() {
-		// Restart string builder if some parse method has already been called
+		// Restart string builder if translator has already been called
 		sb.setLength(0);
 		currentIndent = 0;
-		__pythonParseNode__(parseTree);
+		__pythonTranslateNode__(syntaxTree);
 		return sb.toString();
 	}
-	private void __pythonParseList__(ArrayList<Node> parseTrees) {
-		for (Node pn : parseTrees) {
-			__pythonParseNode__(pn);
+	private void __pythonCrawlList__(ArrayList<Node> syntaxNodes) {
+		for (Node pn : syntaxNodes) {
+			__pythonTranslateNode__(pn);
 		}
 	}
-	private void __pythonParseNode__(Node pn) {
+	private void __pythonTranslateNode__(Node pn) {
 		ArrayList<Node> params = pn.getParam();
 		
 		// Try NonTerminal
@@ -41,11 +41,11 @@ public class Translator {
 				endLine();
 				add("def ");
 				for (int i = 0; i < params.size() - 1; i++) {
-					__pythonParseNode__(params.get(i));
+					__pythonTranslateNode__(params.get(i));
 				}
 				addLine(":");
 				currentIndent++;
-				__pythonParseNode__(params.get(params.size()-1));
+				__pythonTranslateNode__(params.get(params.size()-1));
 				currentIndent--;
 				endLine();
 				break;
@@ -53,10 +53,10 @@ public class Translator {
 				endLine();
 				add("if");
 				// Expression
-				__pythonParseNode__(params.get(2));
+				__pythonTranslateNode__(params.get(2));
 				addLine(":");
 				currentIndent++;
-				__pythonParseNode__(params.get(4));
+				__pythonTranslateNode__(params.get(4));
 				currentIndent--;
 				endLine();
 				break;
@@ -70,10 +70,10 @@ public class Translator {
 					endLine();
 					currentIndent--;
 					add("elif");
-					__pythonParseNode__(params.get(2));
+					__pythonTranslateNode__(params.get(2));
 					addLine(":");
 					currentIndent++;
-					__pythonParseNode__(params.get(4));
+					__pythonTranslateNode__(params.get(4));
 				}
 				else if (firstChild.getToken() == Terminal.ELSE) {
 					// Else condition exists
@@ -81,38 +81,38 @@ public class Translator {
 					currentIndent--;
 					addLine("else:");
 					currentIndent++;
-					__pythonParseNode__(params.get(1));
+					__pythonTranslateNode__(params.get(1));
 				}
 				break;
 			case _BLOCK_:
 				endLine();
 				addLine("if True:");
 				currentIndent++;
-				__pythonParseList__(params);
+				__pythonCrawlList__(params);
 				currentIndent--;
 				endLine();
 				break;
 			case _STMT_:
-				__pythonParseList__(params);
+				__pythonCrawlList__(params);
 				endLine();
 				break;
 			case _ECHO_:
 				// Expressions all enclosed in parentheses,
 				// So no need to place them here
 				add("print");
-				__pythonParseList__(params);
+				__pythonCrawlList__(params);
 				break;
 			case _INPUT_:
-				__pythonParseNode__(params.get(1));
+				__pythonTranslateNode__(params.get(1));
 				add(" = input() ");
 				break;
 			case _EXPR_:
 				add(" (");
-				__pythonParseList__(params);
+				__pythonCrawlList__(params);
 				add(") ");
 				break;
 			default:
-				__pythonParseList__(params);
+				__pythonCrawlList__(params);
 				break;
 			}
 			return;
