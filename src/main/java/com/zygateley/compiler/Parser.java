@@ -121,7 +121,7 @@ public class Parser {
 		depth = 0;
 		
 		if (verbose) {
-			System.out.println("<!-- New parser started -->\n");
+			System.out.println("<!-- Parsing initiated -->\n");
 		}
 		
 		// Top-level of syntaxTree should only contain first rule
@@ -129,7 +129,7 @@ public class Parser {
 		Node syntaxTree = parseRule(firstRule, tokenStream.length());
 				
 		if (verbose) {
-			System.out.println("\n<!-- New parser finished -->\n");
+			System.out.println("\n<!-- Parsing finished -->\n");
 		}
 		
 		return syntaxTree;
@@ -292,7 +292,6 @@ public class Parser {
 		tokenStream.setLeft(startPosition);
 		// endPosition is exclusive, but so is tokenStream's rightPosition
 		tokenStream.setRightExclusive(endPosition);
-		System.out.println(tokenStream);
 
 		// Look for a split token within the bounds of the stream 
 		// If there is no match, reset the stream and send it to the next rule
@@ -381,10 +380,11 @@ public class Parser {
 		
 		
 		final Terminal splitToken = Terminal.getTerminal(splitTokenValue);
-		System.out.println(rule + ": ");
-		System.out.println("\t" + (haveMatch ? "HAVE MATCH: " + splitToken : "NO MATCH"));
-		//System.out.println("\tstart, partition, end (" + direction + ")");
-		System.out.println(String.format("\t%d, %d, %d\n", startPosition, partition, endPosition));
+		if (verbose) { 
+			System.out.println(rule + ": (" + (haveMatch ? "match: " + splitToken : "no match") + ")");
+			System.out.println("\tstart, partition, end (" + direction + ")");
+			System.out.println(String.format("\t%d, %d, %d\n", startPosition, partition, endPosition));
+		}
 
 		// For any passing to subrules, 
 		// exclude the split token
@@ -400,7 +400,6 @@ public class Parser {
 		if (startPosition < partition + leftOffset) {
 			// And get parse rule
 			NonTerminal leftRule = NonTerminal.getNonTerminal(rule.precedencePattern.leftRule);
-			System.out.println("--> left (" + leftRule + ")");
 			
 			// Get new childNode from left-hand string
 			if (leftRule.isPrecedenceRule()) {
@@ -446,7 +445,6 @@ public class Parser {
 		if (partition + rightOffset < endPosition) {
 			// Get parse rule
 			NonTerminal rightRule = NonTerminal.getNonTerminal(rule.precedencePattern.rightRule);
-			System.out.println("--> right (" + rightRule + ")");
 			
 			// Get new childNode from left-hand string
 			if (rightRule.isPrecedenceRule()) {
@@ -489,9 +487,6 @@ public class Parser {
 		// Merge operands appropriately
 		NonTerminal wrappingClass = NonTerminal.getNonTerminal(rule.precedencePattern.nonTerminalWrapper);
 		wrapper = mergeOperands(leftOperand, rightOperand, wrappingClass, splitToken);
-
-		
-		System.out.println(wrapper);
 		
 		wrapper.setNegated(item.negated);
 		return wrapper;
@@ -632,7 +627,7 @@ public class Parser {
 
 		// Finished parsing this precedence non-terminal
 		if (verbose) {
-			System.out.println("\n...Ambigous stream --> Non-precedence stream...\n");
+			System.out.println("\n...Precedence stream --> Non-precedence stream...\n");
 		}
 		
 		return syntaxTree;
