@@ -32,6 +32,10 @@ public class Translator {
 	private void __pythonTranslateNode__(Node pn) {
 		ArrayList<Node> params = pn.getParam();
 		
+		if (pn.isNegated()) {
+			add("(-");
+		}
+		
 		// Try NonTerminal
 		NonTerminal nt = pn.getRule();
 		Node firstChild;
@@ -122,23 +126,28 @@ public class Translator {
 				__pythonCrawlList__(params);
 				break;
 			}
-			return;
+		}
+		// Try Terminal
+		else {
+			Terminal t = pn.getToken();
+			switch (t) {
+			case INT:
+				String value = pn.getValue();
+				add(value);
+				break;
+			case STRING:
+				add(pn.getSymbol().getValue());
+				break;
+			case VAR:
+				add(pn.getSymbol().getName());
+			default:
+				addTerminal(t);
+				break;
+			}
 		}
 		
-		// Try Terminal
-		Terminal t = pn.getToken();
-		switch (t) {
-		case INT:
-			add(pn.getValue());
-			break;
-		case STRING:
-			add(pn.getSymbol().getValue());
-			break;
-		case VAR:
-			add(pn.getSymbol().getName());
-		default:
-			addTerminal(t);
-			break;
+		if (pn.isNegated()) {
+			add(")");
 		}
 		
 		return;

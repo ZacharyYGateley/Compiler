@@ -4,7 +4,8 @@ import java.util.*;
 
 
 class StreamItem {
-	public final Terminal token;
+	// Allow parser to change token for negation
+	public Terminal token;
 	public final Symbol symbol;
 	public final String value;
 	// If this token represents a group (paren, curly, square)
@@ -12,25 +13,22 @@ class StreamItem {
 	// 		from open StreamItem to close INDEX
 	// 		from close StreamItem to open INDEX
 	// Only when you have to, see Parser::toPrecedenceStream
-	public int closeGroup;
-	public int openGroup;
+	public int closeGroup = -1;
+	public int openGroup = -1;
 	// During parsing, Store pointer to syntaxTree here if group
-	public Node syntaxTree;
+	public Node syntaxTree = null;
+	public boolean negated = false;
 	public static final StreamItem EMPTY = new StreamItem(Terminal.EMPTY);
 	
 	public StreamItem(Terminal token) {
 		this.token = token;
 		this.symbol = null;
 		this.value = null;
-		this.openGroup = -1;
-		this.closeGroup = -1;
 	}
 	public StreamItem(Terminal token, Symbol symbol, String value) {
 		this.token = token;
 		this.symbol = symbol;
 		this.value = value;
-		this.openGroup = -1;
-		this.closeGroup = -1;
 	}
 	
 	@Override
@@ -41,6 +39,10 @@ class StreamItem {
 		String positionString = "";
 		if (position > -1) {
 			positionString = " (" + position + ")\t";
+		}
+		String negationString = "";
+		if (this.negated) {
+			negationString = " (NEGATED)";
 		}
 		String symbolString = "";
 		if (this.symbol != null) {
@@ -58,7 +60,7 @@ class StreamItem {
 		if (this.syntaxTree != null) {
 			syntaxString = "\n\tHas syntax tree";
 		}
-		return "Token:" + positionString + this.token + 
+		return "Token:" + positionString + this.token + negationString + 
 				symbolString + valueString + groupString + syntaxString;
 	}
 }

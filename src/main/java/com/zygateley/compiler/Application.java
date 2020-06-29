@@ -24,7 +24,8 @@ public class Application {
 	public static void main(String[] args) throws Exception {
 		// TESTING
 		String myString =
-				"echo ((33 + (22 + (11 * 25) - 11 / 3)) * 2 - 1);"
+				//"echo -(-(-1)-2);"
+				"echo -((33 + -(-22 + (11 * 25) - 11 / 3)) * 2 - -1);"
 				//"echo a*(b*c)*f-d*e;\n"
 				//"echo a + b;"
 				//"echo a*(b*c);"

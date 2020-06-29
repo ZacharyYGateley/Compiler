@@ -11,6 +11,7 @@ class Node implements Iterable<Node> {
 	private Terminal token;
 	private Symbol symbol;
 	private String value;
+	private boolean negated = false;
 	private ArrayList<Node> param;
 	// Keep one copy of an empty parameter list
 	// Point to it on empty parameter list to limit memory usage
@@ -86,6 +87,13 @@ class Node implements Iterable<Node> {
 		if (this.token == null) {
 			this.token = token;
 		}
+	}
+	
+	public boolean isNegated() {
+		return this.negated;
+	}
+	public void setNegated(boolean negated) {
+		this.negated = negated;
 	}
 	
 	@Override
@@ -286,6 +294,7 @@ public class Parser {
 		tokenStream.setLeft(startPosition);
 		// endPosition is exclusive, but so is tokenStream's rightPosition
 		tokenStream.setRightExclusive(endPosition);
+		System.out.println(tokenStream);
 
 		// Look for a split token within the bounds of the stream 
 		// If there is no match, reset the stream and send it to the next rule
@@ -302,60 +311,52 @@ public class Parser {
 		boolean leftToRight = (direction == Token.Direction.LEFT_TO_RIGHT);
 		StreamItem item = null;
 		int itemCount = 0;
-/*
-		if (leftToRight) {
-			// Left to right
-			partition = endPosition;
-			while (tokenStream.getLeft() < endPosition) {
-				StreamItem item = tokenStream.popLeft();
-				splitTokenValue = findSplit(splitAt, item.token.tokenValue);
-				if (splitTokenValue > -1) {
-					partition = tokenStream.getLeft() - 1;
-					break;
-				}
+		boolean leftmostIsEmpty = false;
+
+		// Right to left
+		partition = startPosition;		// If no match
+		while (tokenStream.getRightExclusive() > startPosition) {
+			// Get token at next location
+			StreamItem nextItem = tokenStream.popRight();
+			
+			// Skip empty
+			if (nextItem.token == Terminal.EMPTY) {
+				leftmostIsEmpty = true;
+				continue;
 			}
-			// Reset stream to initial state
-			tokenStream.setLeft(startPosition);
-		}
-		else {
-*/
-			// Right to left
-			partition = startPosition;		// If no match
-			while (tokenStream.getRightExclusive() > startPosition) {
-				// Get token at next location
-				item = tokenStream.popRight();
-				itemCount++;
-				
-				// If this is an embedded group,
-				// Recur then skip group
-				if (item.openGroup > -1) {
-					if (item.syntaxTree == null) {
-						// Recur to get parse tree
-						// And set as these stream items' parse trees 
-						Node embeddedTree = parseAmbiguousRule(rule, item.openGroup + 1, item.closeGroup);
-						StreamItem opener = tokenStream.get(item.openGroup);
-						opener.syntaxTree = item.syntaxTree = embeddedTree;
-						tokenStream.setLeft(startPosition);
-					}
-					// Skip group
-					tokenStream.setRightExclusive(item.openGroup);
-					continue;
+			leftmostIsEmpty = false;
+			
+			item = nextItem;
+			itemCount++;
+			
+			// If this is an embedded group,
+			// Recur then skip group
+			if (item.openGroup > -1) {
+				if (item.syntaxTree == null) {
+					// Recur to get parse tree
+					// And set as these stream items' parse trees 
+					Node embeddedTree = parseAmbiguousRule(rule, item.openGroup + 1, item.closeGroup);
+					StreamItem opener = tokenStream.get(item.openGroup);
+					opener.syntaxTree = item.syntaxTree = embeddedTree;
+					// Since we are passing a parse tree
+					// from one StreamItem to another,
+					// Need to apply this negation to any previous negation (XOR)
+					embeddedTree.setNegated(opener.negated ^ embeddedTree.isNegated());
+					tokenStream.setLeft(startPosition);
 				}
-				
-				splitTokenValue = findSplit(splitAt, item.token.tokenValue);
-				if (splitTokenValue > -1) {
-					partition = tokenStream.getRightExclusive();
-					break;
-				}
-				else if (item.openGroup > -1) {
-					
-				}
+				// Skip group
+				tokenStream.setRightExclusive(item.openGroup);
+				continue;
 			}
-			// Reset stream to initial state
-			tokenStream.setRightExclusive(endPosition);
-/*
+			
+			splitTokenValue = findSplit(splitAt, item.token.tokenValue);
+			if (splitTokenValue > -1) {
+				partition = tokenStream.getRightExclusive();
+				break;
+			}
 		}
-*/
+		// Reset stream to initial state
+		tokenStream.setRightExclusive(endPosition);
 
 		boolean haveMatch = (splitTokenValue > -1);
 		
@@ -368,6 +369,16 @@ public class Parser {
 		);
 		if (onlyEmbeddedParseTree) {
 			return item.syntaxTree;
+		}
+		
+		// Do not parse empty, placed there by negator in toAmbiguousStream 
+		if (leftmostIsEmpty) {
+			// Skip empty
+			if (partition == startPosition) {
+				partition++;
+			}
+			startPosition++;
+			tokenStream.setLeft(startPosition);
 		}
 		
 		
@@ -410,6 +421,7 @@ public class Parser {
 				// This operand is a __VALUE__
 			}
 			
+			
 			// No match means 
 			// we are passing an operand back upwards
 			//		i.e. Had to work down operator precedence
@@ -417,6 +429,8 @@ public class Parser {
 			//			 Its result has been passed
 			//			 back up to here. Keep passing it.
 			if (!haveMatch) {
+				// Set negated as necessary
+				leftOperand.setNegated(item.negated);
 				return leftOperand;
 			}
 			// Otherwise, we have a match.
@@ -453,6 +467,7 @@ public class Parser {
 				// This operand is a __VALUE__
 			}
 			
+			
 			// No match means 
 			// we are passing an operand back upwards
 			//		i.e. Had to work down operator precedence
@@ -460,16 +475,19 @@ public class Parser {
 			//			 Its result has been passed
 			//			 back up to here. Keep passing it.
 			if (!haveMatch) {
+				// Set negated as necessary
+				rightOperand.setNegated(item.negated);
 				return rightOperand;
 			}
 			// Otherwise, we have a match.
 			// This *node* is a wrapper for Token.AmbiguousPattern NonTerminals
 		}
+
+		// MATCH!
+		// We have found something by this rule
 		
 		Node wrapper = null;
 		
-		// MATCH!
-		// We have found something by this rule
 		// Merge operands appropriately
 		NonTerminal wrappingClass = NonTerminal.getNonTerminal(rule.ambiguousPattern.nonTerminalWrapper);
 		wrapper = mergeOperands(leftOperand, rightOperand, wrappingClass, splitToken);
@@ -477,6 +495,7 @@ public class Parser {
 		
 		System.out.println(wrapper);
 		
+		wrapper.setNegated(item.negated);
 		return wrapper;
 	}
 	
@@ -514,6 +533,7 @@ public class Parser {
 		// 	(by parent.FOLLOW.contains)
 		//  (and by balanced parentheses, curly, square brackets)
 		// Concurrently, link matching open/close parens, curlies, squares
+		// Concurrently, indicate all negations
 		int startPos = this.tokenStream.getLeft();
 		int endPos = startPos;
 		ArrayDeque<StreamItem> parenStack = new ArrayDeque<>();
@@ -523,44 +543,75 @@ public class Parser {
 		boolean inFollow = false;
 		boolean isBalanced = true;
 		int leftPosition = startPos - 1;
+		Terminal thisToken = null, lastToken = null;
+		boolean thisIsSign = false, thisIsOperator = false, thisIsOpenParen = false;
+		boolean lastIsSign = false, lastIsOperator = false, lastIsOpenParen = false;
+		boolean lastIsBOF = true;
 		while (++leftPosition < endPosition) {
+			// Remember last token
+			lastToken = thisToken;
+			lastIsSign = thisIsSign;
+			lastIsOperator = thisIsOperator;
+			lastIsOpenParen = thisIsOpenParen;
+			
 			// Consume stream
-			StreamItem nextItem = tokenStream.popLeft();
-			inFollow = parentRule.inFollow(nextItem.token);
+			StreamItem item = tokenStream.popLeft();
+			inFollow = parentRule.inFollow(item.token);
 			isBalanced = (openGroups == 0);
 			if (inFollow && isBalanced) {
 				break;
 			}
 			
+			thisToken = item.token;
+			
 			// Find balance
-			switch (nextItem.token) {
+			switch (thisToken) {
 			case PAREN_OPEN:
-				markOpenGroup(parenStack, nextItem, leftPosition);
+				markOpenGroup(parenStack, item, leftPosition);
 				openGroups++;
 				break;
 			case PAREN_CLOSE:
-				markCloseGroup(parenStack, nextItem, leftPosition);
+				markCloseGroup(parenStack, item, leftPosition);
 				openGroups--;
 				break;
 			case CURLY_OPEN:
-				markOpenGroup(curlyStack, nextItem, leftPosition);
+				markOpenGroup(curlyStack, item, leftPosition);
 				openGroups++;
 				break;
 			case CURLY_CLOSE:
-				markCloseGroup(curlyStack, nextItem, leftPosition);
+				markCloseGroup(curlyStack, item, leftPosition);
 				openGroups--;
 				break;
 			case SQUARE_OPEN:
-				markOpenGroup(squareStack, nextItem, leftPosition);
+				markOpenGroup(squareStack, item, leftPosition);
 				openGroups++;
 				break;
 			case SQUARE_CLOSE:
-				markCloseGroup(squareStack, nextItem, leftPosition);
+				markCloseGroup(squareStack, item, leftPosition);
 				openGroups--;
 				break;
 			default:
 				break;
 			}
+			
+			// Find negations
+			//	1) any +/- operators preceded by an operator
+			//	2) any open paren preceded by +/-
+			thisIsSign = Token.isSign(thisToken.tokenValue);
+			thisIsOperator = Token.isOperator(thisToken.tokenValue);
+			thisIsOpenParen = (thisToken == Terminal.PAREN_OPEN);
+			if (thisIsSign && (lastIsOperator || lastIsOpenParen || lastIsBOF)) {
+				// Set operand to negated
+				StreamItem nextItem = tokenStream.peekLeft();
+				nextItem.negated = (thisToken == Terminal.MINUS);
+				// Clear this token from stream
+				item.token = Terminal.EMPTY;
+			}
+			else if (thisIsOpenParen && lastIsSign) {
+				item.negated = (lastToken == Terminal.MINUS);
+				lastToken = Terminal.EMPTY;
+			}
+			lastIsBOF = false;
 		}
 
 		// Store result and reset stream pointers
@@ -583,7 +634,6 @@ public class Parser {
 		
 		// And parse using the ambiguous rule until the determined end position
 		Node syntaxTree = this.parseAmbiguousRule(ambiguousRule, startPos, endPos);
-		syntaxTree = cleanAmbiguousTree(syntaxTree);
 		
 		// Reset stream parameters after already-parsed stream
 		// Set to before FOLLOW token so that parent NonTerminal knows that it is done.
@@ -613,6 +663,7 @@ public class Parser {
 		openItem.closeGroup = position;
 	}
 	
+	/*
 	private Node cleanAmbiguousTree(Node topNode) {
 		Node syntaxTree = topNode;
 		
@@ -630,91 +681,22 @@ public class Parser {
 		
 		return syntaxTree;
 	}
+	*/
 	
 	private Node mergeOperands(Node leftOperand, Node rightOperand, NonTerminal wrappingClass, Terminal splitToken) {
-		Node wrapper = null;
-		
-		// If either of the children are missing 
-		// one single child, combine add this additional
-		// operand as the missing operand
-		
-		// Left
+		// Do not combine fully empty
 		boolean leftIsNull = (leftOperand == null);
-		boolean leftIsWrappingClass = (!leftIsNull && Token.isWrappingClass(leftOperand.getRule().tokenValue));
-		ArrayList<Node> leftParam = (!leftIsNull ? leftOperand.getParam() : null);
-
-		// Right
 		boolean rightIsNull = (rightOperand == null);
-		boolean rightIsWrappingClass = (!rightIsNull && Token.isWrappingClass(rightOperand.getRule().tokenValue));
-		ArrayList<Node> rightParam = (!rightIsNull ? rightOperand.getParam() : null);
-		
-		// Possible situations:
-		//		Left Wrapping?		Right Wrapping?			Action
-		//			yes					yes		 			Wrap
-		//			no					yes					Wrap
-		//			yes					no					Wrap
-		//			no					no					Wrap
-		//			null				no					Wrap
-		//			no					null				Wrap
-		//			yes					null				Pass 1 back up the stream
-		//			null				yes					Pass 2 back up the call stack
-		//			null				null				null
-		
-		boolean doWrap = false;
-		doWrap = true;
-		/*
-		// Both are null
-		if (rightIsNull && leftIsNull) {
+		if (leftIsNull && rightIsNull) {
 			return null;
 		}
-		// Both are non-null
-		else if (!rightIsNull && !leftIsNull) {
-			// Merge the trees
-			// If one is a wrapping class (binary) with an empty child
-/////
-// 
-			if (rightIsWrappingClass) {
-				// Right has an empty binary child
-				// merge left into that spot
-				wrapper = rightOperand;
-				if (rightParam.get(0) == null) {
-					rightParam.set(0, leftOperand);
-				}
-				else {
-					rightParam.set(1, leftOperand);
-				}
-			}
-			else if (leftIsWrappingClass && (leftParam.get(0) == null || leftParam.get(1) == null)) {
-				// Left has an empty binary child
-				// merge right into that spot
-				wrapper = leftOperand;
-				if (leftParam.get(0) == null) {
-					leftParam.set(0,  rightOperand);
-				}
-				else {
-					leftParam.set(1,  rightOperand);
-				}
-			}
-			// Do normal wrapper
-			// Otherwise
-			else {
-				doWrap = true;
-			}
-		}
-		// One is null, one is not
-		// If no wrapping class appears, wrap
-		else if (!rightIsWrappingClass || !leftIsWrappingClass) {
-			doWrap = true;
-		}
-		*/
+		
 		// If both children have appropriate child nodes
 		// Create a new wrapper Node (NonTerminal.AmbiguousPattern.nonTerminalWrapper)
-		if (doWrap) {
-			wrapper = new Node(wrappingClass);
-			wrapper.setToken(splitToken);
-			wrapper.addParam(leftOperand);
-			wrapper.addParam(rightOperand);
-		}
+		Node wrapper = new Node(wrappingClass);
+		wrapper.setToken(splitToken);
+		wrapper.addParam(leftOperand);
+		wrapper.addParam(rightOperand);
 		
 		return wrapper;
 	}

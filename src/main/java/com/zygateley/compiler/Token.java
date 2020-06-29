@@ -73,9 +73,11 @@ public interface Token {
 		// Statement FIRST set
 		ECHO = 			id.next(),
 		INPUT = 		id.next(),
-		VAR = 			id.next(),
-
-		// Operator set
+		VAR = 			id.next();
+	
+	// Operator set
+	public final static int firstOperator = id.id;
+	public final static int
 		PLUS = 			id.next(),
 		MINUS = 		id.next(),
 		ASTERISK = 		id.next(),
@@ -85,8 +87,10 @@ public interface Token {
 		GTEQ = 			id.next(),
 		LT = 			id.next(),
 		GT = 			id.next(),
-		EQEQ = 			id.next(),
-		
+		EQEQ = 			id.next();
+	public final static int lastOperator = id.id - 1;
+	
+	public final static int
 		EOF = 			id.next();
 	
 	// All Terminals have id < partition
@@ -218,6 +222,12 @@ public interface Token {
 	}
 	public static boolean isWrappingClass(int tokenValue) {
 		return tokenValue >= firstWrappingClass;
+	}
+	public static boolean isSign(int tokenValue) {
+		return tokenValue == PLUS || tokenValue == MINUS;
+	}
+	public static boolean isOperator(int tokenValue) {
+		return tokenValue >= firstOperator && tokenValue <= lastOperator;
 	}
 }
 
