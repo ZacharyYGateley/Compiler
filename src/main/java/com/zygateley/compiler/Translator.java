@@ -2,50 +2,54 @@ package com.zygateley.compiler;
 
 import java.util.*;
 
-public class Backend {
+public class Translator {
 	private StringBuilder sb;
-	private ParseNode parseTree;
+	private Node syntaxTree;
 	private int currentIndent;
 	private boolean newLine;
 	
-	public Backend(ParseNode parseTree) {
+	public Translator(Node syntaxTree) {
 		this.sb = new StringBuilder();
-		this.parseTree = parseTree;
+		this.syntaxTree = syntaxTree;
 	}
 	
 	/**
 	 * "Compile" code into Python 
 	 * @return compiled code
 	 */
-	public String python() {
-		// Restart string builder if some parse method has already been called
+	public String toPython() {
+		// Restart string builder if translator has already been called
 		sb.setLength(0);
 		currentIndent = 0;
-		__pythonParseNode__(parseTree);
+		__pythonTranslateNode__(syntaxTree);
 		return sb.toString();
 	}
-	private void __pythonParseList__(ArrayList<ParseNode> parseTrees) {
-		for (ParseNode pn : parseTrees) {
-			__pythonParseNode__(pn);
+	private void __pythonCrawlList__(ArrayList<Node> syntaxNodes) {
+		for (Node pn : syntaxNodes) {
+			__pythonTranslateNode__(pn);
 		}
 	}
-	private void __pythonParseNode__(ParseNode pn) {
-		ArrayList<ParseNode> params = pn.getParam();
+	private void __pythonTranslateNode__(Node pn) {
+		ArrayList<Node> params = pn.getParam();
+		
+		if (pn.isNegated()) {
+			add("(-");
+		}
 		
 		// Try NonTerminal
 		NonTerminal nt = pn.getRule();
-		ParseNode firstChild;
+		Node firstChild;
 		if (nt != null) {
 			switch (nt) {
 			case _FUNCDEF_:
 				endLine();
 				add("def ");
 				for (int i = 0; i < params.size() - 1; i++) {
-					__pythonParseNode__(params.get(i));
+					__pythonTranslateNode__(params.get(i));
 				}
 				addLine(":");
 				currentIndent++;
-				__pythonParseNode__(params.get(params.size()-1));
+				__pythonTranslateNode__(params.get(params.size()-1));
 				currentIndent--;
 				endLine();
 				break;
@@ -53,10 +57,10 @@ public class Backend {
 				endLine();
 				add("if");
 				// Expression
-				__pythonParseNode__(params.get(2));
+				__pythonTranslateNode__(params.get(2));
 				addLine(":");
 				currentIndent++;
-				__pythonParseNode__(params.get(4));
+				__pythonTranslateNode__(params.get(4));
 				currentIndent--;
 				endLine();
 				break;
@@ -70,10 +74,10 @@ public class Backend {
 					endLine();
 					currentIndent--;
 					add("elif");
-					__pythonParseNode__(params.get(2));
+					__pythonTranslateNode__(params.get(2));
 					addLine(":");
 					currentIndent++;
-					__pythonParseNode__(params.get(4));
+					__pythonTranslateNode__(params.get(4));
 				}
 				else if (firstChild.getToken() == Terminal.ELSE) {
 					// Else condition exists
@@ -81,46 +85,87 @@ public class Backend {
 					currentIndent--;
 					addLine("else:");
 					currentIndent++;
-					__pythonParseNode__(params.get(1));
+					__pythonTranslateNode__(params.get(1));
 				}
 				break;
 			case _BLOCK_:
 				endLine();
 				addLine("if True:");
 				currentIndent++;
-				__pythonParseList__(params);
+				__pythonCrawlList__(params);
 				currentIndent--;
 				endLine();
 				break;
 			case _STMT_:
-				__pythonParseList__(params);
+				__pythonCrawlList__(params);
 				endLine();
 				break;
 			case _ECHO_:
 				// Expressions all enclosed in parentheses,
 				// So no need to place them here
-				add("print");
-				__pythonParseList__(params);
+				add("print (");
+				__pythonCrawlList__(params);
+				addLine(")");
 				break;
-			case _EXPR_:
-				add(" (");
-				__pythonParseList__(params);
-				add(") ");
+			case _INPUT_:
+				__pythonTranslateNode__(params.get(1));
+				add(" = input() ");
+				break;
+			case __OP__:
+				add("(");
+				__pythonTranslateNode__(params.get(0));
+				add(" ");
+				addTerminal(pn.getToken());
+				add(" ");
+				__pythonTranslateNode__(params.get(1));
+				add(")");
 				break;
 			default:
-				__pythonParseList__(params);
+				__pythonCrawlList__(params);
 				break;
 			}
-			return;
+		}
+		// Try Terminal
+		else {
+			Terminal t = pn.getToken();
+			switch (t) {
+			case INT:
+				String value = pn.getValue();
+				add(value);
+				break;
+			case STRING:
+				add(pn.getSymbol().getValue());
+				break;
+			case VAR:
+				add(pn.getSymbol().getName());
+			default:
+				addTerminal(t);
+				break;
+			}
 		}
 		
+		if (pn.isNegated()) {
+			add(")");
+		}
+		
+		return;
+	}
+	
+	private void add(String output) {
+		if (newLine) {
+			sb.append("    ".repeat(currentIndent));
+			newLine = false;
+		}
+		sb.append(output);
+	}
+	private void addTerminal(Terminal t) {
 		// Try Terminal
-		Terminal t = pn.getToken();
 		switch (t) {
 		case FUNCTION:
 		case ECHO:
 		case CURLY_OPEN:
 		case CURLY_CLOSE:
+		case SEMICOLON:
 		case EMPTY:
 		case EOF:
 			// These handled by their wrapping NonTerminals
@@ -130,11 +175,6 @@ public class Backend {
 			break;
 		case FALSE:
 			add("False");
-			break;
-		case VAR:
-		case INT:
-		case STRING:
-			add(pn.getSymbol().name);
 			break;
 		case EQ:
 			add(" =");
@@ -149,19 +189,9 @@ public class Backend {
 			add(", ");
 			break;
 		default:
-			add(" " + pn.getToken().exactString);
+			add(t.exactString);
 			break;
 		}
-		
-		return;
-	}
-	
-	private void add(String output) {
-		if (newLine) {
-			sb.append("    ".repeat(currentIndent));
-			newLine = false;
-		}
-		sb.append(output);
 	}
 	private void addLine(String output) {
 		add(output);
