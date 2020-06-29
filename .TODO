@@ -1,5 +1,6 @@
+Ambiguous -> Precedence
+
 Output to assembly
-Oops, order of operations isn't working
 Can make firstTerminalsAndPatterns and follow do the work of the NonTerminal constructor?
 Make Token prettier :'-(
 Should be able to pass EXPR as argument

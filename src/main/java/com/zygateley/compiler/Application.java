@@ -21,20 +21,32 @@ public class Application {
 	 * @param args un-compiled file
 	 * @throws IOException 
 	 */
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		// TESTING
-		PushbackReader sr = new PushbackReader(new StringReader(
-				/*"function printIt (g, m) {echo g;\n" 
-				+ "echo m;}"
+		String myString =
+				"echo ((33 + (22 + (11 * 25) - 11 / 3)) * 2 - 1);"
+				//"echo a*(b*c)*f-d*e;\n"
+				//"echo a + b;"
+				//"echo a*(b*c);"
+				/*
+				"function crazyMath (a, b, c, d, e) {" 
+				+ "echo a * (b * c) - d * e;\n" 
+				+ "}"
 				+ "input abc;\n"
 				+ "rob = 3;\n"
-				+ "if (abc > rob) { printIt(\"abc is bigger than rob\", \"You filthy animal\"); }"
-				+ "elseif (abc == rob) { printIt(\"abc is equal to rob\", \"!\"); }"
-				+ "else printIt(\"abc is less than rob\", \"And don't you forget it\");"
+				+ "if (abc > rob) { echo \"abc is bigger than rob\"; }"
+				+ "elseif (abc == rob) { echo \"abc is equal to rob\"; }"
+				+ "else echo \"abc is less than rob\";"
+				+ "crazyMath(1, 2, 3, 4, 5);"
 				*/
-				//"if (false) {abc = 5; df = 5; echo abc + df * 6;}elseif ( 2 == 4) b = 2; else{echo \"My goodness\";}" // echo \"The man with the plan is yo mamma\"; {echo true;}"
-				"a=(3*2)+4*5;"
+				//"if (false) {abc = 5 * 2 + 6; df = 5; echo abc + df * 6;}elseif ( 2 == 4) b = 2; else{echo \"My goodness\";}" // echo \"The man with the plan is yo mamma\"; {echo true;}"
+				//"a=3*2+4*5;"
+				;
+		PushbackReader sr = new PushbackReader(new StringReader(
+				myString
 				));
+		System.out.println("Original code: \n");
+		System.out.println(myString + "\n\n");
 		
 		// Objects passed to Parser
 		SymbolTable st = new SymbolTable();

@@ -7,24 +7,59 @@ class StreamItem {
 	public final Terminal token;
 	public final Symbol symbol;
 	public final String value;
+	// If this token represents a group (paren, curly, square)
+	// Pointers
+	// 		from open StreamItem to close INDEX
+	// 		from close StreamItem to open INDEX
+	// Only when you have to, see Parser::toPrecedenceStream
+	public int closeGroup;
+	public int openGroup;
+	// During parsing, Store pointer to syntaxTree here if group
+	public Node syntaxTree;
 	public static final StreamItem EMPTY = new StreamItem(Terminal.EMPTY);
 	
 	public StreamItem(Terminal token) {
 		this.token = token;
 		this.symbol = null;
 		this.value = null;
+		this.openGroup = -1;
+		this.closeGroup = -1;
 	}
 	public StreamItem(Terminal token, Symbol symbol, String value) {
 		this.token = token;
 		this.symbol = symbol;
 		this.value = value;
+		this.openGroup = -1;
+		this.closeGroup = -1;
 	}
 	
 	@Override
 	public String toString() {
-		return "Token: " + this.token + 
-				(this.symbol != null ? "\n\tSymbol: " + this.symbol : "") + 
-				(this.value != null ? "\n\tValue: " + this.value : ""); 
+		return this.toString(-1);
+	}
+	public String toString(int position) {
+		String positionString = "";
+		if (position > -1) {
+			positionString = " (" + position + ")\t";
+		}
+		String symbolString = "";
+		if (this.symbol != null) {
+			symbolString = "\n\tSymbol: " + (this.symbol.getName() != null ? this.symbol.getName() : this.symbol.getValue());
+		}
+		String valueString = "";
+		if (this.value != null) {
+			valueString = "\n\tValue: " + this.value;
+		}
+		String groupString = "";
+		if (this.openGroup > 0) {
+			groupString = "\n\tGroup: [" + this.openGroup + ", " + this.closeGroup + "]";
+		}
+		String syntaxString = "";
+		if (this.syntaxTree != null) {
+			syntaxString = "\n\tHas syntax tree";
+		}
+		return "Token:" + positionString + this.token + 
+				symbolString + valueString + groupString + syntaxString;
 	}
 }
 
@@ -37,57 +72,81 @@ class StreamItem {
 public class TokenStream {
 	
 	private ArrayList<StreamItem> tokens;
-	private int len;
-	private int pos = 0;
+	private int rightPositionExclusive;
+	private int leftPosition; 
 	 
 	public TokenStream() {
 		this.tokens = new ArrayList<StreamItem>();
-		this.len = 0;
-		this.pos = 0;
+		this.rightPositionExclusive = 0;
+		this.leftPosition = 0;
 	}
 	public TokenStream(ArrayList<StreamItem> tokens) {
 		this.tokens = tokens;
-	    this.len = tokens.size();
-	    this.pos = 0;
+	    this.rightPositionExclusive = tokens.size();
+	    this.leftPosition = 0;
 	}
 	 
-	public StreamItem peek() {
+	public StreamItem peekLeft() {
 	    if (this.isEmpty()) {
 	        return StreamItem.EMPTY;
 	    }
-	    return this.tokens.get(this.pos);
+	    return this.tokens.get(this.leftPosition);
+	}
+	public StreamItem peekRight() {
+		if (this.isEmpty()) {
+			return StreamItem.EMPTY;
+		}
+		return this.tokens.get(this.rightPositionExclusive - 1);
 	}
 	
 	public void addtoken(Terminal token, Symbol symbol, String value) {
 		this.tokens.add(new StreamItem(token, symbol, value));
-		this.len++;
+		this.rightPositionExclusive++;
 	}
 	public void addtoken(StreamItem si) {
 		this.tokens.add(si);
-		this.len++;
+		this.rightPositionExclusive++;
 	}
 	 
-	public StreamItem gettoken() {
-	    StreamItem next = this.peek();
-	    this.pos++;
+	public StreamItem popLeft() {
+		boolean isEmpty = this.isEmpty();
+	    StreamItem next = this.peekLeft();
+	    if (!isEmpty) this.leftPosition++;
 	    return next;
 	}
 	
-	public void ungettoken() {
-		if (this.pos > 0) {
-			this.pos--;
+	public StreamItem popRight() {
+		boolean isEmpty = this.isEmpty();
+		StreamItem prev = this.peekRight();
+		if (!isEmpty) this.rightPositionExclusive--;
+		return prev;
+	}
+	
+	public void unpopLeft() {
+		if (this.leftPosition > 0) {
+			this.leftPosition--;
 		}
 	}
 	
+	public StreamItem get(int position) {
+		return this.tokens.get(position);
+	}
+		
 	/**
 	 * For ambiguous streams,
 	 * must remember where we were
 	 */
-	public int getPosition() {
-		return this.pos;
+	public int getLeft() {
+		return this.leftPosition;
 	}
-	public void setPosition(int position) {
-		this.pos = position;
+	public void setLeft(int position) {
+		this.leftPosition = position;
+	}
+	public int getRightExclusive() {
+		return this.rightPositionExclusive;
+	}
+	public void setRightExclusive(int position) {
+		this.rightPositionExclusive = position;
 	}
 	 
 	public boolean contains(Terminal t) {
@@ -100,24 +159,28 @@ public class TokenStream {
 	}
 	 
 	public boolean isEmpty() {
-	    return this.len == this.pos;
+	    return this.rightPositionExclusive == this.leftPosition;
 	}
 	 
 	public int length() {
-	    return this.len - this.pos;
+	    return this.rightPositionExclusive - this.leftPosition;
 	}
 	
 	@Override
 	public String toString() {
-		return toString(this.len);
+		return toString(this.leftPosition, this.rightPositionExclusive);
 	}
-	public String toString(int limit) {
-		int originalPosition = this.getPosition();
+	public String toString(int startPosition, int endPosition) {
+		int originalLeft = this.getLeft();
+		int originalRight = this.getRightExclusive();
+		this.setLeft(startPosition);
 		StringBuilder sb = new StringBuilder();
-		while (!this.isEmpty() && this.getPosition() < limit) {
-			sb.append(this.gettoken() + "\n");
+		for (int i = startPosition; i < endPosition; i++) {
+			StreamItem item = this.tokens.get(i);
+			sb.append(item.toString(i) + "\n");
 		}
-		this.setPosition(originalPosition);
+		this.setLeft(originalLeft);
+		this.setRightExclusive(originalRight);
 		return sb.toString();
 	}
 }

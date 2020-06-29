@@ -77,7 +77,9 @@ public class Assembler {
 		
 		// Iterate
 		for (Node child : pn) {
-			assembleNode(child);
+			if (child != null) {
+				assembleNode(child);
+			}
 		}
 	}
 	

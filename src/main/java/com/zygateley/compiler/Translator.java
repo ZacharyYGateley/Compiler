@@ -99,17 +99,24 @@ public class Translator {
 			case _ECHO_:
 				// Expressions all enclosed in parentheses,
 				// So no need to place them here
-				add("print");
+				add("print (");
 				__pythonCrawlList__(params);
+				addLine(")");
 				break;
 			case _INPUT_:
 				__pythonTranslateNode__(params.get(1));
 				add(" = input() ");
 				break;
-			case _EXPR_:
-				add(" (");
-				__pythonCrawlList__(params);
-				add(") ");
+			case __OP__:
+				add("(");
+				__pythonTranslateNode__(params.get(0));
+				add(" ");
+				addTerminal(pn.getToken());
+				add(" ");
+				__pythonTranslateNode__(params.get(1));
+				add(")");
+				break;
+			case __LIST__:
 				break;
 			default:
 				__pythonCrawlList__(params);
@@ -120,6 +127,32 @@ public class Translator {
 		
 		// Try Terminal
 		Terminal t = pn.getToken();
+		switch (t) {
+		case INT:
+			add(pn.getValue());
+			break;
+		case STRING:
+			add(pn.getSymbol().getValue());
+			break;
+		case VAR:
+			add(pn.getSymbol().getName());
+		default:
+			addTerminal(t);
+			break;
+		}
+		
+		return;
+	}
+	
+	private void add(String output) {
+		if (newLine) {
+			sb.append("    ".repeat(currentIndent));
+			newLine = false;
+		}
+		sb.append(output);
+	}
+	private void addTerminal(Terminal t) {
+		// Try Terminal
 		switch (t) {
 		case FUNCTION:
 		case ECHO:
@@ -136,13 +169,6 @@ public class Translator {
 		case FALSE:
 			add("False");
 			break;
-		case INT:
-			add(pn.getValue());
-			break;
-		case VAR:
-		case STRING:
-			add(pn.getSymbol().getName());
-			break;
 		case EQ:
 			add(" =");
 			break;
@@ -156,19 +182,9 @@ public class Translator {
 			add(", ");
 			break;
 		default:
-			add(" " + pn.getToken().exactString);
+			add(t.exactString);
 			break;
 		}
-		
-		return;
-	}
-	
-	private void add(String output) {
-		if (newLine) {
-			sb.append("    ".repeat(currentIndent));
-			newLine = false;
-		}
-		sb.append(output);
 	}
 	private void addLine(String output) {
 		add(output);

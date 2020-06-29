@@ -16,6 +16,7 @@
  */
 package com.zygateley.compiler;
 
+import java.util.Arrays;
 import java.util.regex.*;
 import java.util.stream.*;
 
@@ -73,12 +74,12 @@ public interface Token {
 		ECHO = 			id.next(),
 		INPUT = 		id.next(),
 		VAR = 			id.next(),
-		
+
 		// Operator set
-		ASTERISK = 		id.next(),
-		SLASH = 		id.next(),
 		PLUS = 			id.next(),
 		MINUS = 		id.next(),
+		ASTERISK = 		id.next(),
+		SLASH = 		id.next(),
 		NEQ = 			id.next(),
 		LTEQ = 			id.next(),
 		GTEQ = 			id.next(),
@@ -110,8 +111,6 @@ public interface Token {
 		_VARSTMT_ =		id.next(),
 		_VARDEF_ = 		id.next(),
 		_EXPR_ = 		id.next(),
-		//_OPEXPR_ = 		id.next(),
-		_OP_ = 			id.next(),
 		_VALUE_ = 		id.next(),
 		_VAR_ = 		id.next(),
 		_VAREXPR_ = 	id.next(),
@@ -124,11 +123,24 @@ public interface Token {
 	
 	// NonTerminals without FIRST and FOLLOW sets
 	public final static int
-		__WILDCARD__ =	id.next(),
-		__AMBEXPR0__ = id.next(),
+		__WILDCARD__ = id.next(),
+		__AMBOPEN__  = id.next(),
+		__AMBCLOSE__ = id.next(),
 		__AMBEXPR1__ = id.next(),
 		__AMBEXPR2__ = id.next(),
 		__AMBEXPR3__ = id.next();
+	
+	public final static int firstWrappingClass = id.id;
+	
+	// Wrapping classes for return nodes of ambiguous rules above
+	public final static int
+		__OP__		 = id.next(),
+		__LIST__	 = id.next();
+	
+	public enum Direction {
+		RIGHT_TO_LEFT,
+		LEFT_TO_RIGHT
+	}
 	
 
 	/**
@@ -204,6 +216,9 @@ public interface Token {
 	public static boolean isTerminal(int tokenValue) {
 		return tokenValue < firstNonTerminal;
 	}
+	public static boolean isWrappingClass(int tokenValue) {
+		return tokenValue >= firstWrappingClass;
+	}
 }
 
 enum Terminal implements Token {
@@ -236,12 +251,12 @@ enum Terminal implements Token {
 	INPUT		(Token.INPUT, "input"),
 	VAR			(Token.VAR, Symbol.Type.VAR, "", ("^[a-z|A-Z|_][a-z|A-Z|\\d|_]*")),
 	// Any reserved words must be declared before VAR
-	
+
 	// Defined as <ops> in CFG.xlsx
-	ASTERISK 	(Token.ASTERISK, "*"),
-	SLASH 		(Token.SLASH, "/"),
 	PLUS  		(Token.PLUS, "+"),
 	MINUS 		(Token.MINUS, "-"),
+	ASTERISK 	(Token.ASTERISK, "*"),
+	SLASH 		(Token.SLASH, "/"),
 	NEQ  		(Token.NEQ, "!="),
 	LTEQ 		(Token.LTEQ, "<="),
 	GTEQ  		(Token.GTEQ, ">="),
@@ -316,7 +331,7 @@ enum Terminal implements Token {
 	 * @param tokenValue Terminal.tokenValue to find
 	 * @return Terminal with matching tokenValue or null
 	 */
-	public static Terminal getNonTerminal(int tokenValue) {
+	public static Terminal getTerminal(int tokenValue) {
 		Terminal[] all = Terminal.values();
 		for (Terminal nt : all) {
 			if (nt.tokenValue == tokenValue) {
@@ -328,6 +343,8 @@ enum Terminal implements Token {
 }
 
 enum NonTerminal implements Token {
+	// Patterns not ambiguous by FIRST Terminal
+	// SINGLE UNDERSCORE
 	_PROGRAM_	(Token._PROGRAM_,
 				 firstTerminalsAndPattern(Token.combineArrays(new int[] { Token.FUNCTION, Token.IF, Token.CURLY_OPEN }, Token._STMT_FIRST), Token._STMTS_),
 				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
@@ -402,26 +419,11 @@ enum NonTerminal implements Token {
 				 follow(Token.SEMICOLON)),
 	
 	_EXPR_		(Token._EXPR_,
-				 //firstTerminalsAndPattern(Token.PAREN_OPEN, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE),
-				 // On anything else, 
-				 // send to ambiguous branch 
-				 firstTerminalsAndPattern(IntStream.rangeClosed(1, id.id).toArray(), Token.__AMBEXPR0__),
+				 // Placeholder NonTerminal
+				 // Sends stream to ambiguous branch 
+				 firstTerminalsAndPattern(IntStream.rangeClosed(1, id.id).toArray(), Token.__AMBEXPR1__),
 				 //firstTerminalsAndPattern(Token.combineArrays(Token.primitiveSet, Token.VAR), Token._VALUE_, Token._OPEXPR_),
 	 			 follow(new int[] {Token.SEMICOLON, Token.PAREN_CLOSE})),
-	
-	/*
-	_OPEXPR_	(Token._OPEXPR_,
-				 firstTerminalsAndPattern(Token.operatorSet, Token._OP_, Token._EXPR_),
-				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
-	 			 follow(new int[] {Token.SEMICOLON, Token.PAREN_CLOSE})),
-	 */
-	
-	_OP_		(Token._OP_,
-				 singleTerminalsPatternsAndFollow(
-						 Token.operatorSet, 
-						 follow(Token.combineArrays(Token.primitiveSet, Token.VAR, Token.PAREN_OPEN))
-						 )
-				 ),
 	
 	_VALUE_		(Token._VALUE_,
 				 firstTerminalsAndPattern(Token.VAR, Token._VAR_),
@@ -459,23 +461,17 @@ enum NonTerminal implements Token {
 				 ),
 	
 	// Patterns ambiguous by FIRST Terminal set
-	// __EXPR__ enters into ambiguous patterns
-	// __EXPRRANK3__ returns to non-ambiguous patterns
-	
-	/*
-	__EXPR__	(Token.__EXPR__,
-				 firstTerminalsAndPattern(Token.PAREN_OPEN, Token.PAREN_OPEN, Token.__EXPR__, Token.PAREN_CLOSE),
-				 follow(Token.SEMICOLON, Token.PAREN_CLOSE)),
-	*/
-	__AMBEXPR0__(Token.__AMBEXPR0__, ambiguousSplitAt(Token.PAREN_OPEN), Token.__AMBEXPR1__, Token._EXPR_),
-	__AMBEXPR1__(Token.__AMBEXPR1__, ambiguousSplitAt(Token.operatorSetRank0), Token.__AMBEXPR2__, Token._EXPR_),
-	__AMBEXPR2__(Token.__AMBEXPR2__, ambiguousSplitAt(Token.operatorSetRank1), Token.__AMBEXPR3__, Token._EXPR_),
-	__AMBEXPR3__(Token.__AMBEXPR3__, ambiguousSplitAt(Token.operatorSetRank2), Token._VALUE_, Token._EXPR_);
-	/*
-	__EXPRRANK3__(Token.__EXPRRANK3__,
-				  firstTerminalsAndPattern(Token.combineArrays(Token.primitiveSet, Token.VAR), Token._VALUE_),
-				  follow(Token.SEMICOLON, Token.PAREN_CLOSE));
-				  */
+	// but not ambiguous by NonTerminal
+	// Double underscore
+	//__AMBCLOSE__(Token.__AMBCLOSE__, ambiguousSplitAt(Token.PAREN_CLOSE), 		Token.__AMBOPEN__, 	Token.__AMBEXPR1__,	Direction.RIGHT_TO_LEFT,		Token.__LIST__),
+	//__AMBOPEN__ (Token.__AMBOPEN__,  ambiguousSplitAt(Token.PAREN_OPEN), 		Token.__AMBEXPR1__, Token.__AMBCLOSE__, Direction.LEFT_TO_RIGHT,		Token.__LIST__),
+	__AMBEXPR1__(Token.__AMBEXPR1__, ambiguousSplitAt(Token.operatorSetRank0), 	Token.__AMBEXPR1__, Token.__AMBEXPR2__,	Direction.RIGHT_TO_LEFT,		Token.__OP__),
+	__AMBEXPR2__(Token.__AMBEXPR2__, ambiguousSplitAt(Token.operatorSetRank1), 	Token.__AMBEXPR2__, Token.__AMBEXPR3__,	Direction.RIGHT_TO_LEFT,		Token.__OP__),
+	__AMBEXPR3__(Token.__AMBEXPR3__, ambiguousSplitAt(Token.operatorSetRank2), 	Token.__AMBEXPR3__,	Token._VALUE_,		Direction.RIGHT_TO_LEFT,		Token.__OP__),
+	// Placeholder
+	// All operations appear with this as parent to its two operands
+	__LIST__	(Token.__LIST__),
+	__OP__		(Token.__OP__);
 	
 	/**
 	 * Internal class for NonTerminals
@@ -499,15 +495,39 @@ enum NonTerminal implements Token {
 			this.PATTERN = pattern;
 		}
 	}
+	
+	/**
+	 * Ambiguous Pattern
+	 * 
+	 * Find first instance of any item in splitAt
+	 * starting from the one side and working Token.Direction (i.e. LEFT or RIGHT)
+	 * The match on the left side will evaluate first,
+	 * returning a parse tree.
+	 * Then the match on the right will evaluate.
+	 * These "operands" will then be combined into a binary Node(NonTerminal wrapper)
+	 * 
+	 * @author Zachary Gateley
+	 *
+	 */
 	public class AmbiguousPattern {
 		public final int[] splitAt;
 		public final int leftRule;
 		public final int rightRule;
+		public final Token.Direction direction;
+		public final int nonTerminalWrapper;
 		
-		public AmbiguousPattern(int[] splitAt, int leftRule, int rightRule) {
+		public AmbiguousPattern(
+				int[] splitAt, 
+				int leftRule, 
+				int rightRule, 
+				Token.Direction direction,
+				int nonTerminalWrapper
+				) {
 			this.splitAt = splitAt;
 			this.leftRule = leftRule;
 			this.rightRule = rightRule;
+			this.direction = direction;
+			this.nonTerminalWrapper = nonTerminalWrapper;
 		}
 	}
 	
@@ -516,6 +536,15 @@ enum NonTerminal implements Token {
 	public final AmbiguousPattern ambiguousPattern;
 	public final int[] FOLLOW;
 	
+	/**
+	 * Constructor --> Empty wrapper, not part of any CFG or Ambiguous rule
+	 */
+	private NonTerminal(int tokenValue) {
+		this.tokenValue = tokenValue;
+		this.patterns = null;
+		this.ambiguousPattern = null;
+		this.FOLLOW = null;
+	}
 	/**
 	 * Constructor --> Parse by expediting from FIRST set
 	 * 
@@ -561,10 +590,10 @@ enum NonTerminal implements Token {
 	 * 		e.g. { __EXPRRANK1__, +,  __EXPRRANK0__}
 	 * 			 { __EXPRRANK1__, -,  __EXPRRANK0__}
 	 */
-	private NonTerminal(int tokenValue, int[] splitAt, int leftRule, int rightRule) {
+	private NonTerminal(int tokenValue, int[] splitAt, int leftRule, int rightRule, Direction direction, int nonTerminalWrapper) {
 		this.tokenValue = tokenValue;
 		this.patterns = null;
-		this.ambiguousPattern = new AmbiguousPattern(splitAt, leftRule, rightRule);
+		this.ambiguousPattern = new AmbiguousPattern(splitAt, leftRule, rightRule, direction, nonTerminalWrapper);
 		this.FOLLOW = null;
 	}
 
@@ -680,7 +709,7 @@ enum NonTerminal implements Token {
 	 * @param tokenValue NonTerminal.tokenValue to find
 	 * @return NonTerminal with matching tokenValue or null
 	 */
-	public static NonTerminal getNonTerminal(int tokenValue) {
+	public static NonTerminal getNonTerminal(final int tokenValue) {
 		NonTerminal[] all = NonTerminal.values();
 		for (NonTerminal nt : all) {
 			if (nt.tokenValue == tokenValue) {
