@@ -16,7 +16,6 @@
  */
 package com.zygateley.compiler;
 
-import java.util.Arrays;
 import java.util.regex.*;
 import java.util.stream.*;
 
@@ -123,20 +122,20 @@ public interface Token {
 		_ARGS1_ = 		id.next(),
 		_LITERAL_ = 	id.next();
 
-	public final static int firstAmbiguousNonTerminal = id.id;
+	public final static int firstPrecedenceNonTerminal = id.id;
 	
 	// NonTerminals without FIRST and FOLLOW sets
 	public final static int
 		__WILDCARD__ = id.next(),
 		__AMBOPEN__  = id.next(),
 		__AMBCLOSE__ = id.next(),
-		__AMBEXPR1__ = id.next(),
-		__AMBEXPR2__ = id.next(),
-		__AMBEXPR3__ = id.next();
+		__PRECEDENCE1__ = id.next(),
+		__PRECEDENCE2__ = id.next(),
+		__PRECEDENCE3__ = id.next();
 	
 	public final static int firstWrappingClass = id.id;
 	
-	// Wrapping classes for return nodes of ambiguous rules above
+	// Wrapping classes for return nodes of precedence rules above
 	public final static int
 		__OP__		 = id.next(),
 		__LIST__	 = id.next();
@@ -353,7 +352,7 @@ enum Terminal implements Token {
 }
 
 enum NonTerminal implements Token {
-	// Patterns not ambiguous by FIRST Terminal
+	// Patterns not precedence by FIRST Terminal
 	// SINGLE UNDERSCORE
 	_PROGRAM_	(Token._PROGRAM_,
 				 firstTerminalsAndPattern(Token.combineArrays(new int[] { Token.FUNCTION, Token.IF, Token.CURLY_OPEN }, Token._STMT_FIRST), Token._STMTS_),
@@ -430,8 +429,8 @@ enum NonTerminal implements Token {
 	
 	_EXPR_		(Token._EXPR_,
 				 // Placeholder NonTerminal
-				 // Sends stream to ambiguous branch 
-				 firstTerminalsAndPattern(IntStream.rangeClosed(1, id.id).toArray(), Token.__AMBEXPR1__),
+				 // Sends stream to precedence branch 
+				 firstTerminalsAndPattern(IntStream.rangeClosed(1, id.id).toArray(), Token.__PRECEDENCE1__),
 				 //firstTerminalsAndPattern(Token.combineArrays(Token.primitiveSet, Token.VAR), Token._VALUE_, Token._OPEXPR_),
 	 			 follow(new int[] {Token.SEMICOLON, Token.PAREN_CLOSE})),
 	
@@ -473,14 +472,11 @@ enum NonTerminal implements Token {
 	// Patterns ambiguous by FIRST Terminal set
 	// but not ambiguous by NonTerminal
 	// Double underscore
-	//__AMBCLOSE__(Token.__AMBCLOSE__, ambiguousSplitAt(Token.PAREN_CLOSE), 		Token.__AMBOPEN__, 	Token.__AMBEXPR1__,	Direction.RIGHT_TO_LEFT,		Token.__LIST__),
-	//__AMBOPEN__ (Token.__AMBOPEN__,  ambiguousSplitAt(Token.PAREN_OPEN), 		Token.__AMBEXPR1__, Token.__AMBCLOSE__, Direction.LEFT_TO_RIGHT,		Token.__LIST__),
-	__AMBEXPR1__(Token.__AMBEXPR1__, ambiguousSplitAt(Token.operatorSetRank0), 	Token.__AMBEXPR1__, Token.__AMBEXPR2__,	Direction.RIGHT_TO_LEFT,		Token.__OP__),
-	__AMBEXPR2__(Token.__AMBEXPR2__, ambiguousSplitAt(Token.operatorSetRank1), 	Token.__AMBEXPR2__, Token.__AMBEXPR3__,	Direction.RIGHT_TO_LEFT,		Token.__OP__),
-	__AMBEXPR3__(Token.__AMBEXPR3__, ambiguousSplitAt(Token.operatorSetRank2), 	Token.__AMBEXPR3__,	Token._VALUE_,		Direction.RIGHT_TO_LEFT,		Token.__OP__),
+	__PRECEDENCE1__(Token.__PRECEDENCE1__, precedenceSplitAt(Token.operatorSetRank0), 	Token.__PRECEDENCE1__, Token.__PRECEDENCE2__,	Direction.RIGHT_TO_LEFT,		Token.__OP__),
+	__PRECEDENCE2__(Token.__PRECEDENCE2__, precedenceSplitAt(Token.operatorSetRank1), 	Token.__PRECEDENCE2__, Token.__PRECEDENCE3__,	Direction.RIGHT_TO_LEFT,		Token.__OP__),
+	__PRECEDENCE3__(Token.__PRECEDENCE3__, precedenceSplitAt(Token.operatorSetRank2), 	Token.__PRECEDENCE3__,	Token._VALUE_,		Direction.RIGHT_TO_LEFT,		Token.__OP__),
 	// Placeholder
 	// All operations appear with this as parent to its two operands
-	__LIST__	(Token.__LIST__),
 	__OP__		(Token.__OP__);
 	
 	/**
@@ -507,7 +503,7 @@ enum NonTerminal implements Token {
 	}
 	
 	/**
-	 * Ambiguous Pattern
+	 * Precedence Pattern
 	 * 
 	 * Find first instance of any item in splitAt
 	 * starting from the one side and working Token.Direction (i.e. LEFT or RIGHT)
@@ -519,14 +515,14 @@ enum NonTerminal implements Token {
 	 * @author Zachary Gateley
 	 *
 	 */
-	public class AmbiguousPattern {
+	public class PrecedencePattern {
 		public final int[] splitAt;
 		public final int leftRule;
 		public final int rightRule;
 		public final Token.Direction direction;
 		public final int nonTerminalWrapper;
 		
-		public AmbiguousPattern(
+		public PrecedencePattern(
 				int[] splitAt, 
 				int leftRule, 
 				int rightRule, 
@@ -543,16 +539,16 @@ enum NonTerminal implements Token {
 	
 	public final int tokenValue;
 	public final Pattern[] patterns;
-	public final AmbiguousPattern ambiguousPattern;
+	public final PrecedencePattern precedencePattern;
 	public final int[] FOLLOW;
 	
 	/**
-	 * Constructor --> Empty wrapper, not part of any CFG or Ambiguous rule
+	 * Constructor --> Empty wrapper, not part of any CFG or Precedence rule
 	 */
 	private NonTerminal(int tokenValue) {
 		this.tokenValue = tokenValue;
 		this.patterns = null;
-		this.ambiguousPattern = null;
+		this.precedencePattern = null;
 		this.FOLLOW = null;
 	}
 	/**
@@ -576,7 +572,7 @@ enum NonTerminal implements Token {
 			// Add FIRST / PATTERN sets
 			this.patterns[i] = p;
 		}
-		this.ambiguousPattern = null;
+		this.precedencePattern = null;
 		// Last array is FOLLOW
 		this.FOLLOW = patterns[patterns.length - 1][0];
 	}
@@ -603,7 +599,7 @@ enum NonTerminal implements Token {
 	private NonTerminal(int tokenValue, int[] splitAt, int leftRule, int rightRule, Direction direction, int nonTerminalWrapper) {
 		this.tokenValue = tokenValue;
 		this.patterns = null;
-		this.ambiguousPattern = new AmbiguousPattern(splitAt, leftRule, rightRule, direction, nonTerminalWrapper);
+		this.precedencePattern = new PrecedencePattern(splitAt, leftRule, rightRule, direction, nonTerminalWrapper);
 		this.FOLLOW = null;
 	}
 
@@ -663,7 +659,7 @@ enum NonTerminal implements Token {
 	/**
 	 * 
 	 */
-	private static int[] ambiguousSplitAt(int... tokens) {
+	private static int[] precedenceSplitAt(int... tokens) {
 		if (tokens == null) return new int[0];
 		else 				return tokens;
 	}
@@ -729,7 +725,7 @@ enum NonTerminal implements Token {
 		return null;
 	}
 	
-	public boolean isAmbiguous() {
-		return (this.ambiguousPattern != null);
+	public boolean isPrecedenceRule() {
+		return (this.precedencePattern != null);
 	}
 }

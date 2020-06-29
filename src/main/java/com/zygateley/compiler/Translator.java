@@ -120,8 +120,6 @@ public class Translator {
 				__pythonTranslateNode__(params.get(1));
 				add(")");
 				break;
-			case __LIST__:
-				break;
 			default:
 				__pythonCrawlList__(params);
 				break;

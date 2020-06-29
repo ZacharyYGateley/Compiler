@@ -1,4 +1,5 @@
-Ambiguous -> Precedence
+Reconsider naming of TokenStream methods.
+	Information hiding --> readLeft, readRight, unreadLeft, unreadRight
 
 Output to assembly
 Can make firstTerminalsAndPatterns and follow do the work of the NonTerminal constructor?

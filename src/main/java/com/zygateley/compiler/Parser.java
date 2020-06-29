@@ -107,11 +107,9 @@ public class Parser {
 	private TokenStream tokenStream;
 	private boolean verbose;
 	private int depth;
-	private boolean ambiguousStreamOpen;
 	
 	public Parser(TokenStream ts) {
 		this.tokenStream = ts;
-		this.ambiguousStreamOpen = false;
 	}
 	
 	public Node parse(boolean verbose) throws Exception {
@@ -149,7 +147,10 @@ public class Parser {
 		// New non-terminal node
 		Node pn = new Node(rule);
 		
-		Terminal t = tokenStream.peekLeft().token;
+		// Skip all EMPTY tokens
+		// These are only used to hasEpsilon and inFollow
+		Terminal t = null;
+		while (t == null || t == Terminal.EMPTY) t = tokenStream.peekLeft().token;
 
     	int indexInFirst = rule.indexOfMatchFirst(t);
 
@@ -185,9 +186,17 @@ public class Parser {
 		// Get rules in order
 		// If any of the rules is a NonTerminal, recur
 		for (int i = 0; i < pattern.length; i++) {
+			
+			// Skip all EMPTY terminals in stream
+			while (true) {
+				StreamItem nextItem = tokenStream.peekLeft();
+				if (nextItem == null || nextItem.token != Terminal.EMPTY) break;
+				tokenStream.getLeft();
+			}
+			
 			// If reached the end of this expression
 			// but have not finished the NonTerminal, err out
-			if (tokenStream.getLeft() > endPosition) {
+			if (tokenStream.isEmpty()) {
 				this.fatalError("Fatal error 2: Production rule terminated prematurely.");
 				return null;
 			}
@@ -211,15 +220,15 @@ public class Parser {
 			// Recur into parseRule
 			else {
 				NonTerminal nextToken = NonTerminal.getNonTerminal(tokenValue);
-				if (!nextToken.isAmbiguous()) {
+				if (!nextToken.isPrecedenceRule()) {
 					depth++;
 					next = parseRule(nextToken, endPosition);
 					depth--;
 				}
-				// Ambiguous rules need to move into ambiguous branch
+				// Precedence rules need to move into precedence branch
 				else {
-					// Ambiguous rules do not represent an increase in depth
-					next = toAmbiguousStream(nextToken, endPosition, rule);
+					// Precedence rules do not represent an increase in depth
+					next = toPrecedenceStream(nextToken, endPosition, rule);
 				}
 
 				// Add resulting NonTerminal to tree
@@ -244,48 +253,37 @@ public class Parser {
 	}
 	
 	/**
-	 * From ambiguous stream to non-ambiguous stream
+	 * From precedence stream to non-precedence stream
 	 * 
-	 * @param nonAmbiguousRule
+	 * @param ruleCFG
 	 * @param endPosition exclusive
 	 * @return
 	 */
-	private Node toNonAmbiguousStream(NonTerminal nonAmbiguousRule, int startPosition, int endPosition) throws Exception {
+	private Node toCFGStream(NonTerminal ruleCFG, int startPosition, int endPosition) throws Exception {
 		if (verbose) {
-			System.out.println("\n...Ambiguous stream --> Non-ambiguous stream...\n");
+			System.out.println("\n...Precedence stream --> Non-precedence stream...\n");
 		}
 		depth++;
 		tokenStream.setLeft(startPosition);
 		tokenStream.setRightExclusive(endPosition);
-		Node syntaxTree = parseRule(nonAmbiguousRule, endPosition);
+		Node syntaxTree = parseRule(ruleCFG, endPosition);
 		depth--;
 		if (verbose) {
-			System.out.println("\n...Non-ambiguous stream --> Ambiguous stream...\n");
+			System.out.println("\n...Non-precedence stream --> Precedence stream...\n");
 		}
 		return syntaxTree;
 	}
 	
-	private int findSplit(int[] splitAt, int tokenValue) {
-		for (int terminal : splitAt) {
-			// Skip any terminal not in  this set
-			if (tokenValue != terminal) continue;
-			
-			// Match!
-			return terminal;
-		}
-		return -1;
-	}
-	
 	/**
-	 * parseAmbiguousRule
-	 * @param rule Ambiguous NonTerminal rule
+	 * parsePrecedenceRule
+	 * @param rule Precedence NonTerminal rule
 	 * @param startPosition in tokenStream inclusive
 	 * @param endPosition in tokenStream exclusive
 	 * @return
 	 */
-	private Node parseAmbiguousRule(NonTerminal rule, int startPosition, int endPosition) throws Exception {
+	private Node parsePrecedenceRule(NonTerminal rule, int startPosition, int endPosition) throws Exception {
 		// Patterns split at these tokens
-		int[] splitAt = rule.ambiguousPattern.splitAt;
+		int[] splitAt = rule.precedencePattern.splitAt;
 		int partition = -1;
 		int splitTokenValue = -1;
 		
@@ -298,7 +296,7 @@ public class Parser {
 
 		// Look for a split token within the bounds of the stream 
 		// If there is no match, reset the stream and send it to the next rule
-		// 		Return to nonAmbiguous stream will throw parse errors 
+		// 		Return to nonPrecedence stream will throw parse errors 
 		// 		if there are no matches anywhere along the sequence of rules 
 		// If there is a match,
 		//		Send left side of match to rule's left rule
@@ -307,7 +305,7 @@ public class Parser {
 		//			returns parseTree
 		//		Combine results into a single parse tree 
 		//			by this rule's wrapper class
-		Token.Direction direction = rule.ambiguousPattern.direction;
+		Token.Direction direction = rule.precedencePattern.direction;
 		boolean leftToRight = (direction == Token.Direction.LEFT_TO_RIGHT);
 		StreamItem item = null;
 		int itemCount = 0;
@@ -335,7 +333,7 @@ public class Parser {
 				if (item.syntaxTree == null) {
 					// Recur to get parse tree
 					// And set as these stream items' parse trees 
-					Node embeddedTree = parseAmbiguousRule(rule, item.openGroup + 1, item.closeGroup);
+					Node embeddedTree = parsePrecedenceRule(rule, item.openGroup + 1, item.closeGroup);
 					StreamItem opener = tokenStream.get(item.openGroup);
 					opener.syntaxTree = item.syntaxTree = embeddedTree;
 					// Since we are passing a parse tree
@@ -371,7 +369,7 @@ public class Parser {
 			return item.syntaxTree;
 		}
 		
-		// Do not parse empty, placed there by negator in toAmbiguousStream 
+		// Do not parse empty, placed there by negator in toPrecedenceStream 
 		if (leftmostIsEmpty) {
 			// Skip empty
 			if (partition == startPosition) {
@@ -401,23 +399,23 @@ public class Parser {
 		Node leftOperand = null;
 		if (startPosition < partition + leftOffset) {
 			// And get parse rule
-			NonTerminal leftRule = NonTerminal.getNonTerminal(rule.ambiguousPattern.leftRule);
+			NonTerminal leftRule = NonTerminal.getNonTerminal(rule.precedencePattern.leftRule);
 			System.out.println("--> left (" + leftRule + ")");
 			
 			// Get new childNode from left-hand string
-			if (leftRule.isAmbiguous()) {
-				// Stay in ambiguous stream
+			if (leftRule.isPrecedenceRule()) {
+				// Stay in precedence stream
 				// startPosition inclusive
 				// endPosition exclusive
-				leftOperand = parseAmbiguousRule(leftRule, startPosition, partition + leftOffset);
+				leftOperand = parsePrecedenceRule(leftRule, startPosition, partition + leftOffset);
 				// This operand is in a wrapper Node
-				// See Token.AmbiguousPattern for more details
+				// See Token.PrecedencePattern for more details
 			}
 			else {
 				// __VALUE__
-				// Move to non-ambiguous stream
-				// Non-ambiguous stream is always left to right
-				leftOperand = toNonAmbiguousStream(leftRule, startPosition, partition + leftOffset);
+				// Move to non-precedence stream
+				// Non-precedence stream is always left to right
+				leftOperand = toCFGStream(leftRule, startPosition, partition + leftOffset);
 				// This operand is a __VALUE__
 			}
 			
@@ -434,7 +432,7 @@ public class Parser {
 				return leftOperand;
 			}
 			// Otherwise, we have a match.
-			// This *node* is a wrapper for Token.AmbiguousPattern NonTerminals
+			// This *node* is a wrapper for Token.PrecedencePattern NonTerminals
 		}
 		
 		/***** RIGHT OPERAND ****/
@@ -447,23 +445,23 @@ public class Parser {
 		int rightOffset = (!leftToRight && haveMatch ? 1 : 0);
 		if (partition + rightOffset < endPosition) {
 			// Get parse rule
-			NonTerminal rightRule = NonTerminal.getNonTerminal(rule.ambiguousPattern.rightRule);
+			NonTerminal rightRule = NonTerminal.getNonTerminal(rule.precedencePattern.rightRule);
 			System.out.println("--> right (" + rightRule + ")");
 			
 			// Get new childNode from left-hand string
-			if (rightRule.isAmbiguous()) {
-				// Stay in ambiguous stream
+			if (rightRule.isPrecedenceRule()) {
+				// Stay in precedence stream
 				// startPosition inclusive
 				// endPosition exclusive
-				rightOperand = parseAmbiguousRule(rightRule, partition + rightOffset, endPosition);
+				rightOperand = parsePrecedenceRule(rightRule, partition + rightOffset, endPosition);
 				// This operand is in a wrapper Node
-				// See Token.AmbiguousPattern for more details
+				// See Token.PrecedencePattern for more details
 			}
 			else {
 				// __VALUE__
-				// Move to non-ambiguous stream
-				// Non-ambiguous stream is always left to right
-				rightOperand = toNonAmbiguousStream(rightRule, partition + rightOffset, endPosition);
+				// Move to non-precedence stream
+				// Non-precedence stream is always left to right
+				rightOperand = toCFGStream(rightRule, partition + rightOffset, endPosition);
 				// This operand is a __VALUE__
 			}
 			
@@ -480,7 +478,7 @@ public class Parser {
 				return rightOperand;
 			}
 			// Otherwise, we have a match.
-			// This *node* is a wrapper for Token.AmbiguousPattern NonTerminals
+			// This *node* is a wrapper for Token.PrecedencePattern NonTerminals
 		}
 
 		// MATCH!
@@ -489,7 +487,7 @@ public class Parser {
 		Node wrapper = null;
 		
 		// Merge operands appropriately
-		NonTerminal wrappingClass = NonTerminal.getNonTerminal(rule.ambiguousPattern.nonTerminalWrapper);
+		NonTerminal wrappingClass = NonTerminal.getNonTerminal(rule.precedencePattern.nonTerminalWrapper);
 		wrapper = mergeOperands(leftOperand, rightOperand, wrappingClass, splitToken);
 
 		
@@ -500,33 +498,25 @@ public class Parser {
 	}
 	
 	/**
-	 * toAmbiguousStream
+	 * toPrecedenceStream
 	 * 
 	 * In order to keep operator precedence,
 	 * some rules do not have a FIRST set (see __EXPR__)
-	 * and are ambiguous by first Terminal.
-	 * However, they are not ambiguous by NonTerminal.
+	 * and are precedence by first Terminal.
+	 * However, they are not precedence by NonTerminal.
 	 * To parse these, first get the entire tokenStream belonging to this rule
 	 * (gettoken() until in FOLLOW and open/close paren/curly/square bracket are balanced)
 	 * With this new stream, look for matches (w/ ambiguity)
 	 * 
-	 * @param ambiguousRule, next rule (ambiguous)
+	 * @param precedenceRule, next rule (precedence)
 	 * @param endPosition exclusive
-	 * @param parentRule to determine when to stop stream for ambiguous rule
+	 * @param parentRule to determine when to stop stream for precedence rule
 	 * @return
 	 */
-	private Node toAmbiguousStream(NonTerminal ambiguousRule, int endPosition, NonTerminal parentRule) throws Exception {
-		// Because of the nature of the ambiguous stream
-		// Only one ambiguous stream may be open at once
-		if (this.ambiguousStreamOpen) {
-			Node syntaxTree = new Node(Terminal.EMPTY, null, null);
-			return syntaxTree;
-		}
-		this.ambiguousStreamOpen = true;
-		
-		// Start parsing this ambiguous non-terminal
+	private Node toPrecedenceStream(NonTerminal precedenceRule, int endPosition, NonTerminal parentRule) throws Exception {
+		// Start parsing this precedence non-terminal
 		if (verbose) {
-			System.out.println("\n...Non-ambiguous stream --> Ambiguous stream...\n");
+			System.out.println("\n...Non-precedence stream --> Precedence stream...\n");
 		}
 		
 		// Find final StreamItem for this expression 
@@ -632,21 +622,18 @@ public class Parser {
 		}
 		// Otherwise, there is a stream to parse
 		
-		// And parse using the ambiguous rule until the determined end position
-		Node syntaxTree = this.parseAmbiguousRule(ambiguousRule, startPos, endPos);
+		// And parse using the precedence rule until the determined end position
+		Node syntaxTree = this.parsePrecedenceRule(precedenceRule, startPos, endPos);
 		
 		// Reset stream parameters after already-parsed stream
 		// Set to before FOLLOW token so that parent NonTerminal knows that it is done.
 		tokenStream.setLeft(endPos);
 		tokenStream.setRightExclusive(endPosition);
 
-		// Finished parsing this ambiguous non-terminal
+		// Finished parsing this precedence non-terminal
 		if (verbose) {
-			System.out.println("\n...Ambigous stream --> Non-ambiguous stream...\n");
+			System.out.println("\n...Ambigous stream --> Non-precedence stream...\n");
 		}
-		
-		// Close ambiguous stream
-		this.ambiguousStreamOpen = false;
 		
 		return syntaxTree;
 	}
@@ -662,26 +649,17 @@ public class Parser {
 		closeItem.closeGroup = position;
 		openItem.closeGroup = position;
 	}
-	
-	/*
-	private Node cleanAmbiguousTree(Node topNode) {
-		Node syntaxTree = topNode;
-		
-		if (topNode != null) {
-			ArrayList<Node> param = topNode.getParam();
-			if (param != null) {
-				if (param.get(0) == null) {
-					syntaxTree = param.get(1);
-				}
-				else if (param.get(1) == null) {
-					syntaxTree = param.get(0);
-				}
-			}
+
+	private int findSplit(int[] splitAt, int tokenValue) {
+		for (int terminal : splitAt) {
+			// Skip any terminal not in  this set
+			if (tokenValue != terminal) continue;
+			
+			// Match!
+			return terminal;
 		}
-		
-		return syntaxTree;
+		return -1;
 	}
-	*/
 	
 	private Node mergeOperands(Node leftOperand, Node rightOperand, NonTerminal wrappingClass, Terminal splitToken) {
 		// Do not combine fully empty
@@ -692,7 +670,7 @@ public class Parser {
 		}
 		
 		// If both children have appropriate child nodes
-		// Create a new wrapper Node (NonTerminal.AmbiguousPattern.nonTerminalWrapper)
+		// Create a new wrapper Node (NonTerminal.PrecedencePattern.nonTerminalWrapper)
 		Node wrapper = new Node(wrappingClass);
 		wrapper.setToken(splitToken);
 		wrapper.addParam(leftOperand);
