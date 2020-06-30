@@ -276,7 +276,7 @@ public class Lexer {
 			// All non-literals inherit their value from the rule
 			value = thisRule.exactString;
 		}
-		tokenStreamOut.addtoken(thisRule, symbol, value);
+		tokenStreamOut.writeRight(thisRule, symbol, value);
 		
 		if (verbose) {
 			StringBuilder sbtr = new StringBuilder(thisRule + "         ");
