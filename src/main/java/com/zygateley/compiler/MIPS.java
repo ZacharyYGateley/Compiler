@@ -5,17 +5,23 @@ import java.util.*;
 
 
 public class MIPS {
-	private static class Writer {
+	public static class Writer {
 		private final StringBuilder outputStream;
+		private int currentIndent;
 		
 		public Writer() {
 			outputStream = new StringBuilder();
+			currentIndent = 0;
 		}
 		
 		public void println(String s) {
 			println(s, "");
 		}
 		public void println(String s, Object... formatters) {
+			// Indent as necessary
+			for (int i = 0; i < currentIndent; i++) outputStream.append("    ");
+			
+			// Format strings as necessary
 			if (formatters.length > 0) {
 				outputStream.append(String.format(s, (Object[]) formatters));
 				
@@ -26,10 +32,19 @@ public class MIPS {
 					}
 				}
 			}
+			// No formatters
 			else {
 				outputStream.append(s);
 			}
 			outputStream.append("\r\n");
+		}
+		
+		public void indent() {
+			this.currentIndent++;
+		}
+		
+		public void outdent() {
+			this.currentIndent--;
 		}
 		
 		@Override
@@ -198,7 +213,7 @@ public class MIPS {
 		}
 	}
 	
-	private static class Scope {
+	public static class Scope {
 		private RegisterLRU tLRU;
 		private RegisterLRU sLRU;
 		
