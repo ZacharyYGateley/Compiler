@@ -4,6 +4,7 @@ Reconsider naming of TokenStream methods.
 Allow lone semicolons in grammar?
 	
 Make traversing parseTree more data hidden
+TokenStream rightIndex should be inclusive?
 
 Output to assembly
 	Aliases and pulling/pushing from stack only when necessary

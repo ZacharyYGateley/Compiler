@@ -251,8 +251,8 @@ public class Parser {
 			this.printVerbose("// --> To Precedence stream from CFG stream");
 			this.printVerbose("//");
 		}
-		tokenStream.setLeft(startPosition);
-		tokenStream.setRightExclusive(endPosition);
+		tokenStream.setLeftIndex(startPosition);
+		tokenStream.setRightIndexExcl(endPosition);
 		Node syntaxSubtree = parseCFGRule(ruleCFG, endPosition);
 		if (verbose) {
 			this.printVerbose("//");
@@ -279,7 +279,7 @@ public class Parser {
 		// Skip all EMPTY tokens
 		// These are only used to hasEpsilon and inFollow
 		Terminal t = tokenStream.peekLeft().token;
-		while (!tokenStream.isEmpty() && (t == null || t == Terminal.EMPTY)) tokenStream.popLeft();
+		while (!tokenStream.isEmpty() && (t == null || t == Terminal.EMPTY)) tokenStream.readLeft();
 
     	int indexInFirst = rule.indexOfMatchFirst(t);
 
@@ -310,7 +310,7 @@ public class Parser {
 			while (!tokenStream.isEmpty()) {
 				StreamItem nextItem = tokenStream.peekLeft();
 				if (nextItem == null || nextItem.token != Terminal.EMPTY) break;
-				tokenStream.popLeft();
+				tokenStream.readLeft();
 			}
 			
 			// If reached the end of this expression
@@ -356,7 +356,7 @@ public class Parser {
 			// Terminal
 			// These are immediately added to the syntax tree
 			if (patternToken.isTerminal()) {
-				StreamItem item = tokenStream.popLeft();
+				StreamItem item = tokenStream.readLeft();
 				
 				// Verify pattern match
 				if (item.token != patternToken) {
@@ -379,7 +379,7 @@ public class Parser {
 				// Precedence rules need to move into precedence branch
 				else {
 					// Precedence rules do not represent an increase in depth
-					next = toPrecedenceStream(nextRule, rule, tokenStream.getLeft(), endPosition);
+					next = toPrecedenceStream(nextRule, rule, tokenStream.getLeftIndex(), endPosition);
 				}
 				depth--;
 
@@ -423,8 +423,8 @@ public class Parser {
 		}
 		
 		// Make sure stream positioning is correct
-		tokenStream.setLeft(startPosition);
-		tokenStream.setRightExclusive(maxEndPosition);
+		tokenStream.setLeftIndex(startPosition);
+		tokenStream.setRightIndexExcl(maxEndPosition);
 		
 		// Find final StreamItem for this expression 
 		// 	(by parent.FOLLOW.contains)
@@ -456,7 +456,7 @@ public class Parser {
 			lastIsOpenParen = thisIsOpenParen;
 			
 			// Consume stream
-			StreamItem item = tokenStream.popLeft();
+			StreamItem item = tokenStream.readLeft();
 			inFollow = parentRule.inFollow(item.token);
 			isBalanced = (openGroupCount == 0);
 			if (inFollow && isBalanced) {
@@ -516,9 +516,9 @@ public class Parser {
 		}
 
 		// Store result and reset stream pointers
-		tokenStream.setLeft(startPosition);
+		tokenStream.setLeftIndex(startPosition);
 		int endPosition = leftPosition;
-		tokenStream.setRightExclusive(endPosition);
+		tokenStream.setRightIndexExcl(endPosition);
 		
 		// Reached end of stream (read: program)
 		// If not balanced parentheses, syntax error.
@@ -537,8 +537,8 @@ public class Parser {
 		Node syntaxTree = this.parsePrecedenceRule(precedenceRule, startPosition, endPosition);
 		
 		// Reset stream parameters after already having read the stream
-		tokenStream.setLeft(endPosition);
-		tokenStream.setRightExclusive(maxEndPosition);
+		tokenStream.setLeftIndex(endPosition);
+		tokenStream.setRightIndexExcl(maxEndPosition);
 
 		// Finished parsing this precedence non-terminal
 		if (verbose) {
@@ -558,7 +558,7 @@ public class Parser {
 	 */
 	private void markOpenGroup(ArrayDeque<StreamItem> stack, StreamItem openItem, int position) { 
 		stack.push(openItem);
-		openItem.openGroupAt = position;
+		openItem.openGroupIndex = position;
 	}
 	
 	/**
@@ -574,9 +574,9 @@ public class Parser {
 	 */
 	private void markCloseGroup(ArrayDeque<StreamItem> stack, StreamItem closeItem, int closePosition) {
 		StreamItem openItem = stack.pop();
-		closeItem.openGroupAt = openItem.openGroupAt;
-		closeItem.closeGroupAt = closePosition;
-		openItem.closeGroupAt = closePosition;
+		closeItem.openGroupIndex = openItem.openGroupIndex;
+		closeItem.closeGroupIndex = closePosition;
+		openItem.closeGroupIndex = closePosition;
 	}
 	
 	/**
@@ -616,9 +616,9 @@ public class Parser {
 		
 		// Make sure the stream is up-to-date
 		// Inclusive start
-		tokenStream.setLeft(startPosition);
+		tokenStream.setLeftIndex(startPosition);
 		// endPosition is exclusive, but so is tokenStream's rightPosition
-		tokenStream.setRightExclusive(endPosition);
+		tokenStream.setRightIndexExcl(endPosition);
 
 		// Look for a SPLIT token within the bounds of the stream
 
@@ -627,9 +627,9 @@ public class Parser {
 		StreamItem item = null;
 		int itemCount = 0;
 		boolean leftmostIsEmpty = false;
-		while (tokenStream.getRightExclusive() > startPosition) {
+		while (tokenStream.getRightIndexExcl() > startPosition) {
 			// Get token at next location
-			StreamItem nextItem = tokenStream.popRight();
+			StreamItem nextItem = tokenStream.readRight();
 			
 			// Skip empty
 			if (nextItem.token == Terminal.EMPTY) {
@@ -643,33 +643,33 @@ public class Parser {
 			
 			// If this is an embedded group,
 			// Recur then skip group
-			if (item.openGroupAt > -1) {
-				if (item.syntaxTree == null) {
+			if (item.openGroupIndex > -1) {
+				if (item.syntaxSubtree == null) {
 					// Recur to get parse tree
 					// And set as these stream items' parse trees 
-					Node embeddedTree = parsePrecedenceRule(rule, item.openGroupAt + 1, item.closeGroupAt);
-					StreamItem opener = tokenStream.get(item.openGroupAt);
-					opener.syntaxTree = item.syntaxTree = embeddedTree;
+					Node embeddedTree = parsePrecedenceRule(rule, item.openGroupIndex + 1, item.closeGroupIndex);
+					StreamItem opener = tokenStream.peekAt(item.openGroupIndex);
+					opener.syntaxSubtree = item.syntaxSubtree = embeddedTree;
 					// Since we are passing a parse tree
 					// from one StreamItem to another,
 					// Need to apply this negation to any previous negation (XOR)
 					embeddedTree.setNegated(opener.negated ^ embeddedTree.isNegated());
-					tokenStream.setLeft(startPosition);
+					tokenStream.setLeftIndex(startPosition);
 				}
 				// Skip group
-				tokenStream.setRightExclusive(item.openGroupAt);
+				tokenStream.setRightIndexExcl(item.openGroupIndex);
 				continue;
 			}
 			
 			boolean isSplitToken = splitContains(splitTokens, item.token.tokenValue);
 			splitTokenValue = (isSplitToken ? item.token.tokenValue : -1);
 			if (splitTokenValue > -1) {
-				partition = tokenStream.getRightExclusive();
+				partition = tokenStream.getRightIndexExcl();
 				break;
 			}
 		}
 		// Reset stream to initial state
-		tokenStream.setRightExclusive(endPosition);
+		tokenStream.setRightIndexExcl(endPosition);
 
 		boolean haveMatch = (splitTokenValue > -1);
 		
@@ -678,10 +678,10 @@ public class Parser {
 		boolean onlyEmbeddedParseTree = (
 				itemCount == 1 &&
 				item != null &&
-				item.openGroupAt > -1
+				item.openGroupIndex > -1
 		);
 		if (onlyEmbeddedParseTree) {
-			return item.syntaxTree;
+			return item.syntaxSubtree;
 		}
 		
 		// Do not parse empty, placed there by negator in toPrecedenceStream 
@@ -691,7 +691,7 @@ public class Parser {
 				partition++;
 			}
 			startPosition++;
-			tokenStream.setLeft(startPosition);
+			tokenStream.setLeftIndex(startPosition);
 		}
 		
 		
@@ -796,7 +796,7 @@ public class Parser {
 			// Extend the stream span to include the FOLLOW character (CFG requires this)
 			while (!tokenStream.isEmpty()) {
 				// Extend by one
-				tokenStream.setRightExclusive(++endPosition);
+				tokenStream.setRightIndexExcl(++endPosition);
 				// If this newly-included character is empty, extend again
 				StreamItem nextItem = tokenStream.peekRight();
 				if (nextItem != null && nextItem.token != Terminal.EMPTY) break;
@@ -894,8 +894,8 @@ public class Parser {
 	private void fatalError(String err) throws ParseException {
 		String stream = "End of stream";
 		if (!this.tokenStream.isEmpty()) {
-			int leftPos = this.tokenStream.getLeft();
-			int rightPos = this.tokenStream.getRightExclusive();
+			int leftPos = this.tokenStream.getLeftIndex();
+			int rightPos = this.tokenStream.getRightIndexExcl();
 			boolean isLongStream = (rightPos - leftPos > 5); 
 			if (isLongStream) {
 				 stream = this.tokenStream.toString(leftPos, leftPos + 5) + "...";

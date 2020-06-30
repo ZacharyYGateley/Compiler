@@ -3,28 +3,41 @@ package com.zygateley.compiler;
 import java.util.*;
 
 
+/**
+ * A stream item contains a token (Terminal)
+ * and may contain a symbol or a value
+ * symbol: item in SymbolTable
+ * value:  primitive literal or Terminal.exactString 
+ * @author Zachary Gateley
+ *
+ */
 class StreamItem {
 	// Allow parser to change token for negation
 	public Terminal token;
 	public final Symbol symbol;
 	public final String value;
-	// If this token represents a group (paren, curly, square)
+	
+	// Groups (paren, curly, square brackets)
 	// Pointers
 	// 		from open StreamItem to close INDEX
 	// 		from close StreamItem to open INDEX
 	// Only when you have to, see Parser::toPrecedenceStream
-	public int closeGroupAt = -1;
-	public int openGroupAt = -1;
-	// During parsing, Store pointer to syntaxTree here if group
-	public Node syntaxTree = null;
-	public boolean negated = false;
-	public static final StreamItem EMPTY = new StreamItem(Terminal.EMPTY);
+	public int closeGroupIndex = -1;
+	public int openGroupIndex = -1;
+	// During parsing, pointer to syntax subtree is stored here
+	public Node syntaxSubtree = null;
 	
-	public StreamItem(Terminal token) {
-		this.token = token;
-		this.symbol = null;
-		this.value = null;
-	}
+	// During parsing, this stream item may be marked as negated
+	public boolean negated = false;
+	
+	// Save space by storing only one empty StreamItem
+	public static final StreamItem EMPTY = new StreamItem(Terminal.EMPTY, null, null);
+	
+	/**
+	 * @param token 
+	 * @param symbol entry in SymbolTable, if applicable
+	 * @param value primitive literal String value or Terminal.exactString 
+	 */
 	public StreamItem(Terminal token, Symbol symbol, String value) {
 		this.token = token;
 		this.symbol = symbol;
@@ -53,11 +66,11 @@ class StreamItem {
 			valueString = "\n\tValue: " + this.value;
 		}
 		String groupString = "";
-		if (this.openGroupAt > 0) {
-			groupString = "\n\tGroup: [" + this.openGroupAt + ", " + this.closeGroupAt + "]";
+		if (this.openGroupIndex > 0) {
+			groupString = "\n\tGroup: [" + this.openGroupIndex + ", " + this.closeGroupIndex + "]";
 		}
 		String syntaxString = "";
-		if (this.syntaxTree != null) {
+		if (this.syntaxSubtree != null) {
 			syntaxString = "\n\tHas syntax tree";
 		}
 		return "Token:" + positionString + this.token + negationString + 
@@ -66,7 +79,9 @@ class StreamItem {
 }
 
 /**
- * Stream of tokens for parser.
+ * Stream of StreamItems built by lexer and used by parser.
+ * leftIndex is inclusive
+ * rightIndex is exclusive
  * 
  * @author Zachary Gateley
  *
@@ -74,63 +89,59 @@ class StreamItem {
 public class TokenStream {
 	
 	private ArrayList<StreamItem> tokens;
-	private int rightPositionExclusive;
-	private int leftPosition; 
+	private int leftIndex = 0;
+	private int rightIndexExcl = 0;
+	private int capacity = 0;
 	 
 	public TokenStream() {
 		this.tokens = new ArrayList<StreamItem>();
-		this.rightPositionExclusive = 0;
-		this.leftPosition = 0;
-	}
-	public TokenStream(ArrayList<StreamItem> tokens) {
-		this.tokens = tokens;
-	    this.rightPositionExclusive = tokens.size();
-	    this.leftPosition = 0;
 	}
 	 
 	public StreamItem peekLeft() {
 	    if (this.isEmpty()) {
 	        return StreamItem.EMPTY;
 	    }
-	    return this.tokens.get(this.leftPosition);
+	    return this.tokens.get(this.leftIndex);
 	}
 	public StreamItem peekRight() {
 		if (this.isEmpty()) {
 			return StreamItem.EMPTY;
 		}
-		return this.tokens.get(this.rightPositionExclusive - 1);
+		return this.tokens.get(this.rightIndexExcl - 1);
 	}
 	
-	public void addtoken(Terminal token, Symbol symbol, String value) {
+	public void writeRight(Terminal token, Symbol symbol, String value) {
 		this.tokens.add(new StreamItem(token, symbol, value));
-		this.rightPositionExclusive++;
+		this.rightIndexExcl++;
+		this.capacity++;
 	}
-	public void addtoken(StreamItem si) {
+	public void writeRight(StreamItem si) {
 		this.tokens.add(si);
-		this.rightPositionExclusive++;
+		this.rightIndexExcl++;
+		this.capacity++;
 	}
 	 
-	public StreamItem popLeft() {
+	public StreamItem readLeft() {
 		boolean isEmpty = this.isEmpty();
 	    StreamItem next = this.peekLeft();
-	    if (!isEmpty) this.leftPosition++;
+	    if (!isEmpty) this.leftIndex++;
 	    return next;
 	}
 	
-	public StreamItem popRight() {
+	public StreamItem readRight() {
 		boolean isEmpty = this.isEmpty();
 		StreamItem prev = this.peekRight();
-		if (!isEmpty) this.rightPositionExclusive--;
+		if (!isEmpty) this.rightIndexExcl--;
 		return prev;
 	}
 	
-	public void unpopLeft() {
-		if (this.leftPosition > 0) {
-			this.leftPosition--;
+	public void unreadLeft() {
+		if (this.leftIndex > 0) {
+			this.leftIndex--;
 		}
 	}
 	
-	public StreamItem get(int position) {
+	public StreamItem peekAt(int position) {
 		return this.tokens.get(position);
 	}
 		
@@ -138,51 +149,42 @@ public class TokenStream {
 	 * For ambiguous streams,
 	 * must remember where we were
 	 */
-	public int getLeft() {
-		return this.leftPosition;
+	public int getLeftIndex() {
+		return this.leftIndex;
 	}
-	public void setLeft(int position) {
-		this.leftPosition = position;
+	public void setLeftIndex(int position) {
+		this.leftIndex = position;
 	}
-	public int getRightExclusive() {
-		return this.rightPositionExclusive;
+	public int getRightIndexExcl() {
+		return this.rightIndexExcl;
 	}
-	public void setRightExclusive(int position) {
-		this.rightPositionExclusive = position;
-	}
-	 
-	public boolean contains(Terminal t) {
-		for (StreamItem tp : this.tokens) {
-			if (tp.token.equals(t)) {
-				return true;
-			}
-		}
-		return false;
+	public void setRightIndexExcl(int position) {
+		this.rightIndexExcl = position;
 	}
 	 
 	public boolean isEmpty() {
-	    return this.rightPositionExclusive == this.leftPosition;
+	    return this.rightIndexExcl == this.leftIndex;
 	}
 	 
 	public int length() {
-	    return this.rightPositionExclusive - this.leftPosition;
+	    return this.rightIndexExcl - this.leftIndex;
 	}
 	
 	@Override
 	public String toString() {
-		return toString(this.leftPosition, this.rightPositionExclusive);
+		return toString(this.leftIndex, this.rightIndexExcl);
 	}
 	public String toString(int startPosition, int endPosition) {
-		int originalLeft = this.getLeft();
-		int originalRight = this.getRightExclusive();
-		this.setLeft(startPosition);
+		int originalLeft = this.getLeftIndex();
+		int originalRight = this.getRightIndexExcl();
+		this.setLeftIndex(startPosition);
 		StringBuilder sb = new StringBuilder();
 		for (int i = startPosition; i < endPosition; i++) {
 			StreamItem item = this.tokens.get(i);
 			sb.append(item.toString(i) + "\n");
 		}
-		this.setLeft(originalLeft);
-		this.setRightExclusive(originalRight);
+		this.setLeftIndex(originalLeft);
+		this.setRightIndexExcl(originalRight);
 		return sb.toString();
 	}
 }
