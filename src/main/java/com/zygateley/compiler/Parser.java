@@ -221,6 +221,12 @@ public class Parser {
 		// Precedence rules depend on parent rules and their respective follow sets
 		NonTerminal startingRule = NonTerminal.getNonTerminal(Token.startingRule);
 		Node syntaxTree = toCFGStream(startingRule, 0, tokenStream.length());
+		
+		StreamItem nextItem = tokenStream.peekLeft();
+		if (nextItem == null || nextItem.token != Terminal.EOF) {
+			this.fatalError("Syntax error: program closed before code finished parsing.");
+			return null;
+		}
 				
 		if (verbose) {
 			System.out.println("\n<!-- Parsing finished -->\n");
@@ -272,8 +278,8 @@ public class Parser {
 		
 		// Skip all EMPTY tokens
 		// These are only used to hasEpsilon and inFollow
-		Terminal t = null;
-		while (t == null || t == Terminal.EMPTY) t = tokenStream.peekLeft().token;
+		Terminal t = tokenStream.peekLeft().token;
+		while (!tokenStream.isEmpty() && (t == null || t == Terminal.EMPTY)) tokenStream.popLeft();
 
     	int indexInFirst = rule.indexOfMatchFirst(t);
 
@@ -283,53 +289,77 @@ public class Parser {
         	boolean inFollow = rule.inFollow(t);
         	if (hasEpsilon && inFollow) {
         		// Empty string has been utilized for this rule
-        		
-        		// Node has no official children
-        		if (verbose) {
-        			this.printVerbose("<" + rule.toString().replaceAll("_",  "") + " />");
-        		}
-        		
-        		return null;
+        		if (verbose) this.printVerbose("<" + rule.toString().replaceAll("_",  "") + " />");
         	}
         	else {
         		this.fatalError("Syntax error 1: Production rule terminated prematurely.");
-        		return null;
         	}
+        	return null;
     	}
     	
     	// Starting building this NonTerminal
-		if (verbose) {
-			this.printVerbose("<" + rule.toString().replaceAll("_",  "") + ">");
-		}
-    	
 		int[] pattern = rule.patterns[indexInFirst].PATTERN;
+		
+		if (verbose) this.printVerbose("<" + rule.toString().replaceAll("_",  "") + ">");
 		
 		// Get rules in order
 		// If any of the rules is a NonTerminal, recur
-		for (int i = 0; i < pattern.length; i++) {
-			
+		int patternIndex = -1;
+		while (!tokenStream.isEmpty()) {
 			// Skip all EMPTY terminals in stream
-			while (true) {
+			while (!tokenStream.isEmpty()) {
 				StreamItem nextItem = tokenStream.peekLeft();
 				if (nextItem == null || nextItem.token != Terminal.EMPTY) break;
-				tokenStream.getLeft();
+				tokenStream.popLeft();
 			}
 			
 			// If reached the end of this expression
 			// but have not finished the NonTerminal, err out
 			if (tokenStream.isEmpty()) {
-				this.fatalError("Fatal error 2: Production rule terminated prematurely.");
+				this.fatalError("Syntax error: Missing value or expression.");
 				return null;
 			}
 			
-			int tokenValue = pattern[i];
+			// Is pattern finished?
+			boolean patternFinished = patternIndex == pattern.length - 1;
+			if (patternFinished) {
+				StreamItem nextItem = tokenStream.peekLeft();
+				boolean inFollow = rule.inFollow(nextItem.token);
+				if (!inFollow) {
+					// Syntax error
+					fatalError("Syntax error: Non-empty production rule terminated prematurely.");
+					return null;
+				}
+				// Pattern finished successfully
+				break;
+			}
 			
-			Node next;
+			// Otherwise, keep building from rule
+			patternIndex++;
+			int patternTokenValue = pattern[patternIndex];
+			Token patternToken;
+			if (Token.isTerminal(patternTokenValue)) {
+				patternToken = Terminal.getTerminal(patternTokenValue);
+			}
+			else {
+				patternToken = NonTerminal.getNonTerminal(patternTokenValue);
+			}
+			
+			// Too much in the expression?
+			if (patternIndex == pattern.length) {
+				// If too much in the expression
+				// We are missing a follow character
+				this.fatalError("Syntax error: Missing termination or separation character.");
+				return null;
+			}
+			
 			// Terminal
 			// These are immediately added to the syntax tree
-			if (Token.isTerminal(tokenValue)) {
+			if (patternToken.isTerminal()) {
 				StreamItem item = tokenStream.popLeft();
-				if (item.token.tokenValue != tokenValue) {
+				
+				// Verify pattern match
+				if (item.token != patternToken) {
 					this.fatalError("Fatal error: incorrect syntax.");
 					return null;
 				}
@@ -340,17 +370,18 @@ public class Parser {
 			// NonTerminals
 			// Recur into parseRule
 			else {
-				NonTerminal nextRule = NonTerminal.getNonTerminal(tokenValue);
+				depth++;
+				NonTerminal nextRule = (NonTerminal) patternToken;
+				Node next;
 				if (!nextRule.isPrecedenceRule()) {
-					depth++;
 					next = parseCFGRule(nextRule, endPosition);
-					depth--;
 				}
 				// Precedence rules need to move into precedence branch
 				else {
 					// Precedence rules do not represent an increase in depth
 					next = toPrecedenceStream(nextRule, rule, tokenStream.getLeft(), endPosition);
 				}
+				depth--;
 
 				// Add resulting NonTerminal to tree
 				if (next != null) {
@@ -386,7 +417,6 @@ public class Parser {
 	 */
 	private Node toPrecedenceStream(NonTerminal precedenceRule, NonTerminal parentRule, int startPosition, int maxEndPosition) throws ParseException {
 		// Start parsing this precedence non-terminal
-		depth++;
 		if (verbose) {
 			this.printVerbose("// --> To CFG stream from Precedence stream");
 			this.printVerbose("//");
@@ -515,7 +545,7 @@ public class Parser {
 			this.printVerbose("//");
 			this.printVerbose("// <-- To Precedence stream from CFG stream");
 		}
-		depth--;
+		
 		return syntaxTree;
 	}
 	
@@ -763,6 +793,15 @@ public class Parser {
 				this.printVerbose("//");
 			}
 			
+			// Extend the stream span to include the FOLLOW character (CFG requires this)
+			while (!tokenStream.isEmpty()) {
+				// Extend by one
+				tokenStream.setRightExclusive(++endPosition);
+				// If this newly-included character is empty, extend again
+				StreamItem nextItem = tokenStream.peekRight();
+				if (nextItem != null && nextItem.token != Terminal.EMPTY) break;
+			}
+			
 			parseSubtree = toCFGStream(nextRule, startPosition, endPosition);
 		}
 		return parseSubtree;
@@ -853,6 +892,18 @@ public class Parser {
 	}
 	
 	private void fatalError(String err) throws ParseException {
-		throw new ParseException("\n" + err + "\nAt...\n\n" + this.tokenStream);
+		String stream = "End of stream";
+		if (!this.tokenStream.isEmpty()) {
+			int leftPos = this.tokenStream.getLeft();
+			int rightPos = this.tokenStream.getRightExclusive();
+			boolean isLongStream = (rightPos - leftPos > 5); 
+			if (isLongStream) {
+				 stream = this.tokenStream.toString(leftPos, leftPos + 5) + "...";
+			}
+			else {
+				stream = this.tokenStream.toString();
+			}
+		}
+		throw new ParseException("\n" + err + "\nAt...\n" + stream + "\n");
 	}
 }

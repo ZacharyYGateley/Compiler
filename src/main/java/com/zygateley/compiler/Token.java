@@ -160,18 +160,12 @@ public interface Token {
 		}
 		return array;
 	}
-	public static final int[] _STMTS_FIRST = {
-			FUNCTION,
-			IF,
-			CURLY_OPEN,
-			VAR,
-			ECHO
-	};
 	public static final int[] _STMT_FIRST = {
 			VAR,
 			INPUT,
 			ECHO
 	};
+	public static final int[] _STMTS_FIRST = combineArrays(_STMT_FIRST, FUNCTION, IF, CURLY_OPEN, VAR, ECHO);
 	public final static int[] operatorSet = {
 			PLUS,
 			MINUS,
@@ -206,11 +200,12 @@ public interface Token {
 			INT,
 			STRING
 	};
-	public static final int[][] commonFollow1 = new int[][] { combineArrays(_STMT_FIRST, EOF) };
-	public static final int[][] commonFollow2 = new int[][] { combineArrays(_STMT_FIRST, EOF, ELSEIF, ELSE) };
+	public static final int[][] commonFollow1 = new int[][] { combineArrays(_STMTS_FIRST, EOF, CURLY_CLOSE) };
+	public static final int[][] commonFollow2 = new int[][] { combineArrays(_STMTS_FIRST, EOF, CURLY_CLOSE, ELSEIF, ELSE) };
 	public static final int[][] commonFollow3 = new int[][] { combineArrays(operatorSet, SEMICOLON, COMMA, PAREN_CLOSE) };
 	
 
+	public boolean isTerminal();
 	public static boolean isTerminal(int tokenValue) {
 		return firstTerminal <= tokenValue && tokenValue <= lastTerminal;
 	}
@@ -300,6 +295,9 @@ enum Terminal implements Token {
 		this.regexStart = (matching.length > 1) ? Pattern.compile(matching[1]) : null;
 		this.regexEnd = (matching.length > 2) ? Pattern.compile(matching[2]) : null;
 	}
+	
+	public boolean isTerminal() { return true; }
+	public boolean isNonTerminal() { return false; }
 	
 	/**
 	 * fullMatch == false: looks for partial match with token
@@ -607,6 +605,9 @@ enum NonTerminal implements Token {
 		this.precedencePattern = new PrecedencePattern(splitAt, leftRule, rightRule, direction, nonTerminalWrapper);
 		this.FOLLOW = null;
 	}
+	
+	public boolean isTerminal() { return false; }
+	public boolean isNonTerminal() { return true; }
 
 	//// CONSTRUCTOR helper methods
 	/**

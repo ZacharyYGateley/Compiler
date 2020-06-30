@@ -24,24 +24,23 @@ public class Application {
 	public static void main(String[] args) throws Exception {
 		// TESTING
 		String myString =
-				//"echo -(-(-1)-2);"
-				"echo -((33 + -(-22 + (11 * 25) - 11 / 3)) * 2 - -1);"
-				//"echo a*(b*c)*f-d*e;\n"
-				//"echo a + b;"
-				//"echo a*(b*c);"
-				/*
 				"function crazyMath (a, b, c, d, e) {" 
 				+ "echo a * (b * c) - d * e;\n" 
 				+ "}"
 				+ "input abc;\n"
-				+ "rob = 3;\n"
-				+ "if (abc > rob) { echo \"abc is bigger than rob\"; }"
-				+ "elseif (abc == rob) { echo \"abc is equal to rob\"; }"
-				+ "else echo \"abc is less than rob\";"
-				+ "crazyMath(1, 2, 3, 4, 5);"
-				*/
-				//"if (false) {abc = 5 * 2 + 6; df = 5; echo abc + df * 6;}elseif ( 2 == 4) b = 2; else{echo \"My goodness\";}" // echo \"The man with the plan is yo mamma\"; {echo true;}"
-				//"a=3*2+4*5;"
+				+ "rob = \"rob\";\n"
+				+ "if (abc == rob) {"
+				+ "  echo \"abc is bigger than rob\";"
+				+ "  echo \"My goodness\\\\\";"
+				+ "  echo \"The man with the plan is yo mamma\";"
+				+ "}"
+				+ "else {"
+				+ "  echo \"abc is less than rob\";"
+				+ "  echo \"Here's some crazy math for you: \";"
+				+ "  crazyMath(1, 2, 3, 4, 5);"
+				+ "  echo \"Here's some normal math for you: \";"
+				+ "  echo -((33 + -(-22 + (11 * 25) - 11 / 3)) * 2 - -1);"
+				+ "}"
 				;
 		PushbackReader sr = new PushbackReader(new StringReader(
 				myString

@@ -1,15 +1,15 @@
 Reconsider naming of TokenStream methods.
 	Information hiding --> readLeft, readRight, unreadLeft, unreadRight
 	
+Allow lone semicolons in grammar?
+	
 Make traversing parseTree more data hidden
 
-Is StreamItem.value redundant?
-
 Output to assembly
-	Aliases and pulling/pushing from stack
+	Aliases and pulling/pushing from stack only when necessary
 Can make firstTerminalsAndPatterns and follow do the work of the NonTerminal constructor?
 Make Token prettier :'-(
-Should be able to pass EXPR as argument
+Should be able to pass EXPR as argument in made-up language
 TokenStream.peek should return EOF if no tokens, not EMPTY
 
 boolean operators (&& || !)

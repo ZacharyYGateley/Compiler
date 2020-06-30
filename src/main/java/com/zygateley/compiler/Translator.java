@@ -55,7 +55,7 @@ public class Translator {
 				break;
 			case _IF_:
 				endLine();
-				add("if");
+				add("if ");
 				// Expression
 				__pythonTranslateNode__(childNodes.get(2));
 				addLine(":");
@@ -89,12 +89,8 @@ public class Translator {
 				}
 				break;
 			case _BLOCK_:
-				endLine();
-				addLine("if True:");
-				currentIndent++;
+				// Python does not contain if-then scopes, so just process normally
 				__pythonCrawlList__(childNodes);
-				currentIndent--;
-				endLine();
 				break;
 			case _STMT_:
 				__pythonCrawlList__(childNodes);
