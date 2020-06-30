@@ -13,8 +13,8 @@ class StreamItem {
 	// 		from open StreamItem to close INDEX
 	// 		from close StreamItem to open INDEX
 	// Only when you have to, see Parser::toPrecedenceStream
-	public int closeGroup = -1;
-	public int openGroup = -1;
+	public int closeGroupAt = -1;
+	public int openGroupAt = -1;
 	// During parsing, Store pointer to syntaxTree here if group
 	public Node syntaxTree = null;
 	public boolean negated = false;
@@ -53,8 +53,8 @@ class StreamItem {
 			valueString = "\n\tValue: " + this.value;
 		}
 		String groupString = "";
-		if (this.openGroup > 0) {
-			groupString = "\n\tGroup: [" + this.openGroup + ", " + this.closeGroup + "]";
+		if (this.openGroupAt > 0) {
+			groupString = "\n\tGroup: [" + this.openGroupAt + ", " + this.closeGroupAt + "]";
 		}
 		String syntaxString = "";
 		if (this.syntaxTree != null) {

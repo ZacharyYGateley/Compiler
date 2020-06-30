@@ -2,93 +2,125 @@ package com.zygateley.compiler;
 
 import java.util.*;
 
-
+/**
+ * The syntaxTree is composed of Nodes.
+ * Each node may be a 
+ * 		NonTerminal: nonTerminal = nonTerminal
+ * 					 childNodes = ArrayList<Node> of children
+ * 					 terminal = null
+ * 						EXCEPT for precedence rules (see mergeOperands in precedence stream)
+ * 					
+ * 					 
+ * 		or Terminal: terminal = Terminal
+ * 					 childNodes = null (no children --> leaf Node)
+ * 					 May contain 
+ * 						a symbol from the SymbolTable 
+ * 							e.g. VAR has a symbol. PLUS does not.
+ * 							This is indicated by Terminal.symbolType
+ * 					 	or a value
+ * 							either LITERAL value
+ * 							or inherited from Terminal.exactString
+ *  
+ * Both NonTerminals and Terminals may be negated
+ * 
+ * @author Zachary Gateley
+ *
+ */
 class Node implements Iterable<Node> {
-	// Name is used for debugging so that the 
-	// token is clearly understood at first sight
-	private String _name_;
-	private NonTerminal rule;
-	private Terminal token;
-	private Symbol symbol;
-	private String value;
-	private boolean negated = false;
-	private ArrayList<Node> param;
-	// Keep one copy of an empty parameter list
-	// Point to it on empty parameter list to limit memory usage
-	// Additionally, this ensures param is never null
-	private static final ArrayList<Node> emptyParam = new ArrayList<Node>();
+	// Name is used for more readable toString
+	private final String _name_;
 	
-	public Node(NonTerminal rule) {
-		this._name_ = rule+"";
-		this.rule = rule;
-		this.token = null;
-		this.symbol = null;
-		this.value = null;
-		this.param = new ArrayList<Node>();
+	// NonTerminals
+	private NonTerminal nonTerminal = null;
+	private ArrayList<Node> childNodes;
+	
+	// Terminals
+	private Terminal terminal = null;
+	private Symbol symbol = null;
+	private String value = null;
+	
+	// Terminal or NonTerminal
+	private boolean negated = false;
+	
+	// CONSTRUCTORS
+	/**
+	 * Non-leaf node
+	 * 
+	 * @param nonTerminal rule for this node
+	 */
+	public Node(NonTerminal nonTerminal) {
+		this.nonTerminal = nonTerminal;
+		this.childNodes = new ArrayList<Node>();
+
+		// toString override value
+		this._name_ = nonTerminal + "";
+	}	
+	/**
+	 * Non-leaf node
+	 * 
+	 * @param nonTerminal rule for this node
+	 * @param operatorTerminal Terminal operator string
+	 */
+	public Node(NonTerminal nonTerminal, Terminal operatorTerminal) {
+		this.nonTerminal = nonTerminal;
+		this.terminal = operatorTerminal;
+		this.childNodes = new ArrayList<Node>();
+
+		// toString override value
+		this._name_ = nonTerminal + " (" + operatorTerminal + ")";
 	}
-	public Node(NonTerminal rule, boolean hasParameters) {
-		this._name_ = rule+"";
-		this.rule = rule;
-		this.token = null;
-		this.symbol = null;
-		this.value = null;
-		this.param = (hasParameters ? new ArrayList<Node>() : Node.emptyParam);
-	}
-	public Node(Terminal token, Symbol symbol, String value) {
+	/**
+	 * Leaf node
+	 * 
+	 * @param terminal Token terminal 
+	 * @param symbol Symbol item from the SymbolTable, may be null
+	 * @param value may be a LITERAL value or the exactString from terminal
+	 */
+	public Node(Terminal terminal, Symbol symbol, String value) {
+		this.terminal = terminal;
+		this.symbol = symbol;
+		this.value = value;
+		// Leaf nodes do not have children
+		this.childNodes = null;
+
+		// toString override value
 		String type = "";
 		if (symbol != null) {
 			type = (symbol.getType() != null ? symbol.getType()+"" : symbol.getName());
 		}
-		this._name_ = (symbol != null ? "(" + type + ") " : "") + token;
-		this.rule = null;
-		this.token = token;
-		this.symbol = symbol;
-		this.value = value;
-		// No parameters for terminals
-		this.param = null;
-	}
-	public Node(final Node pn, boolean hasParameters) {
-		this._name_ = pn._name_;
-		this.rule = pn.rule;
-		this.token = pn.token;
-		this.symbol = pn.symbol;
-		this.value = pn.value;
-		this.param = (hasParameters ? pn.param : Node.emptyParam);
+		this._name_ = (symbol != null ? "(" + type + ") " : "") + terminal;
 	}
 	
+	// Keep all fields protected
 	public NonTerminal getRule() {
-		return this.rule;
+		return this.nonTerminal;
 	}
-	
 	public Terminal getToken() {
-		return this.token;
+		return this.terminal;
 	}
-	
 	public Symbol getSymbol() {
 		return this.symbol;
 	}
-	
 	public String getValue() {
 		return this.value;
 	}
-	
-	public ArrayList<Node> getParam() {
-		return this.param;
-	}
-	
-	public void addParam(final Node param) {
-		// Do not add parameters to emptyParam
-		if (this.param != Node.emptyParam) {
-			this.param.add(param);
+	/**
+	 * @return a copy of the children of this Node
+	 */
+	public ArrayList<Node> childNodes() {
+		// Protect
+		if (this.childNodes == null) {
+			return null;
+		}
+		else {
+			return new ArrayList<Node>(this.childNodes);
 		}
 	}
-	
-	public void setToken(final Terminal token) {
-		if (this.token == null) {
-			this.token = token;
-		}
+	public void addChild(final Node newChild) {
+		this.childNodes.add(newChild);
 	}
 	
+	// Negation
 	public boolean isNegated() {
 		return this.negated;
 	}
@@ -98,25 +130,85 @@ class Node implements Iterable<Node> {
 	
 	@Override
 	public Iterator<Node> iterator() {
-		return this.param.iterator();
+		return this.childNodes.iterator();
+	}
+	@Override
+	public String toString() {
+		return _name_;
+	}
+}
+
+/**
+ * Parse exceptions thrown by fatalError()
+ */
+class ParseException extends Exception {
+	static final long serialVersionUID = 666;
+	
+	public ParseException(String message) {
+		super(message);
 	}
 }
 
 
+/**
+ * Instances of this class can
+ * parse a TokenStream and return the 
+ * root of the resulting syntax tree.
+ * 
+ * There are two streams the parser may follow:
+ * 		CFG (Context Free Grammar)
+ * 			Processes the stream linearly
+ * 			Must be unambiguous
+ * 		Precedence
+ * 			Processes an expression (as the token stream) recursively
+ * 			Used to properly apply operator precedence on expressions
+ * 			toPrecedenceStream() accounts for
+ * 				balanced parentheses
+ * 				unary operators
+ * 			parsePrecedenceRule() accounts for all other rules
+ * 				See NonTerminal.PrecedencePattern
+ * 				for more information on these rules
+ * 
+ * @author Zachary Gateley
+ *
+ */
 public class Parser {
 	private TokenStream tokenStream;
+	
+	// Verbose output shows an XML representation
+	// of the parse tree, indenting appropriately by depth 
 	private boolean verbose;
 	private int depth;
 	
-	public Parser(TokenStream ts) {
-		this.tokenStream = ts;
+	/**
+	 * The only variable needed to instantiate a
+	 * parser is a TokenStream
+	 * @param tokenStream
+	 */
+	public Parser(TokenStream tokenStream) {
+		this.tokenStream = tokenStream;
 	}
 	
-	public Node parse(boolean verbose) throws Exception {
+	/**
+	 * Parse the TokenStream in verbose mode.
+	 * Outputs XML structure of parseTree
+	 * and shows switching between CFG stream and Precedence stream.  
+	 * 
+	 * @param verbose
+	 * @return Node root of resulting syntax tree
+	 * @throws ParseException
+	 */
+	public Node parse(boolean verbose) throws ParseException {
 		this.verbose = verbose;
 		return parse();
 	}
-	public Node parse() throws Exception {
+	/**
+	 * Parse the TokenStream.
+	 * 
+	 * @return Node root of resulting syntax tree
+	 * @throws ParseException
+	 */
+	public Node parse() throws ParseException {
 		// Reset parsing parameters
 		depth = 0;
 		
@@ -124,9 +216,11 @@ public class Parser {
 			System.out.println("<!-- Parsing initiated -->\n");
 		}
 		
-		// Top-level of syntaxTree should only contain first rule
-		NonTerminal firstRule = NonTerminal.getNonTerminal(Token.firstNonTerminal);
-		Node syntaxTree = parseRule(firstRule, tokenStream.length());
+		// Root node of syntax tree
+		// The starting rule MUST be a CFG rule
+		// Precedence rules depend on parent rules and their respective follow sets
+		NonTerminal startingRule = NonTerminal.getNonTerminal(Token.startingRule);
+		Node syntaxTree = toCFGStream(startingRule, 0, tokenStream.length());
 				
 		if (verbose) {
 			System.out.println("\n<!-- Parsing finished -->\n");
@@ -134,18 +228,47 @@ public class Parser {
 		
 		return syntaxTree;
 	}
-	
+
 	/**
-	 * Parse left-to-right using a standard CFG rule
 	 * 
-	 * @param rule
+	 * From Precedence stream to non-precedence stream.
+	 * Must set token stream positioning appropriately
+	 * before calling parseCFGRule
+	 * 
+	 * @param ruleCFG
 	 * @param endPosition exclusive
 	 * @return
-	 * @throws Exception
+	 * @throws ParseException
 	 */
-	private Node parseRule(NonTerminal rule, int endPosition) throws Exception {
-		// New non-terminal node
-		Node pn = new Node(rule);
+	private Node toCFGStream(NonTerminal ruleCFG, int startPosition, int endPosition) throws ParseException {
+		if (verbose) {
+			this.printVerbose("// --> To Precedence stream from CFG stream");
+			this.printVerbose("//");
+		}
+		tokenStream.setLeft(startPosition);
+		tokenStream.setRightExclusive(endPosition);
+		Node syntaxSubtree = parseCFGRule(ruleCFG, endPosition);
+		if (verbose) {
+			this.printVerbose("//");
+			this.printVerbose("// <-- To CFG stream from Precedence stream");
+		}
+		return syntaxSubtree;
+	}
+	
+	/**
+	 * Parse left-to-right using a standard CFG rule.
+	 * 
+	 * TokenStream.leftPosition and TokenStream.rightPosition
+	 * assumed to be appropriately set.
+	 * 
+	 * @param rule NonTerminal representing this CFG rule
+	 * @param endPosition exclusive in TokenStream
+	 * @return Node root of resulting parse subtree 
+	 * @throws ParseException
+	 */
+	private Node parseCFGRule(NonTerminal rule, int endPosition) throws ParseException {
+		// Begin new subtree
+		Node syntaxSubtree = new Node(rule);
 		
 		// Skip all EMPTY tokens
 		// These are only used to hasEpsilon and inFollow
@@ -163,8 +286,7 @@ public class Parser {
         		
         		// Node has no official children
         		if (verbose) {
-        			for (int i = 0; i < depth; i++) System.out.print("  ");
-        			System.out.println("<" + rule.toString().replaceAll("_",  "") + " />");
+        			this.printVerbose("<" + rule.toString().replaceAll("_",  "") + " />");
         		}
         		
         		return null;
@@ -177,8 +299,7 @@ public class Parser {
     	
     	// Starting building this NonTerminal
 		if (verbose) {
-			for (int i = 0; i < depth; i++) System.out.print("  ");
-			System.out.println("<" + rule.toString().replaceAll("_",  "") + ">");
+			this.printVerbose("<" + rule.toString().replaceAll("_",  "") + ">");
 		}
     	
 		int[] pattern = rule.patterns[indexInFirst].PATTERN;
@@ -214,282 +335,36 @@ public class Parser {
 				}
 				
 				// Add new terminal
-				addTerminal(pn, item.token, item.symbol, item.value);
+				addTerminal(syntaxSubtree, item.token, item.symbol, item.value);
 			}
 			// NonTerminals
 			// Recur into parseRule
 			else {
-				NonTerminal nextToken = NonTerminal.getNonTerminal(tokenValue);
-				if (!nextToken.isPrecedenceRule()) {
+				NonTerminal nextRule = NonTerminal.getNonTerminal(tokenValue);
+				if (!nextRule.isPrecedenceRule()) {
 					depth++;
-					next = parseRule(nextToken, endPosition);
+					next = parseCFGRule(nextRule, endPosition);
 					depth--;
 				}
 				// Precedence rules need to move into precedence branch
 				else {
 					// Precedence rules do not represent an increase in depth
-					next = toPrecedenceStream(nextToken, endPosition, rule);
+					next = toPrecedenceStream(nextRule, rule, tokenStream.getLeft(), endPosition);
 				}
 
 				// Add resulting NonTerminal to tree
 				if (next != null) {
-					pn.addParam(next);
+					syntaxSubtree.addChild(next);
 				}
 			}
 		}
 		
 		// Finished building this NonTerminal
 		if (verbose) {
-			for (int i = 0; i < depth; i++) System.out.print("  ");
-			System.out.println("</" + rule.toString().replaceAll("_",  "") + ">");
+			this.printVerbose("</" + rule.toString().replaceAll("_",  "") + ">");
 		}
 		
-		// Strip empty ArrayList where applicable
-		if (pn.getParam().size() == 0) {
-			pn = new Node(pn, false);
-		}
-		
-		return pn;
-	}
-	
-	/**
-	 * From precedence stream to non-precedence stream
-	 * 
-	 * @param ruleCFG
-	 * @param endPosition exclusive
-	 * @return
-	 */
-	private Node toCFGStream(NonTerminal ruleCFG, int startPosition, int endPosition) throws Exception {
-		if (verbose) {
-			System.out.println("\n...Precedence stream --> Non-precedence stream...\n");
-		}
-		depth++;
-		tokenStream.setLeft(startPosition);
-		tokenStream.setRightExclusive(endPosition);
-		Node syntaxTree = parseRule(ruleCFG, endPosition);
-		depth--;
-		if (verbose) {
-			System.out.println("\n...Non-precedence stream --> Precedence stream...\n");
-		}
-		return syntaxTree;
-	}
-	
-	/**
-	 * parsePrecedenceRule
-	 * @param rule Precedence NonTerminal rule
-	 * @param startPosition in tokenStream inclusive
-	 * @param endPosition in tokenStream exclusive
-	 * @return
-	 */
-	private Node parsePrecedenceRule(NonTerminal rule, int startPosition, int endPosition) throws Exception {
-		// Patterns split at these tokens
-		int[] splitAt = rule.precedencePattern.splitAt;
-		int partition = -1;
-		int splitTokenValue = -1;
-		
-		// Make sure the stream is up-to-date
-		// Inclusive start
-		tokenStream.setLeft(startPosition);
-		// endPosition is exclusive, but so is tokenStream's rightPosition
-		tokenStream.setRightExclusive(endPosition);
-
-		// Look for a split token within the bounds of the stream 
-		// If there is no match, reset the stream and send it to the next rule
-		// 		Return to nonPrecedence stream will throw parse errors 
-		// 		if there are no matches anywhere along the sequence of rules 
-		// If there is a match,
-		//		Send left side of match to rule's left rule
-		//			returns parseTree
-		// 		Send right side of match to rule's right rule
-		//			returns parseTree
-		//		Combine results into a single parse tree 
-		//			by this rule's wrapper class
-		Token.Direction direction = rule.precedencePattern.direction;
-		boolean leftToRight = (direction == Token.Direction.LEFT_TO_RIGHT);
-		StreamItem item = null;
-		int itemCount = 0;
-		boolean leftmostIsEmpty = false;
-
-		// Right to left
-		partition = startPosition;		// If no match
-		while (tokenStream.getRightExclusive() > startPosition) {
-			// Get token at next location
-			StreamItem nextItem = tokenStream.popRight();
-			
-			// Skip empty
-			if (nextItem.token == Terminal.EMPTY) {
-				leftmostIsEmpty = true;
-				continue;
-			}
-			leftmostIsEmpty = false;
-			
-			item = nextItem;
-			itemCount++;
-			
-			// If this is an embedded group,
-			// Recur then skip group
-			if (item.openGroup > -1) {
-				if (item.syntaxTree == null) {
-					// Recur to get parse tree
-					// And set as these stream items' parse trees 
-					Node embeddedTree = parsePrecedenceRule(rule, item.openGroup + 1, item.closeGroup);
-					StreamItem opener = tokenStream.get(item.openGroup);
-					opener.syntaxTree = item.syntaxTree = embeddedTree;
-					// Since we are passing a parse tree
-					// from one StreamItem to another,
-					// Need to apply this negation to any previous negation (XOR)
-					embeddedTree.setNegated(opener.negated ^ embeddedTree.isNegated());
-					tokenStream.setLeft(startPosition);
-				}
-				// Skip group
-				tokenStream.setRightExclusive(item.openGroup);
-				continue;
-			}
-			
-			splitTokenValue = findSplit(splitAt, item.token.tokenValue);
-			if (splitTokenValue > -1) {
-				partition = tokenStream.getRightExclusive();
-				break;
-			}
-		}
-		// Reset stream to initial state
-		tokenStream.setRightExclusive(endPosition);
-
-		boolean haveMatch = (splitTokenValue > -1);
-		
-		// If we only have one EMBEDDED item,
-		// return its syntax tree (set recursively during above search)
-		boolean onlyEmbeddedParseTree = (
-				itemCount == 1 &&
-				item != null &&
-				item.openGroup > -1
-		);
-		if (onlyEmbeddedParseTree) {
-			return item.syntaxTree;
-		}
-		
-		// Do not parse empty, placed there by negator in toPrecedenceStream 
-		if (leftmostIsEmpty) {
-			// Skip empty
-			if (partition == startPosition) {
-				partition++;
-			}
-			startPosition++;
-			tokenStream.setLeft(startPosition);
-		}
-		
-		
-		final Terminal splitToken = Terminal.getTerminal(splitTokenValue);
-		if (verbose) { 
-			System.out.println(rule + ": (" + (haveMatch ? "match: " + splitToken : "no match") + ")");
-			System.out.println("\tstart, partition, end (" + direction + ")");
-			System.out.println(String.format("\t%d, %d, %d\n", startPosition, partition, endPosition));
-		}
-
-		// For any passing to subrules, 
-		// exclude the split token
-		
-		/***** LEFT OPERAND *****/
-		// Parse left side of split
-		// Only if there is a string to pass to it
-		// We always skip the splitToken, so 
-		//		if searching left, to right and there is a match, check partition (- 1)
-		//		otherwise, check against partition (- 0)
-		int leftOffset = (leftToRight && haveMatch ? -1 : 0);
-		Node leftOperand = null;
-		if (startPosition < partition + leftOffset) {
-			// And get parse rule
-			NonTerminal leftRule = NonTerminal.getNonTerminal(rule.precedencePattern.leftRule);
-			
-			// Get new childNode from left-hand string
-			if (leftRule.isPrecedenceRule()) {
-				// Stay in precedence stream
-				// startPosition inclusive
-				// endPosition exclusive
-				leftOperand = parsePrecedenceRule(leftRule, startPosition, partition + leftOffset);
-				// This operand is in a wrapper Node
-				// See Token.PrecedencePattern for more details
-			}
-			else {
-				// __VALUE__
-				// Move to non-precedence stream
-				// Non-precedence stream is always left to right
-				leftOperand = toCFGStream(leftRule, startPosition, partition + leftOffset);
-				// This operand is a __VALUE__
-			}
-			
-			
-			// No match means 
-			// we are passing an operand back upwards
-			//		i.e. Had to work down operator precedence
-			//			 to find a match value. 
-			//			 Its result has been passed
-			//			 back up to here. Keep passing it.
-			if (!haveMatch) {
-				// Set negated as necessary
-				leftOperand.setNegated(item.negated);
-				return leftOperand;
-			}
-			// Otherwise, we have a match.
-			// This *node* is a wrapper for Token.PrecedencePattern NonTerminals
-		}
-		
-		/***** RIGHT OPERAND ****/
-		// Parse right side (exclusive of split)
-		// Only if there is a stream to pass it
-		// We always skip the splitToken, so... 
-		//		if match, check partition (+ 1)
-		// 		otherwise, check partition alone
-		Node rightOperand = null;
-		int rightOffset = (!leftToRight && haveMatch ? 1 : 0);
-		if (partition + rightOffset < endPosition) {
-			// Get parse rule
-			NonTerminal rightRule = NonTerminal.getNonTerminal(rule.precedencePattern.rightRule);
-			
-			// Get new childNode from left-hand string
-			if (rightRule.isPrecedenceRule()) {
-				// Stay in precedence stream
-				// startPosition inclusive
-				// endPosition exclusive
-				rightOperand = parsePrecedenceRule(rightRule, partition + rightOffset, endPosition);
-				// This operand is in a wrapper Node
-				// See Token.PrecedencePattern for more details
-			}
-			else {
-				// __VALUE__
-				// Move to non-precedence stream
-				// Non-precedence stream is always left to right
-				rightOperand = toCFGStream(rightRule, partition + rightOffset, endPosition);
-				// This operand is a __VALUE__
-			}
-			
-			
-			// No match means 
-			// we are passing an operand back upwards
-			//		i.e. Had to work down operator precedence
-			//			 to find a match value. 
-			//			 Its result has been passed
-			//			 back up to here. Keep passing it.
-			if (!haveMatch) {
-				// Set negated as necessary
-				rightOperand.setNegated(item.negated);
-				return rightOperand;
-			}
-			// Otherwise, we have a match.
-			// This *node* is a wrapper for Token.PrecedencePattern NonTerminals
-		}
-
-		// MATCH!
-		// We have found something by this rule
-		
-		Node wrapper = null;
-		
-		// Merge operands appropriately
-		NonTerminal wrappingClass = NonTerminal.getNonTerminal(rule.precedencePattern.nonTerminalWrapper);
-		wrapper = mergeOperands(leftOperand, rightOperand, wrappingClass, splitToken);
-		
-		wrapper.setNegated(item.negated);
-		return wrapper;
+		return syntaxSubtree;
 	}
 	
 	/**
@@ -504,35 +379,46 @@ public class Parser {
 	 * With this new stream, look for matches (w/ ambiguity)
 	 * 
 	 * @param precedenceRule, next rule (precedence)
-	 * @param endPosition exclusive
+	 * @param maxEndPosition exclusive
 	 * @param parentRule to determine when to stop stream for precedence rule
 	 * @return
+	 * @throws ParseException
 	 */
-	private Node toPrecedenceStream(NonTerminal precedenceRule, int endPosition, NonTerminal parentRule) throws Exception {
+	private Node toPrecedenceStream(NonTerminal precedenceRule, NonTerminal parentRule, int startPosition, int maxEndPosition) throws ParseException {
 		// Start parsing this precedence non-terminal
+		depth++;
 		if (verbose) {
-			System.out.println("\n...Non-precedence stream --> Precedence stream...\n");
+			this.printVerbose("// --> To CFG stream from Precedence stream");
+			this.printVerbose("//");
 		}
+		
+		// Make sure stream positioning is correct
+		tokenStream.setLeft(startPosition);
+		tokenStream.setRightExclusive(maxEndPosition);
 		
 		// Find final StreamItem for this expression 
 		// 	(by parent.FOLLOW.contains)
 		//  (and by balanced parentheses, curly, square brackets)
 		// Concurrently, link matching open/close parens, curlies, squares
 		// Concurrently, indicate all negations
-		int startPos = this.tokenStream.getLeft();
-		int endPos = startPos;
-		ArrayDeque<StreamItem> parenStack = new ArrayDeque<>();
-		ArrayDeque<StreamItem> curlyStack = new ArrayDeque<>();
-		ArrayDeque<StreamItem> squareStack = new ArrayDeque<>();
-		int openGroups = 0;
-		boolean inFollow = false;
-		boolean isBalanced = true;
-		int leftPosition = startPos - 1;
+		ArrayDeque<StreamItem> 
+			parenStack = new ArrayDeque<>(), 
+			curlyStack = new ArrayDeque<>(), 
+			squareStack = new ArrayDeque<>();
+		int openGroupCount = 0;
+		// Current left position
+		int leftPosition = startPosition - 1;
 		Terminal thisToken = null, lastToken = null;
-		boolean thisIsSign = false, thisIsOperator = false, thisIsOpenParen = false;
-		boolean lastIsSign = false, lastIsOperator = false, lastIsOpenParen = false;
-		boolean lastIsBOF = true;
-		while (++leftPosition < endPosition) {
+		boolean inFollow = false,
+				isBalanced = true;
+		boolean thisIsSign = false, 
+				thisIsOperator = false, 
+				thisIsOpenParen = false,
+				lastIsSign = false, 
+				lastIsOperator = false, 
+				lastIsOpenParen = false,
+				lastIsBOF = true;
+		while (++leftPosition < maxEndPosition) {
 			// Remember last token
 			lastToken = thisToken;
 			lastIsSign = thisIsSign;
@@ -542,7 +428,7 @@ public class Parser {
 			// Consume stream
 			StreamItem item = tokenStream.popLeft();
 			inFollow = parentRule.inFollow(item.token);
-			isBalanced = (openGroups == 0);
+			isBalanced = (openGroupCount == 0);
 			if (inFollow && isBalanced) {
 				break;
 			}
@@ -553,27 +439,27 @@ public class Parser {
 			switch (thisToken) {
 			case PAREN_OPEN:
 				markOpenGroup(parenStack, item, leftPosition);
-				openGroups++;
+				openGroupCount++;
 				break;
 			case PAREN_CLOSE:
 				markCloseGroup(parenStack, item, leftPosition);
-				openGroups--;
+				openGroupCount--;
 				break;
 			case CURLY_OPEN:
 				markOpenGroup(curlyStack, item, leftPosition);
-				openGroups++;
+				openGroupCount++;
 				break;
 			case CURLY_CLOSE:
 				markCloseGroup(curlyStack, item, leftPosition);
-				openGroups--;
+				openGroupCount--;
 				break;
 			case SQUARE_OPEN:
 				markOpenGroup(squareStack, item, leftPosition);
-				openGroups++;
+				openGroupCount++;
 				break;
 			case SQUARE_CLOSE:
 				markCloseGroup(squareStack, item, leftPosition);
-				openGroups--;
+				openGroupCount--;
 				break;
 			default:
 				break;
@@ -600,13 +486,13 @@ public class Parser {
 		}
 
 		// Store result and reset stream pointers
-		endPos = leftPosition;
-		tokenStream.setLeft(startPos);
-		tokenStream.setRightExclusive(endPos);
+		tokenStream.setLeft(startPosition);
+		int endPosition = leftPosition;
+		tokenStream.setRightExclusive(endPosition);
 		
 		// Reached end of stream (read: program)
 		// If not balanced parentheses, syntax error.
-		isBalanced = (openGroups == 0);
+		isBalanced = (openGroupCount == 0);
 		if (!isBalanced) {
 			this.fatalError("Fatal error: Incorrectly-balanced parentheses.");
 			return null;
@@ -618,45 +504,300 @@ public class Parser {
 		// Otherwise, there is a stream to parse
 		
 		// And parse using the precedence rule until the determined end position
-		Node syntaxTree = this.parsePrecedenceRule(precedenceRule, startPos, endPos);
+		Node syntaxTree = this.parsePrecedenceRule(precedenceRule, startPosition, endPosition);
 		
-		// Reset stream parameters after already-parsed stream
-		// Set to before FOLLOW token so that parent NonTerminal knows that it is done.
-		tokenStream.setLeft(endPos);
-		tokenStream.setRightExclusive(endPosition);
+		// Reset stream parameters after already having read the stream
+		tokenStream.setLeft(endPosition);
+		tokenStream.setRightExclusive(maxEndPosition);
 
 		// Finished parsing this precedence non-terminal
 		if (verbose) {
-			System.out.println("\n...Precedence stream --> Non-precedence stream...\n");
+			this.printVerbose("//");
+			this.printVerbose("// <-- To Precedence stream from CFG stream");
 		}
-		
+		depth--;
 		return syntaxTree;
 	}
 	
+	/**
+	 * Push a stream item to the appropriate stack
+	 * 
+	 * @param stack stack to push from
+	 * @param openItem stream item to push
+	 * @param position position in TokenStream
+	 */
 	private void markOpenGroup(ArrayDeque<StreamItem> stack, StreamItem openItem, int position) { 
 		stack.push(openItem);
-		openItem.openGroup = position;
+		openItem.openGroupAt = position;
 	}
 	
-	private void markCloseGroup(ArrayDeque<StreamItem> stack, StreamItem closeItem, int position) {
+	/**
+	 * Pop a stream item from the appropriate open-item stack (not returned)
+	 * Sets the open and close positions for 
+	 * both the StreamItem from the stack (open item)
+	 * and the StreamItem passed as argument (close item)
+	 * 
+	 * @param stack appropriate stack with open items
+	 * @param closeItem matching close item for the last item placed in the stack
+	 * @param closePosition position of this close item in the TokenStream
+	 * @return no return value, all processing complete
+	 */
+	private void markCloseGroup(ArrayDeque<StreamItem> stack, StreamItem closeItem, int closePosition) {
 		StreamItem openItem = stack.pop();
-		closeItem.openGroup = openItem.openGroup;
-		closeItem.closeGroup = position;
-		openItem.closeGroup = position;
+		closeItem.openGroupAt = openItem.openGroupAt;
+		closeItem.closeGroupAt = closePosition;
+		openItem.closeGroupAt = closePosition;
+	}
+	
+	/**
+	 * parsePrecedenceRule
+	 * 
+	 * Read through the stream from startPosition to endPosition
+	 * 
+	 * Look for a SPLIT token within the bounds of the stream 
+	 * 		(See NonTerminal.PrecedencePattern for more details)
+	 * If there is no match, 
+	 * 		Reset the stream and send it to the next rule
+	 * If there is a match,
+	 *  	Send left side of match to rule's left rule
+	 *  		returns parseTree
+	 *  	Send right side of match to rule's right rule
+	 *  		returns parseTree
+	 *  	Combine results into a single parse tree
+	 *  		by this rule's wrapper class
+	 *  
+	 *  Next rule:
+	 *  	If the next rule is a Precedence rule, 
+	 *  		parsePrecedenceRule()
+	 *  	Otherwise,
+	 *  		toCFGStream()
+	 * 
+	 * @param rule Precedence (NonTerminal) rule
+	 * @param startPosition in tokenStream inclusive
+	 * @param endPosition in tokenStream exclusive
+	 * @return parse subtree given for this span [startPosition, endPosition)
+	 * @throws ParseException
+	 */
+	private Node parsePrecedenceRule(NonTerminal rule, int startPosition, int endPosition) throws ParseException {
+		// Patterns split at these tokens
+		int[] splitTokens = rule.precedencePattern.splitTokens;
+		// If a split token is found, this is its Terminal.tokenValue
+		int splitTokenValue = -1;
+		
+		// Make sure the stream is up-to-date
+		// Inclusive start
+		tokenStream.setLeft(startPosition);
+		// endPosition is exclusive, but so is tokenStream's rightPosition
+		tokenStream.setRightExclusive(endPosition);
+
+		// Look for a SPLIT token within the bounds of the stream
+
+		// Look for partition starting at start position
+		int partition = startPosition; 
+		StreamItem item = null;
+		int itemCount = 0;
+		boolean leftmostIsEmpty = false;
+		while (tokenStream.getRightExclusive() > startPosition) {
+			// Get token at next location
+			StreamItem nextItem = tokenStream.popRight();
+			
+			// Skip empty
+			if (nextItem.token == Terminal.EMPTY) {
+				leftmostIsEmpty = true;
+				continue;
+			}
+			leftmostIsEmpty = false;
+			
+			item = nextItem;
+			itemCount++;
+			
+			// If this is an embedded group,
+			// Recur then skip group
+			if (item.openGroupAt > -1) {
+				if (item.syntaxTree == null) {
+					// Recur to get parse tree
+					// And set as these stream items' parse trees 
+					Node embeddedTree = parsePrecedenceRule(rule, item.openGroupAt + 1, item.closeGroupAt);
+					StreamItem opener = tokenStream.get(item.openGroupAt);
+					opener.syntaxTree = item.syntaxTree = embeddedTree;
+					// Since we are passing a parse tree
+					// from one StreamItem to another,
+					// Need to apply this negation to any previous negation (XOR)
+					embeddedTree.setNegated(opener.negated ^ embeddedTree.isNegated());
+					tokenStream.setLeft(startPosition);
+				}
+				// Skip group
+				tokenStream.setRightExclusive(item.openGroupAt);
+				continue;
+			}
+			
+			boolean isSplitToken = splitContains(splitTokens, item.token.tokenValue);
+			splitTokenValue = (isSplitToken ? item.token.tokenValue : -1);
+			if (splitTokenValue > -1) {
+				partition = tokenStream.getRightExclusive();
+				break;
+			}
+		}
+		// Reset stream to initial state
+		tokenStream.setRightExclusive(endPosition);
+
+		boolean haveMatch = (splitTokenValue > -1);
+		
+		// If we only have one EMBEDDED item,
+		// return its syntax tree (set recursively during above search)
+		boolean onlyEmbeddedParseTree = (
+				itemCount == 1 &&
+				item != null &&
+				item.openGroupAt > -1
+		);
+		if (onlyEmbeddedParseTree) {
+			return item.syntaxTree;
+		}
+		
+		// Do not parse empty, placed there by negator in toPrecedenceStream 
+		if (leftmostIsEmpty) {
+			// Skip empty
+			if (partition == startPosition) {
+				partition++;
+			}
+			startPosition++;
+			tokenStream.setLeft(startPosition);
+		}
+		
+		
+		final Terminal splitToken = Terminal.getTerminal(splitTokenValue);
+		if (verbose) {
+			this.printVerbose("//");
+			this.printVerbose("// Try " + rule + ": (" + (haveMatch ? "match: " + splitToken : "no match") + ")");
+			this.printVerbose(String.format("//     start=%d, partition=%d, end=%d", startPosition, partition, endPosition));
+		}
+
+		// For any passing to sub-rules, 
+		// exclude the split token
+		
+		/***** LEFT OPERAND *****/
+		// Parse left side of split if left side is non-empty
+		// We always exclude the splitToken, and 
+		// We always exclude the endPosition, so
+		//		Send [startPosition, partition)
+		//		(if no match and searching left-to-right, partition==endPosition)
+		Node leftOperand = null;
+		if (startPosition < partition) {
+			// Get subsequent parse rule
+			NonTerminal leftRule = NonTerminal.getNonTerminal(rule.precedencePattern.leftRule);
+			leftOperand = precedenceParseNextRule(leftRule, startPosition, partition);
+			
+			// No match means 
+			// leftOperand represents the entire span [startPosition, endPosition),
+			// so leftOperand==parseSubtree
+			if (!haveMatch) {
+				// Set subtree negation as necessary
+				leftOperand.setNegated(item.negated);
+				return leftOperand;
+			}
+		}
+		
+		/***** RIGHT OPERAND ****/
+		// Parse right side of split if right side is non-empty (exclusive of split character)
+		// We always exclude the splitToken, so
+		// If there is a match exclude the left side,
+		//		Send [partition + 1, endPosition)
+		// If there is no match, include the left side
+		//		send [partition, endPosition)
+		Node rightOperand = null;
+		int rightOffset = (haveMatch ? 1 : 0);
+		if (partition + rightOffset < endPosition) {
+			// Get parse rule
+			NonTerminal rightRule = NonTerminal.getNonTerminal(rule.precedencePattern.rightRule);
+			rightOperand = precedenceParseNextRule(rightRule, partition + rightOffset, endPosition);
+			
+			// No match means 
+			// rightOperand represents the entire span [startPosition, endPosition),
+			// so rightOperand==parseSubtree
+			if (!haveMatch) {
+				// Set subtree negation as necessary
+				rightOperand.setNegated(item.negated);
+				return rightOperand;
+			}
+		}
+
+		
+		// MATCH!
+		// Therefore, leftOperand and rightOperand 
+		// are both subtrees
+		
+		// Merge operands using the rule's wrapping class
+		NonTerminal wrappingClass = NonTerminal.getNonTerminal(rule.precedencePattern.nonTerminalWrapper);
+		Node wrapper = mergeOperands(wrappingClass, leftOperand, rightOperand, splitToken);
+		
+		// Set subtree negation as necessary
+		wrapper.setNegated(item.negated);
+		
+		return wrapper;
+	}
+	
+	/**
+	 * Expedites the next rule as necessary
+	 * Returns a parse subtree for this span [startPosition, endPosition)
+	 * 
+	 * @param nextRule NonTerminal rule to match
+	 * @param startPosition inclusive
+	 * @param endPosition exclusive
+	 * @return Node parse subtree
+	 * @throws ParseException
+	 */
+	private Node precedenceParseNextRule(NonTerminal nextRule, int startPosition, int endPosition) throws ParseException {
+		Node parseSubtree;
+		if (nextRule.isPrecedenceRule()) {
+			// Stay in precedence stream
+			parseSubtree = parsePrecedenceRule(nextRule, startPosition, endPosition);
+		}
+		else {
+			// No match in Precedence patterns,
+			// Send to CFG instead.
+			// In valid syntax, this happens for _VALUE_
+			
+			if (verbose) {
+				this.printVerbose("//");
+				printVerbose("// Capture by CFG " + nextRule);
+				this.printVerbose("//");
+			}
+			
+			parseSubtree = toCFGStream(nextRule, startPosition, endPosition);
+		}
+		return parseSubtree;
 	}
 
-	private int findSplit(int[] splitAt, int tokenValue) {
-		for (int terminal : splitAt) {
+	/**
+	 * Check if this token is in the split tokens array from the rule's pattern
+	 * If it is, return the token's index in the array
+	 * 
+	 * @param splitTokens
+	 * @param tokenValue
+	 * @return
+	 */
+	private boolean splitContains(int[] splitTokens, int tokenValue) {
+		for (int terminal : splitTokens) {
 			// Skip any terminal not in  this set
 			if (tokenValue != terminal) continue;
 			
 			// Match!
-			return terminal;
+			return true;
 		}
-		return -1;
+		return false;
 	}
 	
-	private Node mergeOperands(Node leftOperand, Node rightOperand, NonTerminal wrappingClass, Terminal splitToken) {
+	/**
+	 * Merge the operands (subtrees) into its respective wrapping class.
+	 * Return the resulting subtree
+	 * 
+	 * @param leftOperand Node parse subtree
+	 * @param rightOperand Node parse subtree
+	 * @param wrappingClass
+	 * @param splitToken token to label wrapping class with
+	 * @return Node the resulting subtree
+	 */
+	private Node mergeOperands(NonTerminal wrappingClass, Node leftOperand, Node rightOperand, Terminal splitToken) {
 		// Do not combine fully empty
 		boolean leftIsNull = (leftOperand == null);
 		boolean rightIsNull = (rightOperand == null);
@@ -666,15 +807,25 @@ public class Parser {
 		
 		// If both children have appropriate child nodes
 		// Create a new wrapper Node (NonTerminal.PrecedencePattern.nonTerminalWrapper)
-		Node wrapper = new Node(wrappingClass);
-		wrapper.setToken(splitToken);
-		wrapper.addParam(leftOperand);
-		wrapper.addParam(rightOperand);
+		Node wrapper = new Node(wrappingClass, splitToken);
+		wrapper.addChild(leftOperand);
+		wrapper.addChild(rightOperand);
 		
 		return wrapper;
 	}
 	
-	private Node addTerminal(Node parent, Terminal terminal, Symbol symbol, String value) {
+	/**
+	 * Create a leaf for the parse tree,
+	 * add that leaf to the parent node,
+	 * and return the leaf.
+	 * 
+	 * @param parentNode
+	 * @param terminal respective to this leaf
+	 * @param symbol from SymbolTable or null
+	 * @param value LITERAL value or matching terminal string
+	 * @return
+	 */
+	private Node addTerminal(Node parentNode, Terminal terminal, Symbol symbol, String value) {
 		if (verbose) {
 			String tokenName = terminal + "";
 			String symbolString = "";
@@ -689,15 +840,19 @@ public class Parser {
 			else if (value != null && !value.isBlank()) {
 				symbolString += " value=" + value + "\"";
 			}
-			for (int j = 0; j < depth; j++) System.out.print("  ");
-			System.out.println("  <Terminal " + tokenName + symbolString + ">");
+			this.printVerbose("  <Terminal " + tokenName + symbolString + ">");
 		}
 		Node node = new Node(terminal, symbol, value);
-		parent.addParam(node);
+		parentNode.addChild(node);
 		return node;
 	}
 	
-	private void fatalError(String err) throws Exception {
-		throw new Exception("\n" + err + "\nAt...\n\n" + this.tokenStream);
+	private void printVerbose(String message) {
+		for (int i = 0; i < depth; i++) System.out.print("  ");
+		System.out.println(message);
+	}
+	
+	private void fatalError(String err) throws ParseException {
+		throw new ParseException("\n" + err + "\nAt...\n\n" + this.tokenStream);
 	}
 }

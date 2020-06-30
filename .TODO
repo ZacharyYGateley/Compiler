@@ -3,7 +3,10 @@ Reconsider naming of TokenStream methods.
 	
 Make traversing parseTree more data hidden
 
+Is StreamItem.value redundant?
+
 Output to assembly
+	Aliases and pulling/pushing from stack
 Can make firstTerminalsAndPatterns and follow do the work of the NonTerminal constructor?
 Make Token prettier :'-(
 Should be able to pass EXPR as argument

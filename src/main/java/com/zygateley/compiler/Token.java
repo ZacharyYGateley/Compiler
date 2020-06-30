@@ -41,10 +41,7 @@ class id {
  *
  */
 public interface Token {
-	// Indication of syntax error
-	public final static int
-		ERROR =			id.next();
-	
+	public final static int firstTerminal = id.id;
 	// Terminals
 	public final static int 
 		EMPTY = 		id.next(),
@@ -91,12 +88,11 @@ public interface Token {
 	
 	public final static int
 		EOF = 			id.next();
+	public final static int lastTerminal = id.id - 1;
 	
-	// All Terminals have id < partition
-	// All NonTerminals have id >= partition
-	public final static int firstNonTerminal = id.id;
-	
-	// Non-terminals
+	// NonTerminals
+	public final static int firstCFGRule = id.id;
+	public final static int startingRule = id.id; 
 	public final static int
 		_PROGRAM_ = 	id.next(),
 		_STMTS_ = 		id.next(),
@@ -121,10 +117,9 @@ public interface Token {
 		_ARGS0_ = 		id.next(),
 		_ARGS1_ = 		id.next(),
 		_LITERAL_ = 	id.next();
+	public final static int lastCFGRule = id.id - 1;
 
-	public final static int firstPrecedenceNonTerminal = id.id;
-	
-	// NonTerminals without FIRST and FOLLOW sets
+	public final static int firstPrecedenceRule = id.id;
 	public final static int
 		__WILDCARD__ = id.next(),
 		__AMBOPEN__  = id.next(),
@@ -132,14 +127,16 @@ public interface Token {
 		__PRECEDENCE1__ = id.next(),
 		__PRECEDENCE2__ = id.next(),
 		__PRECEDENCE3__ = id.next();
+	public final static int lastPrecedenceRule = id.id - 1;
 	
 	public final static int firstWrappingClass = id.id;
-	
 	// Wrapping classes for return nodes of precedence rules above
 	public final static int
-		__OP__		 = id.next(),
-		__LIST__	 = id.next();
+		__OP__		 = id.next();
+	public final static int lastWrappingClass = id.id -1;
 	
+	
+	// Parse direction of Precedence rules
 	public enum Direction {
 		RIGHT_TO_LEFT,
 		LEFT_TO_RIGHT
@@ -213,14 +210,21 @@ public interface Token {
 	public static final int[][] commonFollow2 = new int[][] { combineArrays(_STMT_FIRST, EOF, ELSEIF, ELSE) };
 	public static final int[][] commonFollow3 = new int[][] { combineArrays(operatorSet, SEMICOLON, COMMA, PAREN_CLOSE) };
 	
-	public static boolean isNonTerminal(int tokenValue) {
-		return tokenValue >= firstNonTerminal;
-	}
+
 	public static boolean isTerminal(int tokenValue) {
-		return tokenValue < firstNonTerminal;
+		return firstTerminal <= tokenValue && tokenValue <= lastTerminal;
+	}
+	public static boolean isNonTerminal(int tokenValue) {
+		return firstCFGRule <= tokenValue && tokenValue <= lastCFGRule;
+	}
+	public static boolean isCFGRule(int tokenValue) {
+		return firstCFGRule <= tokenValue && tokenValue <= lastCFGRule;
+	}
+	public static boolean isPrecedenceRule(int tokenValue) {
+		return firstPrecedenceRule <= tokenValue && tokenValue <= lastPrecedenceRule;
 	}
 	public static boolean isWrappingClass(int tokenValue) {
-		return tokenValue >= firstWrappingClass;
+		return firstWrappingClass <= tokenValue && tokenValue <= lastWrappingClass;
 	}
 	public static boolean isSign(int tokenValue) {
 		return tokenValue == PLUS || tokenValue == MINUS;
@@ -291,6 +295,7 @@ enum Terminal implements Token {
 	private Terminal(int tokenValue, Symbol.Type symbolType, String... matching) {
 		this.tokenValue = tokenValue;
 		this.symbolType = symbolType;
+		// If there is a symbol type, exactString should be ""
 		this.exactString = (matching.length > 0) ? matching[0] : "";
 		this.regexStart = (matching.length > 1) ? Pattern.compile(matching[1]) : null;
 		this.regexEnd = (matching.length > 2) ? Pattern.compile(matching[2]) : null;
@@ -516,7 +521,7 @@ enum NonTerminal implements Token {
 	 *
 	 */
 	public class PrecedencePattern {
-		public final int[] splitAt;
+		public final int[] splitTokens;
 		public final int leftRule;
 		public final int rightRule;
 		public final Token.Direction direction;
@@ -529,7 +534,7 @@ enum NonTerminal implements Token {
 				Token.Direction direction,
 				int nonTerminalWrapper
 				) {
-			this.splitAt = splitAt;
+			this.splitTokens = splitAt;
 			this.leftRule = leftRule;
 			this.rightRule = rightRule;
 			this.direction = direction;
@@ -725,7 +730,10 @@ enum NonTerminal implements Token {
 		return null;
 	}
 	
+	public boolean isCFGRule() {
+		return Token.isCFGRule(this.tokenValue);
+	}
 	public boolean isPrecedenceRule() {
-		return (this.precedencePattern != null);
+		return Token.isPrecedenceRule(this.tokenValue);
 	}
 }

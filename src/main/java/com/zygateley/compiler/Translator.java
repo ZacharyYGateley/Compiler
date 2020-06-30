@@ -30,7 +30,7 @@ public class Translator {
 		}
 	}
 	private void __pythonTranslateNode__(Node pn) {
-		ArrayList<Node> params = pn.getParam();
+		ArrayList<Node> childNodes = pn.childNodes();
 		
 		if (pn.isNegated()) {
 			add("(-");
@@ -44,12 +44,12 @@ public class Translator {
 			case _FUNCDEF_:
 				endLine();
 				add("def ");
-				for (int i = 0; i < params.size() - 1; i++) {
-					__pythonTranslateNode__(params.get(i));
+				for (int i = 0; i < childNodes.size() - 1; i++) {
+					__pythonTranslateNode__(childNodes.get(i));
 				}
 				addLine(":");
 				currentIndent++;
-				__pythonTranslateNode__(params.get(params.size()-1));
+				__pythonTranslateNode__(childNodes.get(childNodes.size()-1));
 				currentIndent--;
 				endLine();
 				break;
@@ -57,10 +57,10 @@ public class Translator {
 				endLine();
 				add("if");
 				// Expression
-				__pythonTranslateNode__(params.get(2));
+				__pythonTranslateNode__(childNodes.get(2));
 				addLine(":");
 				currentIndent++;
-				__pythonTranslateNode__(params.get(4));
+				__pythonTranslateNode__(childNodes.get(4));
 				currentIndent--;
 				endLine();
 				break;
@@ -68,16 +68,16 @@ public class Translator {
 				// Can go into pattern starting with terminal elseif 
 				// or into pattern starting with terminal else
 				// or may be empty
-				firstChild = params.get(0);
+				firstChild = childNodes.get(0);
 				if (firstChild.getToken() == Terminal.ELSEIF) {
 					// Else if condition exists
 					endLine();
 					currentIndent--;
 					add("elif");
-					__pythonTranslateNode__(params.get(2));
+					__pythonTranslateNode__(childNodes.get(2));
 					addLine(":");
 					currentIndent++;
-					__pythonTranslateNode__(params.get(4));
+					__pythonTranslateNode__(childNodes.get(4));
 				}
 				else if (firstChild.getToken() == Terminal.ELSE) {
 					// Else condition exists
@@ -85,43 +85,43 @@ public class Translator {
 					currentIndent--;
 					addLine("else:");
 					currentIndent++;
-					__pythonTranslateNode__(params.get(1));
+					__pythonTranslateNode__(childNodes.get(1));
 				}
 				break;
 			case _BLOCK_:
 				endLine();
 				addLine("if True:");
 				currentIndent++;
-				__pythonCrawlList__(params);
+				__pythonCrawlList__(childNodes);
 				currentIndent--;
 				endLine();
 				break;
 			case _STMT_:
-				__pythonCrawlList__(params);
+				__pythonCrawlList__(childNodes);
 				endLine();
 				break;
 			case _ECHO_:
 				// Expressions all enclosed in parentheses,
 				// So no need to place them here
 				add("print (");
-				__pythonCrawlList__(params);
+				__pythonCrawlList__(childNodes);
 				addLine(")");
 				break;
 			case _INPUT_:
-				__pythonTranslateNode__(params.get(1));
+				__pythonTranslateNode__(childNodes.get(1));
 				add(" = input() ");
 				break;
 			case __OP__:
 				add("(");
-				__pythonTranslateNode__(params.get(0));
+				__pythonTranslateNode__(childNodes.get(0));
 				add(" ");
 				addTerminal(pn.getToken());
 				add(" ");
-				__pythonTranslateNode__(params.get(1));
+				__pythonTranslateNode__(childNodes.get(1));
 				add(")");
 				break;
 			default:
-				__pythonCrawlList__(params);
+				__pythonCrawlList__(childNodes);
 				break;
 			}
 		}

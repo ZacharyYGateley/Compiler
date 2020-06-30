@@ -272,6 +272,10 @@ public class Lexer {
 			// All other literals
 			value = newToken;
 		}
+		else {
+			// All non-literals inherit their value from the rule
+			value = thisRule.exactString;
+		}
 		tokenStreamOut.addtoken(thisRule, symbol, value);
 		
 		if (verbose) {

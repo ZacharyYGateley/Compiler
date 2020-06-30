@@ -65,7 +65,7 @@ public class Assembler {
 		case _FUNCDEF_:
 			// Save all functions into SymbolTable
 			// To be processed and output at the end of file
-			Symbol symbol = pn.getParam().get(1).getSymbol();
+			Symbol symbol = pn.childNodes().get(1).getSymbol();
 			symbol.setType(Symbol.Type.FUNCTION);
 			symbol.setParseTree(pn);
 			
