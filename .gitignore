@@ -1,2 +1,6 @@
-/target/
-/~$CFG.xlsx
+# Build file
+/target/*
+# Test assembly output
+/test/*
+# Excel temporary files
+~$*.xlsx

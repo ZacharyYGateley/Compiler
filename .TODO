@@ -1,9 +1,20 @@
+Reconsider naming of TokenStream methods.
+	Information hiding --> readLeft, readRight, unreadLeft, unreadRight
+	
+Make traversing parseTree more data hidden
+
 Output to assembly
+Can make firstTerminalsAndPatterns and follow do the work of the NonTerminal constructor?
+Make Token prettier :'-(
+Should be able to pass EXPR as argument
+TokenStream.peek should return EOF if no tokens, not EMPTY
 
 boolean operators (&& || !)
 Combine backend functions into NonTerminal rule declarations? if possible and is clean
 Build basic readme. Make repository public.
-Better lexical and parse failure messages
+Better lexical and parse failure messages?
+
+SymbolTable types are a little strange.
 
 Long term
 	Scope?
