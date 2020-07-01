@@ -4,16 +4,17 @@ Output to assembly
 Can make firstTerminalsAndPatterns and follow do the work of the NonTerminal constructor?
 Make Token prettier :'-(
 
-boolean operators (&& || !)
-Build basic readme. Make repository public.
+Build basic README. Make repository public.
+unary ! double parses on expression operand
 
 
 Long term
-	Scope?
+	Scope? Ought to come naturally in assembly. In Python... not so much.
 	Type checking for addition - Adding strings - Subtracting strings...? i.e. type checking
 	Token extends BasicToken for grammar selection
+		Can auto-build Token.java based on some grammar input?
+		Combine backend functions into NonTerminal rule declarations? if possible and is clean
 	TokenStream rightIndex should be inclusive?
 	Make traversing parseTree more data hidden
-	Combine backend functions into NonTerminal rule declarations? if possible and is clean
 	SymbolTable types are a little strange.
 	wait command? on any key press

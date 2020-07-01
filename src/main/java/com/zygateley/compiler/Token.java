@@ -77,16 +77,20 @@ public interface Token {
 	// Operator set
 	public final static int firstOperator = id.id;
 	public final static int
-		PLUS = 			id.next(),
-		MINUS = 		id.next(),
-		ASTERISK = 		id.next(),
-		SLASH = 		id.next(),
+		AND = 			id.next(),
+		OR = 			id.next(),
+		EQEQ = 			id.next(),
 		NEQ = 			id.next(),
 		LTEQ = 			id.next(),
 		GTEQ = 			id.next(),
 		LT = 			id.next(),
 		GT = 			id.next(),
-		EQEQ = 			id.next();
+		PLUS = 			id.next(),
+		MINUS = 		id.next(),
+		ASTERISK = 		id.next(),
+		SLASH = 		id.next(),
+		NOT = 			id.next();
+	
 	public final static int lastOperator = id.id - 1;
 	
 	public final static int
@@ -112,6 +116,7 @@ public interface Token {
 		_INPUT_ = 		id.next(),
 		_VARSTMT_ =		id.next(),
 		_VARDEF_ = 		id.next(),
+		_VALUEOREXPR_ = id.next(),
 		_EXPR_ = 		id.next(),
 		_VALUE_ = 		id.next(),
 		_VAR_ = 		id.next(),
@@ -124,18 +129,21 @@ public interface Token {
 
 	public final static int firstPrecedenceRule = id.id;
 	public final static int
-		__WILDCARD__ = id.next(),
-		__AMBOPEN__  = id.next(),
-		__AMBCLOSE__ = id.next(),
+		__WILDCARD__ = 	id.next(),
+		__AMBOPEN__  = 	id.next(),
+		__AMBCLOSE__ = 	id.next(),
 		__PRECEDENCE1__ = id.next(),
 		__PRECEDENCE2__ = id.next(),
-		__PRECEDENCE3__ = id.next();
+		__PRECEDENCE3__ = id.next(),
+		__PRECEDENCE4__ = id.next(),
+		__PRECEDENCE5__ = id.next();
 	public final static int lastPrecedenceRule = id.id - 1;
 	
 	public final static int firstWrappingClass = id.id;
 	// Wrapping classes for return nodes of precedence rules above
 	public final static int
-		__OP__		 = id.next();
+		__UNARY__	 = id.next(),
+		__BINARY__	 = id.next();
 	public final static int lastWrappingClass = id.id -1;
 	
 	
@@ -163,6 +171,13 @@ public interface Token {
 		}
 		return array;
 	}
+	public static int[] combineArrays(int[]... arrays) {
+		int [] array = arrays[0];
+		for (int i = 1; i < arrays.length; i++) {
+			array = combineArrays(array, arrays[i]);
+		}
+		return array;
+	}
 	public static final int[] _STMT_FIRST = {
 			VAR,
 			INPUT,
@@ -170,34 +185,34 @@ public interface Token {
 			COMMENT
 	};
 	public static final int[] _STMTS_FIRST = combineArrays(_STMT_FIRST, FUNCTION, IF, CURLY_OPEN, VAR, ECHO);
-	public final static int[] operatorSet = {
-			PLUS,
-			MINUS,
-			ASTERISK,
-			SLASH,
+
+	public final static int[] operatorSetRank1 = {
+			AND,
+			OR
+	};
+	public final static int[] operatorSetRank2 = {
+			EQEQ,
 			NEQ,
 			LTEQ,
 			GTEQ,
 			LT,
 			GT,
-			EQEQ
 	};
-	public final static int[] operatorSetRank0 = {
+	public final static int[] operatorSetRank3 = {
 			PLUS,
 			MINUS
 	};
-	public final static int[] operatorSetRank1 = {
+	public final static int[] operatorSetRank4 = {
 			ASTERISK,
 			SLASH
 	};
-	public final static int[] operatorSetRank2 = {
-			NEQ,
-			LTEQ,
-			GTEQ,
-			LT,
-			GT,
-			EQEQ
+	public final static int[] operatorSetRank5 = {
+			NOT
 	};
+	public final static int[] operatorSet = 
+			combineArrays(
+				operatorSetRank1, operatorSetRank2, operatorSetRank3, operatorSetRank4, operatorSetRank5
+				);
 	public static final int[] primitiveSet = {
 			TRUE,
 			FALSE,
@@ -262,20 +277,23 @@ enum Terminal implements Token {
 	// Defined as <stmts> in CFG.xlsx
 	ECHO 		(Token.ECHO, "echo"),
 	INPUT		(Token.INPUT, "input"),
-	VAR			(Token.VAR, Symbol.Type.VAR, "", ("^[a-z|A-Z|_][a-z|A-Z|\\d|_]*")),
+	VAR			(Token.VAR, Symbol.Type.VAR, "", ("^[a-zA-Z_][a-zA-Z\\d_]*")),
 	// Any reserved words must be declared before VAR
 
 	// Defined as <ops> in CFG.xlsx
-	PLUS  		(Token.PLUS, "+"),
-	MINUS 		(Token.MINUS, "-"),
-	ASTERISK 	(Token.ASTERISK, "*"),
-	SLASH 		(Token.SLASH, "/"),
+	AND			(Token.AND, "&&"),
+	OR			(Token.OR, "||"),
+	EQEQ		(Token.EQEQ, "=="),
 	NEQ  		(Token.NEQ, "!="),
 	LTEQ 		(Token.LTEQ, "<="),
 	GTEQ  		(Token.GTEQ, ">="),
 	LT 			(Token.LT, "<"),
 	GT  		(Token.GT, ">"),
-	EQEQ		(Token.EQEQ, "=="),
+	PLUS  		(Token.PLUS, "+"),
+	MINUS 		(Token.MINUS, "-"),
+	ASTERISK 	(Token.ASTERISK, "*"),
+	SLASH 		(Token.SLASH, "/"),
+	NOT			(Token.NOT, "!"),
 	
 	EOF 		(Token.EOF, Character.toString((char) 0));
 	
@@ -435,12 +453,16 @@ enum NonTerminal implements Token {
 	_VARDEF_	(Token._VARDEF_,
 				 firstTerminalsAndPattern(Token.EQ, Token.EQ, Token._EXPR_),
 				 follow(Token.SEMICOLON)),
+
+	_VALUEOREXPR_ (Token._VALUEOREXPR_,				 
+				 firstTerminalsAndPattern(Token.combineArrays(Token.primitiveSet, Token.VAR), Token._VALUE_),
+			 	 firstTerminalsAndPattern(Token.PAREN_OPEN, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE),
+			 	 Token.commonFollow3
+			 	 ),
 	
 	_EXPR_		(Token._EXPR_,
-				 // Placeholder NonTerminal
-				 // Sends stream to precedence branch 
+				 // Send stream to precedence branch no matter what
 				 firstTerminalsAndPattern(IntStream.rangeClosed(1, id.id).toArray(), Token.__PRECEDENCE1__),
-				 //firstTerminalsAndPattern(Token.combineArrays(Token.primitiveSet, Token.VAR), Token._VALUE_, Token._OPEXPR_),
 	 			 follow(new int[] {Token.SEMICOLON, Token.PAREN_CLOSE})),
 	
 	_VALUE_		(Token._VALUE_,
@@ -481,12 +503,15 @@ enum NonTerminal implements Token {
 	// Patterns ambiguous by FIRST Terminal set
 	// but not ambiguous by NonTerminal
 	// Double underscore
-	__PRECEDENCE1__(Token.__PRECEDENCE1__, precedenceSplitAt(Token.operatorSetRank0), 	Token.__PRECEDENCE1__, Token.__PRECEDENCE2__,	Direction.RIGHT_TO_LEFT,		Token.__OP__),
-	__PRECEDENCE2__(Token.__PRECEDENCE2__, precedenceSplitAt(Token.operatorSetRank1), 	Token.__PRECEDENCE2__, Token.__PRECEDENCE3__,	Direction.RIGHT_TO_LEFT,		Token.__OP__),
-	__PRECEDENCE3__(Token.__PRECEDENCE3__, precedenceSplitAt(Token.operatorSetRank2), 	Token.__PRECEDENCE3__,	Token._VALUE_,		Direction.RIGHT_TO_LEFT,		Token.__OP__),
+	__PRECEDENCE1__(Token.__PRECEDENCE1__, precedenceSplitAt(Token.operatorSetRank1), 	Token.__PRECEDENCE1__, 	Token.__PRECEDENCE2__,	Direction.RIGHT_TO_LEFT,	Token.__BINARY__),
+	__PRECEDENCE2__(Token.__PRECEDENCE2__, precedenceSplitAt(Token.operatorSetRank2), 	Token.__PRECEDENCE2__, 	Token.__PRECEDENCE3__,	Direction.RIGHT_TO_LEFT,	Token.__BINARY__),
+	__PRECEDENCE3__(Token.__PRECEDENCE3__, precedenceSplitAt(Token.operatorSetRank3), 	Token.__PRECEDENCE3__, 	Token.__PRECEDENCE4__,	Direction.RIGHT_TO_LEFT,	Token.__BINARY__),
+	__PRECEDENCE4__(Token.__PRECEDENCE4__, precedenceSplitAt(Token.operatorSetRank4), 	Token.__PRECEDENCE4__, 	Token.__PRECEDENCE5__,	Direction.RIGHT_TO_LEFT,	Token.__BINARY__),
+	__PRECEDENCE5__(Token.__PRECEDENCE5__, precedenceSplitAt(Token.operatorSetRank5), 	Token.__PRECEDENCE5__,	Token._VALUEOREXPR_,	Direction.RIGHT_TO_LEFT,	Token.__UNARY__),
 	// Placeholder
 	// All operations appear with this as parent to its two operands
-	__OP__		(Token.__OP__);
+	__BINARY__	(Token.__BINARY__),
+	__UNARY__	(Token.__UNARY__);
 	
 	/**
 	 * Internal class for NonTerminals
