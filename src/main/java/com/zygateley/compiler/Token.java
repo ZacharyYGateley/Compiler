@@ -116,6 +116,7 @@ public interface Token {
 		_INPUT_ = 		id.next(),
 		_VARSTMT_ =		id.next(),
 		_VARDEF_ = 		id.next(),
+		_VALUEOREXPR_ = id.next(),
 		_EXPR_ = 		id.next(),
 		_VALUE_ = 		id.next(),
 		_VAR_ = 		id.next(),
@@ -123,9 +124,7 @@ public interface Token {
 		_FUNCCALL_ = 	id.next(),
 		_ARGS0_ = 		id.next(),
 		_ARGS1_ = 		id.next(),
-		_LITERAL_ = 	id.next(),
-		_VALUEOREXPR_ =id.next(),
-		_EMPTY_ = 		id.next();
+		_LITERAL_ = 	id.next();
 	public final static int lastCFGRule = id.id - 1;
 
 	public final static int firstPrecedenceRule = id.id;
@@ -454,12 +453,16 @@ enum NonTerminal implements Token {
 	_VARDEF_	(Token._VARDEF_,
 				 firstTerminalsAndPattern(Token.EQ, Token.EQ, Token._EXPR_),
 				 follow(Token.SEMICOLON)),
+
+	_VALUEOREXPR_ (Token._VALUEOREXPR_,				 
+				 firstTerminalsAndPattern(Token.combineArrays(Token.primitiveSet, Token.VAR), Token._VALUE_),
+			 	 firstTerminalsAndPattern(Token.PAREN_OPEN, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE),
+			 	 Token.commonFollow3
+			 	 ),
 	
 	_EXPR_		(Token._EXPR_,
-				 // Placeholder NonTerminal
-				 // Sends stream to precedence branch 
+				 // Send stream to precedence branch no matter what
 				 firstTerminalsAndPattern(IntStream.rangeClosed(1, id.id).toArray(), Token.__PRECEDENCE1__),
-				 //firstTerminalsAndPattern(Token.combineArrays(Token.primitiveSet, Token.VAR), Token._VALUE_, Token._OPEXPR_),
 	 			 follow(new int[] {Token.SEMICOLON, Token.PAREN_CLOSE})),
 	
 	_VALUE_		(Token._VALUE_,
@@ -496,27 +499,15 @@ enum NonTerminal implements Token {
 						 Token.commonFollow3
 						 )
 				 ),
-	_VALUEOREXPR_ (Token._VALUEOREXPR_,				 
-				 firstTerminalsAndPattern(Token.combineArrays(Token.primitiveSet, Token.VAR), Token._VALUE_),
-			 	 firstTerminalsAndPattern(Token.PAREN_OPEN, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE),
-			 	 Token.commonFollow3
-			 	 ),
-	// Convenience rule for unary precedence operators
-	// Follow is any token
-	// Match empty string
-	_EMPTY_		(Token._EMPTY_,
-				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
-				 follow(IntStream.rangeClosed(1, id.id).toArray())
-				 ),
 	
 	// Patterns ambiguous by FIRST Terminal set
 	// but not ambiguous by NonTerminal
 	// Double underscore
-	__PRECEDENCE1__(Token.__PRECEDENCE1__, precedenceSplitAt(Token.operatorSetRank1), 	Token.__PRECEDENCE1__, Token.__PRECEDENCE2__,	Direction.RIGHT_TO_LEFT,	Token.__BINARY__),
-	__PRECEDENCE2__(Token.__PRECEDENCE2__, precedenceSplitAt(Token.operatorSetRank2), 	Token.__PRECEDENCE2__, Token.__PRECEDENCE3__,	Direction.RIGHT_TO_LEFT,	Token.__BINARY__),
-	__PRECEDENCE3__(Token.__PRECEDENCE3__, precedenceSplitAt(Token.operatorSetRank3), 	Token.__PRECEDENCE3__, Token.__PRECEDENCE4__,	Direction.RIGHT_TO_LEFT,	Token.__BINARY__),
-	__PRECEDENCE4__(Token.__PRECEDENCE4__, precedenceSplitAt(Token.operatorSetRank4), 	Token.__PRECEDENCE4__, Token.__PRECEDENCE5__,	Direction.RIGHT_TO_LEFT,	Token.__BINARY__),
-	__PRECEDENCE5__(Token.__PRECEDENCE5__, precedenceSplitAt(Token.operatorSetRank5), 	Token._EMPTY_, 		   Token._VALUEOREXPR_,		Direction.RIGHT_TO_LEFT,	Token.__UNARY__),
+	__PRECEDENCE1__(Token.__PRECEDENCE1__, precedenceSplitAt(Token.operatorSetRank1), 	Token.__PRECEDENCE1__, 	Token.__PRECEDENCE2__,	Direction.RIGHT_TO_LEFT,	Token.__BINARY__),
+	__PRECEDENCE2__(Token.__PRECEDENCE2__, precedenceSplitAt(Token.operatorSetRank2), 	Token.__PRECEDENCE2__, 	Token.__PRECEDENCE3__,	Direction.RIGHT_TO_LEFT,	Token.__BINARY__),
+	__PRECEDENCE3__(Token.__PRECEDENCE3__, precedenceSplitAt(Token.operatorSetRank3), 	Token.__PRECEDENCE3__, 	Token.__PRECEDENCE4__,	Direction.RIGHT_TO_LEFT,	Token.__BINARY__),
+	__PRECEDENCE4__(Token.__PRECEDENCE4__, precedenceSplitAt(Token.operatorSetRank4), 	Token.__PRECEDENCE4__, 	Token.__PRECEDENCE5__,	Direction.RIGHT_TO_LEFT,	Token.__BINARY__),
+	__PRECEDENCE5__(Token.__PRECEDENCE5__, precedenceSplitAt(Token.operatorSetRank5), 	Token.__PRECEDENCE5__,	Token._VALUEOREXPR_,	Direction.RIGHT_TO_LEFT,	Token.__UNARY__),
 	// Placeholder
 	// All operations appear with this as parent to its two operands
 	__BINARY__	(Token.__BINARY__),
