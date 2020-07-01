@@ -614,6 +614,11 @@ public class Parser {
 		// If a split token is found, this is its Terminal.tokenValue
 		int splitTokenValue = -1;
 		
+		
+		if (startPosition == endPosition) {
+			return new Node(Terminal.EMPTY, null, null);
+		}
+		
 		// Make sure the stream is up-to-date
 		// Inclusive start
 		tokenStream.setLeftIndex(startPosition);
@@ -700,6 +705,9 @@ public class Parser {
 			this.printVerbose("//");
 			this.printVerbose("// Try " + rule + ": (" + (haveMatch ? "match: " + splitToken : "no match") + ")");
 			this.printVerbose(String.format("//     start=%d, partition=%d, end=%d", startPosition, partition, endPosition));
+			if (startPosition == partition && partition == endPosition) {
+				System.out.println("uh oh");
+			}
 		}
 
 		// For any passing to sub-rules, 
@@ -872,7 +880,7 @@ public class Parser {
 				String name = symbol.getName();
 				if (name != null) symbolString += " name=\"" + symbol.getName() + "\"";
 				String valueString = symbol.getValue();
-				if (valueString != null) symbolString += " value=" + valueString + "\"";
+				if (valueString != null) symbolString += " value=\"" + valueString + "\"";
 				Symbol.Type type = symbol.getType();
 				if (type != null) symbolString = " type=\"" + type + "\" ";
 			}

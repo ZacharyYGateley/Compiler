@@ -1,7 +1,7 @@
 package com.zygateley.compiler;
 
-import java.io.IOException;
-import java.io.PushbackReader;
+import java.io.*;
+import java.util.*;
 
 public class Lexer {
 	private boolean verbose;
@@ -258,6 +258,13 @@ public class Lexer {
 	}
 	
 	private void createAddToken(String newToken, Terminal thisRule) {
+		// Unescape special escaped characters
+		newToken = newToken
+				.replaceAll("\n", "\\\\n")
+				.replaceAll("\r", "\\\\r")
+				.replaceAll("\f", "\\\\f")
+				.replaceAll("\t", "\\\\t");
+		
 		Symbol symbol = null;
 		String value = null;
 		if (thisRule == Terminal.VAR) {

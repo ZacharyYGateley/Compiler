@@ -1,35 +1,52 @@
 package com.zygateley.compiler;
 
+import java.io.*;
 import java.util.*;
 
 public class Translator {
-	private StringBuilder sb;
 	private Node syntaxTree;
+	private StringBuilder stringBuilder;
+	private FileWriter fileWriter;
 	private int currentIndent;
 	private boolean newLine;
 	
 	public Translator(Node syntaxTree) {
-		this.sb = new StringBuilder();
 		this.syntaxTree = syntaxTree;
+		this.stringBuilder = new StringBuilder();
+	}
+	public Translator(Node syntaxTree, FileWriter fileWriter) {
+		this.syntaxTree = syntaxTree;
+		this.fileWriter = fileWriter;
 	}
 	
 	/**
 	 * "Compile" code into Python 
 	 * @return compiled code
 	 */
-	public String toPython() {
+	public String toPython() throws IOException {
 		// Restart string builder if translator has already been called
-		sb.setLength(0);
 		currentIndent = 0;
+		if (stringBuilder != null) {
+			stringBuilder.setLength(0);
+		}
+		else if (fileWriter != null) {
+			// Do not have access to file path from fileWriter
+			// Cannot refresh stream
+		}
 		__pythonTranslateNode__(syntaxTree);
-		return sb.toString();
+		if (stringBuilder != null) {
+			return stringBuilder.toString();
+		}
+		else {
+			return fileWriter.toString();
+		}
 	}
-	private void __pythonCrawlList__(ArrayList<Node> syntaxNodes) {
+	private void __pythonCrawlList__(ArrayList<Node> syntaxNodes) throws IOException {
 		for (Node pn : syntaxNodes) {
 			__pythonTranslateNode__(pn);
 		}
 	}
-	private void __pythonTranslateNode__(Node pn) {
+	private void __pythonTranslateNode__(Node pn) throws IOException {
 		ArrayList<Node> childNodes = pn.childNodes();
 		
 		if (pn.isNegated()) {
@@ -147,14 +164,25 @@ public class Translator {
 		return;
 	}
 	
-	private void add(String output) {
+	private void add(String output) throws IOException {
 		if (newLine) {
-			sb.append("    ".repeat(currentIndent));
+			String indent = "    ".repeat(currentIndent);
+			if (stringBuilder != null) {
+				stringBuilder.append(indent);
+			}
+			if (fileWriter != null) {
+				fileWriter.append(indent);
+			}
 			newLine = false;
 		}
-		sb.append(output);
+		if (stringBuilder != null) {
+			stringBuilder.append(output);
+		}
+		if (fileWriter != null) {
+			fileWriter.append(output);
+		}
 	}
-	private void addTerminal(Terminal t) {
+	private void addTerminal(Terminal t) throws IOException {
 		// Try Terminal
 		switch (t) {
 		case FUNCTION:
@@ -189,12 +217,12 @@ public class Translator {
 			break;
 		}
 	}
-	private void addLine(String output) {
+	private void addLine(String output) throws IOException {
 		add(output);
-		sb.append("\r\n");
+		add("\r\n");
 		newLine = true;
 	}
-	private void endLine() {
+	private void endLine() throws IOException {
 		addLine("");
 	}
 }

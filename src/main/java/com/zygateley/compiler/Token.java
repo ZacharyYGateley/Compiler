@@ -246,7 +246,7 @@ enum Terminal implements Token {
 	TRUE		(Token.TRUE, "true"),
 	FALSE		(Token.FALSE, "false"),
 	INT 		(Token.INT, Symbol.Type.INT, "", ("^\\d*")),
-	STRING      (Token.STRING, Symbol.Type.STRING, "", ("^\".*"), ("[^\\\\]{2,}(?:\\\\\\\\)*\"$")),
+	STRING      (Token.STRING, Symbol.Type.STRING, "", ("^\"(?:.|\n|\r|\f|\t)*"), ("^\"(?:(?:(?:.|\n|\r|\f|\t)*(?:[^\\\\]))?(?:\\\\{2})*)?\"$")),
 	
 	// Other reserved words
 	FUNCTION	(Token.FUNCTION, "function"),
