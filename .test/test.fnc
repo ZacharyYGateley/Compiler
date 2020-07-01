@@ -1,5 +1,7 @@
 function inTheBeginning(what) {
-	echo "In the beginning, there was " + what;
+	if (true && true) {
+		echo "In the beginning, there was " + what;
+	}
 }
 
 

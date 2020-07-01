@@ -86,7 +86,9 @@ public interface Token {
 		GTEQ = 			id.next(),
 		LT = 			id.next(),
 		GT = 			id.next(),
-		EQEQ = 			id.next();
+		EQEQ = 			id.next(),
+		AND = 			id.next(),
+		OR = 			id.next();
 	public final static int lastOperator = id.id - 1;
 	
 	public final static int
@@ -124,12 +126,13 @@ public interface Token {
 
 	public final static int firstPrecedenceRule = id.id;
 	public final static int
-		__WILDCARD__ = id.next(),
-		__AMBOPEN__  = id.next(),
-		__AMBCLOSE__ = id.next(),
+		__WILDCARD__ = 	id.next(),
+		__AMBOPEN__  = 	id.next(),
+		__AMBCLOSE__ = 	id.next(),
 		__PRECEDENCE1__ = id.next(),
 		__PRECEDENCE2__ = id.next(),
-		__PRECEDENCE3__ = id.next();
+		__PRECEDENCE3__ = id.next(),
+		__PRECEDENCE4__ = id.next();
 	public final static int lastPrecedenceRule = id.id - 1;
 	
 	public final static int firstWrappingClass = id.id;
@@ -170,27 +173,15 @@ public interface Token {
 			COMMENT
 	};
 	public static final int[] _STMTS_FIRST = combineArrays(_STMT_FIRST, FUNCTION, IF, CURLY_OPEN, VAR, ECHO);
-	public final static int[] operatorSet = {
-			PLUS,
-			MINUS,
-			ASTERISK,
-			SLASH,
-			NEQ,
-			LTEQ,
-			GTEQ,
-			LT,
-			GT,
-			EQEQ
-	};
-	public final static int[] operatorSetRank0 = {
+	public final static int[] operatorSetRank1 = {
 			PLUS,
 			MINUS
 	};
-	public final static int[] operatorSetRank1 = {
+	public final static int[] operatorSetRank2 = {
 			ASTERISK,
 			SLASH
 	};
-	public final static int[] operatorSetRank2 = {
+	public final static int[] operatorSetRank3 = {
 			NEQ,
 			LTEQ,
 			GTEQ,
@@ -198,6 +189,16 @@ public interface Token {
 			GT,
 			EQEQ
 	};
+	public final static int[] operatorSetRank4 = {
+			AND,
+			OR
+	};
+	public final static int[] operatorSet = 
+			combineArrays(
+				operatorSetRank1, combineArrays(
+					operatorSetRank2, combineArrays(
+							operatorSetRank3, combineArrays(
+									operatorSetRank4))));
 	public static final int[] primitiveSet = {
 			TRUE,
 			FALSE,
@@ -276,6 +277,8 @@ enum Terminal implements Token {
 	LT 			(Token.LT, "<"),
 	GT  		(Token.GT, ">"),
 	EQEQ		(Token.EQEQ, "=="),
+	AND			(Token.AND, "&&"),
+	OR			(Token.OR, "||"),
 	
 	EOF 		(Token.EOF, Character.toString((char) 0));
 	
@@ -481,9 +484,10 @@ enum NonTerminal implements Token {
 	// Patterns ambiguous by FIRST Terminal set
 	// but not ambiguous by NonTerminal
 	// Double underscore
-	__PRECEDENCE1__(Token.__PRECEDENCE1__, precedenceSplitAt(Token.operatorSetRank0), 	Token.__PRECEDENCE1__, Token.__PRECEDENCE2__,	Direction.RIGHT_TO_LEFT,		Token.__OP__),
-	__PRECEDENCE2__(Token.__PRECEDENCE2__, precedenceSplitAt(Token.operatorSetRank1), 	Token.__PRECEDENCE2__, Token.__PRECEDENCE3__,	Direction.RIGHT_TO_LEFT,		Token.__OP__),
-	__PRECEDENCE3__(Token.__PRECEDENCE3__, precedenceSplitAt(Token.operatorSetRank2), 	Token.__PRECEDENCE3__,	Token._VALUE_,		Direction.RIGHT_TO_LEFT,		Token.__OP__),
+	__PRECEDENCE1__(Token.__PRECEDENCE1__, precedenceSplitAt(Token.operatorSetRank1), 	Token.__PRECEDENCE1__, Token.__PRECEDENCE2__,	Direction.RIGHT_TO_LEFT,	Token.__OP__),
+	__PRECEDENCE2__(Token.__PRECEDENCE2__, precedenceSplitAt(Token.operatorSetRank2), 	Token.__PRECEDENCE2__, Token.__PRECEDENCE3__,	Direction.RIGHT_TO_LEFT,	Token.__OP__),
+	__PRECEDENCE3__(Token.__PRECEDENCE3__, precedenceSplitAt(Token.operatorSetRank3), 	Token.__PRECEDENCE3__, Token.__PRECEDENCE4__,	Direction.RIGHT_TO_LEFT,	Token.__OP__),
+	__PRECEDENCE4__(Token.__PRECEDENCE4__, precedenceSplitAt(Token.operatorSetRank4), 	Token.__PRECEDENCE4__, Token._VALUE_,			Direction.RIGHT_TO_LEFT,	Token.__OP__),
 	// Placeholder
 	// All operations appear with this as parent to its two operands
 	__OP__		(Token.__OP__);
