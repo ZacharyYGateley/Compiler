@@ -1,7 +1,7 @@
 # Build file
 /target/*
-# Test assembly output
-/test/*
+# Test native, python, and assembly output
 *.s
+*.py
 # Excel temporary files
 ~$*.xlsx

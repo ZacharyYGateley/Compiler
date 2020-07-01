@@ -1,9 +1,6 @@
 package com.zygateley.compiler;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PushbackReader;
-import java.io.StringReader;
+import java.io.*;
 
 public class Application {
 	/**

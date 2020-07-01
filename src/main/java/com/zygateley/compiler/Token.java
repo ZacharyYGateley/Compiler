@@ -54,6 +54,7 @@ public interface Token {
 		CURLY_CLOSE = 	id.next(),
 		SQUARE_OPEN =	id.next(),
 		SQUARE_CLOSE = 	id.next(),
+		COMMENT =		id.next(),
 		
 		// Primitive set
 		TRUE = 			id.next(),
@@ -163,7 +164,8 @@ public interface Token {
 	public static final int[] _STMT_FIRST = {
 			VAR,
 			INPUT,
-			ECHO
+			ECHO,
+			COMMENT
 	};
 	public static final int[] _STMTS_FIRST = combineArrays(_STMT_FIRST, FUNCTION, IF, CURLY_OPEN, VAR, ECHO);
 	public final static int[] operatorSet = {
@@ -241,12 +243,13 @@ enum Terminal implements Token {
 	CURLY_CLOSE (Token.CURLY_CLOSE, "}"),
 	SQUARE_OPEN (Token.SQUARE_OPEN, "["),
 	SQUARE_CLOSE(Token.SQUARE_CLOSE, "]"),
+	COMMENT		(Token.COMMENT, Symbol.Type.COMMENT, "", ("^/.*"), ("//.*(?:\r|\n|\f)?")),
 	
 	// PRIMITIVES
 	TRUE		(Token.TRUE, "true"),
 	FALSE		(Token.FALSE, "false"),
 	INT 		(Token.INT, Symbol.Type.INT, "", ("^\\d*")),
-	STRING      (Token.STRING, Symbol.Type.STRING, "", ("^\"(?:.|\n|\r|\f|\t)*"), ("^\"(?:(?:(?:.|\n|\r|\f|\t)*(?:[^\\\\]))?(?:\\\\{2})*)?\"$")),
+	STRING      (Token.STRING, Symbol.Type.STRING, "", ("^\".*"), ("^\"(?:(?:.*(?:[^\\\\]))?(?:\\\\{2})*)?\"$")),
 	
 	// Other reserved words
 	FUNCTION	(Token.FUNCTION, "function"),
@@ -277,7 +280,7 @@ enum Terminal implements Token {
 	public final int tokenValue;
 	public final String exactString;
 	public final Pattern regexStart;
-	public final Pattern regexEnd;
+	public final Pattern regexFull;
 	public final Symbol.Type symbolType;
 
 	private Terminal(int tokenValue, String... matching) {
@@ -285,7 +288,7 @@ enum Terminal implements Token {
 		this.symbolType = null;
 		this.exactString = (matching.length > 0) ? matching[0] : "";
 		this.regexStart = (matching.length > 1) ? Pattern.compile(matching[1]) : null;
-		this.regexEnd = (matching.length > 2) ? Pattern.compile(matching[2]) : null;
+		this.regexFull = (matching.length > 2) ? Pattern.compile(matching[2]) : null;
 	}
 	private Terminal(int tokenValue, Symbol.Type symbolType, String... matching) {
 		this.tokenValue = tokenValue;
@@ -293,7 +296,7 @@ enum Terminal implements Token {
 		// If there is a symbol type, exactString should be ""
 		this.exactString = (matching.length > 0) ? matching[0] : "";
 		this.regexStart = (matching.length > 1) ? Pattern.compile(matching[1]) : null;
-		this.regexEnd = (matching.length > 2) ? Pattern.compile(matching[2]) : null;
+		this.regexFull = (matching.length > 2) ? Pattern.compile(matching[2]) : null;
 	}
 	
 	public boolean isTerminal() { return true; }
@@ -316,8 +319,8 @@ enum Terminal implements Token {
 			// only have to compare against starting regular expression ^^^ (above)
 			// If you want a full match,
 			// you must check against both starting and ending regular expressions
-			if (fullMatch && this.regexEnd != null) {
-				m = this.regexEnd.matcher(token);
+			if (fullMatch && this.regexFull != null) {
+				m = this.regexFull.matcher(token);
 				isMatch &= m.matches();
 			}
 		}
@@ -333,7 +336,7 @@ enum Terminal implements Token {
 	}
 	
 	public boolean requiresFullMatch() {
-		return (this.regexEnd != null);
+		return (this.regexFull != null);
 	}
 
 	/**
@@ -410,6 +413,7 @@ enum NonTerminal implements Token {
 	_STMT_		(Token._STMT_,
 			 	 firstTerminalsAndPattern(Token.ECHO, Token._ECHO_, Token.SEMICOLON),
 			 	 firstTerminalsAndPattern(Token.INPUT, Token._INPUT_, Token.SEMICOLON),
+			 	 firstTerminalsAndPattern(Token.COMMENT, Token.COMMENT),
 				 firstTerminalsAndPattern(Token.VAR, Token.VAR, Token._VARSTMT_, Token.SEMICOLON),
 				 Token.commonFollow2),
 	
