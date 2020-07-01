@@ -1,30 +1,19 @@
-Reconsider naming of TokenStream methods.
-	Information hiding --> readLeft, readRight, unreadLeft, unreadRight
-	
-Allow lone semicolons in grammar?
-	
-Make traversing parseTree more data hidden
-TokenStream rightIndex should be inclusive?
-
 Output to assembly
 	Aliases and pulling/pushing from stack only when necessary
+
 Can make firstTerminalsAndPatterns and follow do the work of the NonTerminal constructor?
 Make Token prettier :'-(
-Should be able to pass EXPR as argument in made-up language
 TokenStream.peek should return EOF if no tokens, not EMPTY
 
 boolean operators (&& || !)
 Combine backend functions into NonTerminal rule declarations? if possible and is clean
 Build basic readme. Make repository public.
-Better lexical and parse failure messages?
 
 SymbolTable types are a little strange.
 
 Long term
 	Scope?
 	Type checking for addition - Adding strings - Subtracting strings...? i.e. type checking
-	Read from file
-	
-Not important
-	Fix the double indent in python compile for if / then
-	
+	Token extends BasicToken for grammar selection
+	TokenStream rightIndex should be inclusive?
+	Make traversing parseTree more data hidden

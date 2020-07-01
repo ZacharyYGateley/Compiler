@@ -4,8 +4,8 @@ function inTheBeginning(what) {
 
 // Please ignore this line
 
-inTheBeginning("...?");
+inTheBeginning("." + "..?");
 
 input what;
 
-inTheBeginning(what);
+inTheBeginning(what + ("!" + "!"));

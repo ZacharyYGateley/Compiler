@@ -460,7 +460,7 @@ enum NonTerminal implements Token {
 				 Token.commonFollow3),
 	
 	_ARGS0_		(Token._ARGS0_,
-				 firstTerminalsAndPattern(Token.combineArrays(Token.combineArrays(Token.operatorSet, Token.VAR), Token.primitiveSet), Token._VALUE_, Token._ARGS1_),
+				 firstTerminalsAndPattern(Token.combineArrays(Token.combineArrays(Token.operatorSet, Token.VAR, Token.PLUS, Token.MINUS, Token.PAREN_OPEN), Token.primitiveSet), Token._EXPR_, Token._ARGS1_),
 				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
 				 follow(Token.PAREN_CLOSE)),
 	
