@@ -77,18 +77,19 @@ public interface Token {
 	// Operator set
 	public final static int firstOperator = id.id;
 	public final static int
-		PLUS = 			id.next(),
-		MINUS = 		id.next(),
-		ASTERISK = 		id.next(),
-		SLASH = 		id.next(),
+		AND = 			id.next(),
+		OR = 			id.next(),
+		EQEQ = 			id.next(),
 		NEQ = 			id.next(),
 		LTEQ = 			id.next(),
 		GTEQ = 			id.next(),
 		LT = 			id.next(),
 		GT = 			id.next(),
-		EQEQ = 			id.next(),
-		AND = 			id.next(),
-		OR = 			id.next();
+		PLUS = 			id.next(),
+		MINUS = 		id.next(),
+		ASTERISK = 		id.next(),
+		SLASH = 		id.next();
+	
 	public final static int lastOperator = id.id - 1;
 	
 	public final static int
@@ -173,25 +174,26 @@ public interface Token {
 			COMMENT
 	};
 	public static final int[] _STMTS_FIRST = combineArrays(_STMT_FIRST, FUNCTION, IF, CURLY_OPEN, VAR, ECHO);
+
 	public final static int[] operatorSetRank1 = {
-			PLUS,
-			MINUS
+			AND,
+			OR
 	};
 	public final static int[] operatorSetRank2 = {
-			ASTERISK,
-			SLASH
-	};
-	public final static int[] operatorSetRank3 = {
+			EQEQ,
 			NEQ,
 			LTEQ,
 			GTEQ,
 			LT,
 			GT,
-			EQEQ
+	};
+	public final static int[] operatorSetRank3 = {
+			PLUS,
+			MINUS
 	};
 	public final static int[] operatorSetRank4 = {
-			AND,
-			OR
+			ASTERISK,
+			SLASH
 	};
 	public final static int[] operatorSet = 
 			combineArrays(
@@ -263,22 +265,22 @@ enum Terminal implements Token {
 	// Defined as <stmts> in CFG.xlsx
 	ECHO 		(Token.ECHO, "echo"),
 	INPUT		(Token.INPUT, "input"),
-	VAR			(Token.VAR, Symbol.Type.VAR, "", ("^[a-z|A-Z|_][a-z|A-Z|\\d|_]*")),
+	VAR			(Token.VAR, Symbol.Type.VAR, "", ("^[a-zA-Z_][a-zA-Z\\d_]*")),
 	// Any reserved words must be declared before VAR
 
 	// Defined as <ops> in CFG.xlsx
-	PLUS  		(Token.PLUS, "+"),
-	MINUS 		(Token.MINUS, "-"),
-	ASTERISK 	(Token.ASTERISK, "*"),
-	SLASH 		(Token.SLASH, "/"),
+	AND			(Token.AND, "&&"),
+	OR			(Token.OR, "||"),
+	EQEQ		(Token.EQEQ, "=="),
 	NEQ  		(Token.NEQ, "!="),
 	LTEQ 		(Token.LTEQ, "<="),
 	GTEQ  		(Token.GTEQ, ">="),
 	LT 			(Token.LT, "<"),
 	GT  		(Token.GT, ">"),
-	EQEQ		(Token.EQEQ, "=="),
-	AND			(Token.AND, "&&"),
-	OR			(Token.OR, "||"),
+	PLUS  		(Token.PLUS, "+"),
+	MINUS 		(Token.MINUS, "-"),
+	ASTERISK 	(Token.ASTERISK, "*"),
+	SLASH 		(Token.SLASH, "/"),
 	
 	EOF 		(Token.EOF, Character.toString((char) 0));
 	

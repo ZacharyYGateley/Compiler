@@ -730,7 +730,9 @@ public class Parser {
 			// so leftOperand==parseSubtree
 			if (!haveMatch) {
 				// Set subtree negation as necessary
-				leftOperand.setNegated(item.negated);
+				leftOperand.setNegated(leftOperand.isNegated() ^ item.negated);
+				// Do not reuse negated
+				item.negated = false;
 				return leftOperand;
 			}
 		}
@@ -754,7 +756,9 @@ public class Parser {
 			// so rightOperand==parseSubtree
 			if (!haveMatch) {
 				// Set subtree negation as necessary
-				rightOperand.setNegated(item.negated);
+				rightOperand.setNegated(rightOperand.isNegated() ^ item.negated);
+				// Do not reuse negated
+				item.negated = false;
 				return rightOperand;
 			}
 		}
