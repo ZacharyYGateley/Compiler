@@ -3,13 +3,10 @@ Output to assembly
 
 Can make firstTerminalsAndPatterns and follow do the work of the NonTerminal constructor?
 Make Token prettier :'-(
-TokenStream.peek should return EOF if no tokens, not EMPTY
 
 boolean operators (&& || !)
-Combine backend functions into NonTerminal rule declarations? if possible and is clean
 Build basic readme. Make repository public.
 
-SymbolTable types are a little strange.
 
 Long term
 	Scope?
@@ -17,3 +14,6 @@ Long term
 	Token extends BasicToken for grammar selection
 	TokenStream rightIndex should be inclusive?
 	Make traversing parseTree more data hidden
+	Combine backend functions into NonTerminal rule declarations? if possible and is clean
+	SymbolTable types are a little strange.
+	wait command? on any key press

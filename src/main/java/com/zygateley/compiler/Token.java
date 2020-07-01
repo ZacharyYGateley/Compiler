@@ -21,6 +21,8 @@ import java.util.stream.*;
 
 /**
  * Quick way to create unique, auto-incrementing Token values
+ * When the lexer checks against valid terminals, 
+ * it looks in ascending id starting from Token.firstTerminal
  * 
  * @author Zachary Gateley
  *
@@ -243,7 +245,7 @@ enum Terminal implements Token {
 	CURLY_CLOSE (Token.CURLY_CLOSE, "}"),
 	SQUARE_OPEN (Token.SQUARE_OPEN, "["),
 	SQUARE_CLOSE(Token.SQUARE_CLOSE, "]"),
-	COMMENT		(Token.COMMENT, Symbol.Type.COMMENT, "", ("^/.*"), ("//.*(?:\r|\n|\f)?")),
+	COMMENT		(Token.COMMENT, Symbol.Type.COMMENT, "", ("^/.*"), ("//[^\0]*(?:\r|\n|\f)?")),
 	
 	// PRIMITIVES
 	TRUE		(Token.TRUE, "true"),

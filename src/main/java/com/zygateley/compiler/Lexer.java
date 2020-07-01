@@ -11,11 +11,13 @@ class LexicalException extends Exception {
 
 public class Lexer {
 	private boolean verbose;
-	private PushbackReader stringReaderIn;
-	private TokenStream tokenStreamOut;
+	// In
+	private PushbackReader stringReader;
+	// Out
+	private TokenStream tokenStream;
+	// Build in the meantime
 	private SymbolTable symbolTable;
-	// Tokens are built into buildToken
-	// When a token is complete, buildToken is reset
+	// Tokens are character-by-character
 	private StringBuilder tokenBuilder;
 	
 	class TerminalAndMatch {
@@ -54,8 +56,8 @@ public class Lexer {
 	 * @param tokens Tokens output stream
 	 */
 	public Lexer(PushbackReader input, TokenStream output, SymbolTable symbolTable) {
-		this.stringReaderIn = input;
-		this.tokenStreamOut = output;
+		this.stringReader = input;
+		this.tokenStream = output;
 		this.tokenBuilder = new StringBuilder();
 		this.symbolTable = symbolTable;
 	}
@@ -70,32 +72,23 @@ public class Lexer {
 		}
 		
 		// Next character
-		boolean isEOF = false;
+		resetMatches();
+		boolean isEOFProgram = false;
 		do { // while !isEof
-			int readIn = stringReaderIn.read();
+			int readIn = stringReader.read();
 			String nextIn;
 			if (readIn < 0) {
 				// End of input character
-				isEOF = true;
+				isEOFProgram = true;
 				nextIn = Character.toString((char) 0);
 			}
 			else {
 				// Valid character
+				// Must escape backslashes before adding them to tokenBuilder
 				nextIn = (char) readIn == '\\' ? "\\\\" : Character.toString((char) readIn);
 			}
 			// Add new character to token itself, not token stream
 			tokenBuilder.append(nextIn);
-			
-			boolean isFirstChar = (tokenBuilder.length() == 1);
-			if (isFirstChar) {
-				// This is the first character
-				// Reset all this matches to TRUE  (tokenMatches)
-				//			ensures we loop all tokens
-				// 		 all last matches to FALSE (lastTokenMatches)
-				//			ensures we do not incorrectly assume match 
-				//			when there are no matches on first character
-				resetMatches();
-			}
 			
 			// Find the number of matches on the current string
 			// update tokenMatches with match boolean
@@ -118,33 +111,36 @@ public class Lexer {
 				// This last character does not belong to this token
 				// Return it to the stream (if it is a valid entry)
 				if (readIn > -1) {
-					stringReaderIn.unread(readIn);
+					stringReader.unread(readIn);
 				}
+				
+				// Get the current token
 				currentToken = currentToken.substring(0, currentToken.length() - 1);
-				tokenBuilder.setLength(0);
 				
 				// Find the which terminal type this is
-				// It will be the first (full) match  
-				// in the ordered set Terminal
+				// It will be the first full match from the last match set (ordered by com.zygateley.compiler.Token.id)
 				Terminal thisRule = getTerminalRuleFromLast(currentToken);
 				
 				// Ignore EMPTY terminals
-				// They would only take up unnecessary space at this point
 				if (thisRule == Terminal.EMPTY) {
-					// pass
+					// Empty terminals only take up extra space
 				}
-				// If there is no match at all,
-				// there is an invalid character
+				// If no full match, invalid syntax
 				else if (thisRule == null) {
+					// This can happen when Terminal.regexStart matches 
+					// but Terminal.regexFull does not
 					throw new LexicalException("Lexical error at " + currentToken);
 				}
-				// Otherwise, we have our rule
-				// Create new token
+				// Otherwise, we have a valid rule
 				else {
 					createAddToken(currentToken, thisRule);
 				}
+
+				// Token add complete!
+				// Reset token builder and terminal match count
+				resetMatches();
 			}
-		} while (!isEOF);
+		} while (!isEOFProgram);
 		
 		// Finished, add EOF
 		createAddToken(Character.toString((char) 0), Terminal.EOF);
@@ -165,11 +161,12 @@ public class Lexer {
 	 * 
 	 */
 	private void resetMatches() {
-		// Reset all this matches to TRUE  (tokenMatches)
-		//			ensures we loop all tokens
-		// 		 all last matches to FALSE (lastTokenMatches)
-		//			ensures we do not incorrectly assume match 
-		//			when there are no matches on first character
+		// Reset tokenBuilder to zero-length
+		tokenBuilder.setLength(0);
+		
+		// Reset all potential matches to TRUE  (tokenMatches)
+		// 		 all last potential matches to FALSE (lastTokenMatches)
+		//			ensures we do not incorrectly assume match on first char
 		for (int i = 0; i < thisRoundMatches.length; i++) {
 			// Reset this round matches
 			TerminalAndMatch thisTm = thisRoundMatches[i];
@@ -281,7 +278,7 @@ public class Lexer {
 			// All non-literals inherit their value from the rule
 			value = thisRule.exactString;
 		}
-		tokenStreamOut.writeRight(thisRule, symbol, value);
+		tokenStream.writeRight(thisRule, symbol, value);
 		
 		if (verbose) {
 			StringBuilder sbtr = new StringBuilder(thisRule + "         ");
