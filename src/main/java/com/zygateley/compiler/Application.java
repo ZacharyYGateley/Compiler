@@ -1,5 +1,6 @@
 package com.zygateley.compiler;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PushbackReader;
 import java.io.StringReader;
@@ -23,6 +24,7 @@ public class Application {
 	 */
 	public static void main(String[] args) throws Exception {
 		// TESTING
+		/*
 		String myString =
 				"function crazyMath (a, b, c, d, e) {" 
 				+ "echo a * (b * c) - d * e;\n" 
@@ -42,36 +44,46 @@ public class Application {
 				+ "  echo -((33 + -(-22 + (11 * 25) - 11 / 3)) * 2 - -1);"
 				+ "}"
 				;
-		PushbackReader sr = new PushbackReader(new StringReader(
-				myString
-				));
-		System.out.println("Original code: \n");
-		System.out.println(myString + "\n\n");
+				*/
+		//PushbackReader sr = new PushbackReader(new StringReader("aj();"));
 		
-		// Objects passed to Parser
-		SymbolTable st = new SymbolTable();
-		TokenStream ts = new TokenStream();
-		
-		// Break down into tokens 
-		// and populate symbol tree
-		Lexer l = new Lexer(sr, ts, st);
-		l.lex(true);
-		
-		// Build syntax tree
-		Parser p = new Parser(ts);
-		Node syntaxTree = p.parse(true);
-		if (syntaxTree == null) {
+		String sourceFile = FileIO.getAbsolutePath(".test/test.fnc");
+		PushbackReader pushbackReader = FileIO.getReader(sourceFile);
+		String baseName = sourceFile.substring(0, sourceFile.lastIndexOf('.'));
+		String pythonFile = baseName + ".py";
+		FileWriter targetFile = FileIO.getWriter(pythonFile);
+		// File already exists?
+		if (targetFile == null) {
 			return;
 		}
 		
-		// Run backend into appropriate language
-		Translator tr = new Translator(syntaxTree);
-		String output = tr.toPython();
-		System.out.println("\n\nGenerated code: \n\n\n" + output);
+		// Objects passed to Parser
+		SymbolTable symbolTable = new SymbolTable();
+		TokenStream tokenStream = new TokenStream();
 		
-		Assembler a = new Assembler(syntaxTree, st);
-		output = a.assemble();
-		System.out.println("\n\nGenerated assembly code: \n\n\n" + output);
+		// Break down into tokens 
+		// and populate symbol tree
+		Lexer lexer = new Lexer(pushbackReader, tokenStream, symbolTable);
+		lexer.lex(true);
+		
+		// Build syntax tree
+		Parser parser = new Parser(tokenStream);
+		Node syntaxTree = parser.parse(true);
+		if (syntaxTree instanceof Node) {
+			// Run backend into appropriate language
+			Translator tr = new Translator(syntaxTree, targetFile);
+			String output = tr.toPython();
+			System.out.println("\n\nGenerated code: \n\n\n" + output);
+		}
+		
+		pushbackReader.close();
+		targetFile.close();
+		
+		System.out.println("Python translation written to " + pythonFile);
+		
+		//Assembler a = new Assembler(syntaxTree, st);
+		//output = a.assemble();
+		//System.out.println("\n\nGenerated assembly code: \n\n\n" + output);
 	}
 
 }
