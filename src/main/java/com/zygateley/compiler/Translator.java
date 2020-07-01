@@ -131,7 +131,7 @@ public class Translator {
 				__pythonTranslateNode__(childNodes.get(1));
 				add(" = input() ");
 				break;
-			case __OP__:
+			case __BINARY__:
 				add("(");
 				__pythonTranslateNode__(childNodes.get(0));
 				add(" ");
@@ -139,6 +139,10 @@ public class Translator {
 				add(" ");
 				__pythonTranslateNode__(childNodes.get(1));
 				add(")");
+				break;
+			case __UNARY__:
+				addTerminal(pn.getToken());
+				__pythonTranslateNode__(childNodes.get(1));
 				break;
 			default:
 				__pythonCrawlList__(childNodes);
@@ -215,6 +219,18 @@ public class Translator {
 			break;
 		case EQ:
 			add(" =");
+			break;
+		case NEQ:
+			add(" ~=");
+			break;
+		case AND:
+			add(" and");
+			break;
+		case OR:
+			add(" or");
+			break;
+		case NOT:
+			add("~");
 			break;
 		case PAREN_OPEN:
 			add(" (");

@@ -214,13 +214,16 @@ public class Parser {
 		
 		if (verbose) {
 			System.out.println("<!-- Parsing initiated -->\n");
+
+			this.printVerbose("// --> To CFG stream");
+			this.printVerbose("//");
 		}
 		
 		// Root node of syntax tree
 		// The starting rule MUST be a CFG rule
 		// Precedence rules depend on parent rules and their respective follow sets
 		NonTerminal startingRule = NonTerminal.getNonTerminal(Token.startingRule);
-		Node syntaxTree = toCFGStream(startingRule, 0, tokenStream.length());
+		Node syntaxTree = parseCFGRule(startingRule, tokenStream.length());
 		
 		StreamItem nextItem = tokenStream.peekLeft();
 		if (nextItem == null || nextItem.token != Terminal.EOF) {
@@ -229,6 +232,9 @@ public class Parser {
 		}
 				
 		if (verbose) {
+			this.printVerbose("//");
+			this.printVerbose("// <-- From CFG stream");
+			
 			System.out.println("\n<!-- Parsing finished -->\n");
 		}
 		
@@ -248,7 +254,7 @@ public class Parser {
 	 */
 	private Node toCFGStream(NonTerminal ruleCFG, int startPosition, int endPosition) throws ParseException {
 		if (verbose) {
-			this.printVerbose("// --> To Precedence stream from CFG stream");
+			this.printVerbose("// --> To CFG stream from Precedence stream");
 			this.printVerbose("//");
 		}
 		tokenStream.setLeftIndex(startPosition);
@@ -256,7 +262,7 @@ public class Parser {
 		Node syntaxSubtree = parseCFGRule(ruleCFG, endPosition);
 		if (verbose) {
 			this.printVerbose("//");
-			this.printVerbose("// <-- To CFG stream from Precedence stream");
+			this.printVerbose("// <-- To Precedence stream from CFG stream");
 		}
 		return syntaxSubtree;
 	}
@@ -730,7 +736,9 @@ public class Parser {
 			// so leftOperand==parseSubtree
 			if (!haveMatch) {
 				// Set subtree negation as necessary
-				leftOperand.setNegated(leftOperand.isNegated() ^ item.negated);
+				if (leftOperand != null) {
+					leftOperand.setNegated(leftOperand.isNegated() ^ item.negated);
+				}
 				// Do not reuse negated
 				item.negated = false;
 				return leftOperand;
@@ -756,7 +764,9 @@ public class Parser {
 			// so rightOperand==parseSubtree
 			if (!haveMatch) {
 				// Set subtree negation as necessary
-				rightOperand.setNegated(rightOperand.isNegated() ^ item.negated);
+				if (rightOperand != null) {
+					rightOperand.setNegated(rightOperand.isNegated() ^ item.negated);
+				}
 				// Do not reuse negated
 				item.negated = false;
 				return rightOperand;
@@ -853,7 +863,7 @@ public class Parser {
 		boolean leftIsNull = (leftOperand == null);
 		boolean rightIsNull = (rightOperand == null);
 		if (leftIsNull && rightIsNull) {
-			return null;
+			return new Node(splitToken, null, null);
 		}
 		
 		// If both children have appropriate child nodes

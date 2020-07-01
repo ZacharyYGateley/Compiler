@@ -1,5 +1,5 @@
 function inTheBeginning(what) {
-	if (1 == 2 && -4 + 6*3 > 5*2 + 4 || false) {
+	if (!(1 == 2) && -3 + 6*3 > 5*2 + 4 || false) {
 		echo "In the beginning, there was " + what;
 	}
 }
