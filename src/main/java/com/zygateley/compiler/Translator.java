@@ -141,16 +141,22 @@ public class Translator {
 		// Try Terminal
 		else {
 			Terminal t = pn.getToken();
+			String value;
 			switch (t) {
 			case INT:
-				String value = pn.getValue();
+				value = pn.getValue();
 				add(value);
 				break;
 			case STRING:
 				add(pn.getSymbol().getValue());
 				break;
+			case COMMENT:
+				value = "#" + pn.getValue().substring(2);
+				add(value);
+				break;
 			case VAR:
 				add(pn.getSymbol().getName());
+				break;
 			default:
 				addTerminal(t);
 				break;

@@ -34,11 +34,12 @@ public class FileIO {
 			System.out.println("File already exists: " + absolutePath);
 			System.out.println("\t Overwrite to overwrite? (y / n)\n");
 			String response = ("" + (char) System.in.read()).toLowerCase();
+			System.out.println("");
 			switch (response) {
 			case "y":
 				break;
 			default:
-				System.out.println("\nCompiler aborted.");
+				System.out.println("Compiler aborted.");
 				return null;
 			}
 		}

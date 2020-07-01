@@ -1,7 +1,13 @@
 package com.zygateley.compiler;
 
 import java.io.*;
-import java.util.*;
+
+class LexicalException extends Exception {
+	static final long serialVersionUID = 58008;
+	public LexicalException(String message) {
+		super(message);
+	}
+}
 
 public class Lexer {
 	private boolean verbose;
@@ -54,11 +60,11 @@ public class Lexer {
 		this.symbolTable = symbolTable;
 	}
 	
-	public void lex(boolean verbose) throws IOException {
+	public void lex(boolean verbose) throws LexicalException, IOException {
 		this.verbose = verbose;
 		lex();
 	}
-	public void lex() throws IOException {
+	public void lex() throws LexicalException, IOException {
 		if (verbose) {
 			System.out.println("<!-- Lexer started -->\n");
 		}
@@ -75,7 +81,7 @@ public class Lexer {
 			}
 			else {
 				// Valid character
-				nextIn = Character.toString((char) readIn);
+				nextIn = (char) readIn == '\\' ? "\\\\" : Character.toString((char) readIn);
 			}
 			// Add new character to token itself, not token stream
 			tokenBuilder.append(nextIn);
@@ -130,8 +136,7 @@ public class Lexer {
 				// If there is no match at all,
 				// there is an invalid character
 				else if (thisRule == null) {
-					System.err.println("Lexical error at " + currentToken);
-					return;
+					throw new LexicalException("Lexical error at " + currentToken);
 				}
 				// Otherwise, we have our rule
 				// Create new token
@@ -258,13 +263,6 @@ public class Lexer {
 	}
 	
 	private void createAddToken(String newToken, Terminal thisRule) {
-		// Unescape special escaped characters
-		newToken = newToken
-				.replaceAll("\n", "\\\\n")
-				.replaceAll("\r", "\\\\r")
-				.replaceAll("\f", "\\\\f")
-				.replaceAll("\t", "\\\\t");
-		
 		Symbol symbol = null;
 		String value = null;
 		if (thisRule == Terminal.VAR) {

@@ -5,6 +5,7 @@ import java.util.*;
 class Symbol {
 	public enum Type {
 		NULL,
+		COMMENT,
 		VAR,
 		BOOLEAN,
 		INT,
