@@ -5,23 +5,105 @@ import java.util.HashMap;
 
 
 public abstract class AssyLanguage {
-	private String inputHandle = null;
-	private String outputHandle = null;
 	protected final Assembler.Writer io;
-	protected final Scope scope;
-	protected final Stack stack;
 	protected final SymbolTable symbolTable;
+	protected final Scope globalScope;
 	protected final HashMap<Symbol, String> globalVariables;
 	protected int globalVariableCount = 0;
 	
+	// Language-specific
+	protected Variable inputHandle = null;
+	protected Variable outputHandle = null;
+	protected String[] tempRegisters;
+	public abstract Variable assembleCalculation(Node operation);
+	public abstract Variable assembleExpression(Node parseTree);
+	public abstract Variable assembleFooter();
+	public abstract Variable assembleHeader();
+	public abstract Variable assembleInputHandle();
+	public abstract Variable assembleOutputHandle();
+	public abstract Variable assemblePush(Variable variable);
+	public abstract void assembleTerminal(Node leafNode);
+	public abstract void assembleGlobalString(String name, Symbol symbol);
+	public abstract void assembleFunctions();
+	
+	
 	public AssyLanguage(Assembler.Writer io, Scope scope, Stack stack, SymbolTable symbolTable, HashMap<Symbol, String> globalVariables) {
 		this.io = io;
-		this.scope = scope;
-		this.stack = stack;
+		this.globalScope = new Scope(this);
 		this.symbolTable = symbolTable;
-		this.globalVariables = globalVariables;
+		this.globalVariables = new HashMap<Symbol, String>();
 	}
 
+	public Variable allocateMemory(int numBytes) {
+		return globalScope.allocateMemory();
+	}
+	public Variable allocateRegister() {
+		return globalScope.allocateRegister();
+	}
+	public void assembleNode(Node pn) {
+		boolean isNonTerminal = (pn.getToken() == null);
+		if (isNonTerminal) {
+			assembleNonTerminal(pn);
+		}
+		else {
+			assembleTerminal(pn);
+		}
+	}
+	public void assembleNonTerminal(Node pn) {
+		NonTerminal rule = pn.getRule();
+		switch (rule) {
+		case _FUNCDEF_:
+			// Save all functions into SymbolTable
+			// To be processed and output at the end of file
+			Symbol symbol = pn.childNodes().get(1).getSymbol();
+			symbol.setType(Symbol.Type.FUNCTION);
+			symbol.setParseTree(pn);
+			
+			// Do not parse this tree now
+			return;
+		default:
+			break;
+		}
+		
+		// Iterate
+		for (Node child : pn) {
+			if (child != null) {
+				assembleNode(child);
+			}
+		}
+	}
+	/**
+	 * Find all string literals and create 
+	 * global string pool with these values,
+	 * naming them along the way. 
+	 *  
+	 */
+	public void assembleGlobal() {
+		// Indent the next block
+		io.indent();
+		for (Symbol symbol : this.symbolTable) {
+			if (symbol.getType() == Symbol.Type.STRING) {
+				// String found
+				// Name it by auto-increment
+				String name = String.format("str%d", globalVariableCount++);
+				symbol.setName(name);
+				// Then add it to the string pool
+				assembleGlobalString(name, symbol);
+			}
+		}
+		// Finished this block
+		io.outdent();
+	}
+
+	public Variable getInputHandle() {
+		return (inputHandle != null ? inputHandle : assembleInputHandle());
+	}
+	public Variable getOutputHandle() {
+		return (outputHandle != null ? outputHandle : assembleOutputHandle());
+	}
+
+	////////////////////////////////////////////////
+	// Class declarations
 	public static class Variable {
 		public Register register;
 		public final Symbol symbol;
@@ -75,16 +157,13 @@ public abstract class AssyLanguage {
 	}
 	
 	public static class Registry {
-		private ArrayDeque<Register> accessOrder;
-		private HashMap<Integer, Register> registerMap;
-		private Stack stack;
-		private Assembler.Writer outputStream;
+		private final ArrayDeque<Register> accessOrder;
+		private final HashMap<Integer, Register> registerMap;
+		private final Scope scope;
 		
-		private final String stackPush = 
-				"subu $sp, $sp, 4\n" +
-				"sw %s, 0($sp)\n";
+
 		
-		public Registry(String[] registerNames, Stack stack, Assembler.Writer outputStream) {
+		public Registry(Scope scope, String[] registerNames) {
 			int capacity = registerNames.length;
 			accessOrder = new ArrayDeque<Register>(capacity);
 			registerMap = new HashMap<Integer, Register>(capacity);
@@ -95,9 +174,7 @@ public abstract class AssyLanguage {
 				registerMap.put(i, r);
 			}
 			
-			this.stack = stack;
-			
-			this.outputStream = outputStream;
+			this.scope = scope;
 		}
 		
 		/**
@@ -113,7 +190,10 @@ public abstract class AssyLanguage {
 			
 			// If LRU has a variable, 
 			// move that variable to the stack
-			moveVariableToStack(LRU);
+			if (LRU.variable != null) {
+				scope.push(LRU.variable);
+			}
+			// Register is now available
 			
 			return LRU;
 		}
@@ -134,161 +214,73 @@ public abstract class AssyLanguage {
 				accessOrder.addFirst(r);
 			}
 		}
-		
-		public void moveVariableToStack(Register r) {
-			// No need to move to stack if...
-			// There is no variable in this register
-			Variable v = r.variable;
-			if (v == null) return;
-			
-			// Only need to physically move variable to stack
-			// if it is not already there
-			if (v.indexStack < 0) {
-				// Move variable from register to stack
-				outputStream.println(this.stackPush, r);
-				
-				// Indicate new stack element in compiler
-				// Links location to variable
-				stack.push(v);
-			} else {
-				// Otherwise, update value in stack
-				int offset = (stack.length - v.indexStack - 1) * 4;
-				outputStream.println("sw %s, %d($sp)\n", r, offset);
-			}
-			
-			// Compiler: unlink register and variable
-			v.unlinkRegister();
-		}
 	}
-
-
+	
 	public static class Stack {
-		public ArrayDeque<AssyLanguage.Variable> stack;
+		public ArrayDeque<Variable> stack;
 		public int length;
 		
 		public Stack() {
-			stack = new ArrayDeque<AssyLanguage.Variable>();
+			stack = new ArrayDeque<Variable>();
 			length = 0;
 		}
 		
-		public void push(AssyLanguage.Variable v) {
+		public Variable push(Variable v) {
 			v.indexStack = length;
 			length++;
 			stack.push(v);
+			return v;
+		}
+		public Variable push() {
+			Variable v = new Variable();
+			return this.push(v);
 		}
 	}
-	
-	public static class Scope {
-		private Registry registry;
-		
-		private final Stack stack;
-		
-		private Assembler.Writer outputStream;
 
+	public static class Scope {
+		private final Registry registry;
+		private final Stack stack;
+		private final AssyLanguage language;
+		
 		/**
 		 * LinkedHashMaps initialized to LRU by ACCESS order
 		 * @param stackFrame
 		 */
-		public Scope(Assembler.Writer outputStream, String[] tempRegisters) {
+		public Scope(AssyLanguage language) {
 			// Stack starting at stack pointer = stack
-			stack = new Stack();
+			this.stack = new Stack();
+			this.language = language;
 			
-			this.outputStream = outputStream; 
-			
-			// Register sets
-			registry = new Registry(tempRegisters, stack, outputStream);
+			// Available temporary register locations
+			// Organized as least-recently-used
+			registry = new Registry(this, language.tempRegisters);
 		}
 		
 		/**
 		 * Allocate a new anonymous register
-		 * @return Register object
+		 * @return new anonymous Variable object
 		 */
-		public Register allocate() {
+		public Variable allocateRegister() {
 			// Get least-recently-register
 			// Moves variable to stack as necessary
 			Register r = registry.allocate();
 			Variable v = new Variable();
 			v.linkRegister(r);
 			
-			return r;
-		}
-	}
-	
-	public abstract Variable allocateMemory();
-	public Register allocateRegister() {
-		return scope.allocate();
-	}
-	public abstract Variable assembleCalculation();
-	public abstract Variable assembleExpression(Node parseTree);
-	public abstract Variable assembleFooter();
-	public abstract Variable assembleHeader();
-	public void assembleNode(Node pn) {
-		boolean isNonTerminal = (pn.getToken() == null);
-		if (isNonTerminal) {
-			assembleNonTerminal(pn);
-		}
-		else {
-			assembleTerminal(pn);
-		}
-	}
-	public void assembleNonTerminal(Node pn) {
-		NonTerminal rule = pn.getRule();
-		switch (rule) {
-		case _FUNCDEF_:
-			// Save all functions into SymbolTable
-			// To be processed and output at the end of file
-			Symbol symbol = pn.childNodes().get(1).getSymbol();
-			symbol.setType(Symbol.Type.FUNCTION);
-			symbol.setParseTree(pn);
-			
-			// Do not parse this tree now
-			return;
-		default:
-			break;
+			return v;
 		}
 		
-		// Iterate
-		for (Node child : pn) {
-			if (child != null) {
-				assembleNode(child);
-			}
+		/**
+		 * Allocate new anonymous memory location
+		 * @return new anonymous Variable object 
+		 */
+		public Variable allocateMemory() {
+			Variable v = new Variable();
+			return push(v);
+		}
+		public Variable push(Variable variable) {
+			stack.push(variable);
+			return language.assemblePush(variable);
 		}
 	}
-	
-	public abstract void assembleTerminal(Node node);
-	
-	/**
-	 * Find all string literals and create 
-	 * global string pool with these values,
-	 * naming them along the way. 
-	 *  
-	 */
-	public void assembleGlobal() {
-		io.println(".data         # String pool");
-		
-		// Indent the next block
-		io.indent();
-		for (Symbol symbol : this.symbolTable) {
-			if (symbol.getType() == Symbol.Type.STRING) {
-				// String found
-				// Name it by autoincrement, 
-				String name = String.format("str%d", globalVariableCount++);
-				symbol.setName(name);
-				// Then add it to the string pool
-				assembleGlobalString(name, symbol);
-			}
-		}
-		// Finished this block
-		io.outdent();
-	}
-	public abstract void assembleGlobalString(String name, Symbol symbol);
-	
-	/**
-	 * outputFunctions
-	 * 
-	 * All functions are stored in the SymbolTable as type FUNCTION.
-	 * Output all functions at once at the end of the file
-	 * 
-	 */
-	public abstract void assembleFunctions();
 }
