@@ -1,42 +1,88 @@
 package com.zygateley.compiler;
 
-import com.zygateley.compiler.MIPS.*;
+import com.zygateley.compiler.AssyLanguage.*;
 import java.util.*;
 
 public class Assembler {
+	public static class Writer {
+		private final StringBuilder outputStream;
+		private int currentIndent;
+		private AssyLanguage language;
+		
+		public Writer() {
+			outputStream = new StringBuilder();
+			currentIndent = 0;
+		}
+		
+		public void print(String s) {
+			print(s);
+		}
+		public void print(String s, Object... formatters) {
+			// Indent as necessary
+			for (int i = 0; i < currentIndent; i++) outputStream.append("    ");
+			
+			// Format strings as necessary
+			if (formatters.length > 0) {
+				outputStream.append(String.format(s, (Object[]) formatters));
+				
+				// Promote in LRU all variables used
+				for (Object e : formatters) {
+					if (e instanceof AssyLanguage.Register) {
+						((AssyLanguage.Register) e).promote();
+					}
+				}
+			}
+			// No formatters
+			else {
+				outputStream.append(s);
+			}
+		}
+		public void println(String s) {
+			println(s, "");
+		}
+		public void println(String s, Object... formatters) {
+			print(s, formatters);
+			outputStream.append("\r\n");
+		}
+		
+		public void indent() {
+			this.currentIndent++;
+		}
+		
+		public void outdent() {
+			this.currentIndent--;
+		}
+		
+		@Override
+		public String toString() {
+			return outputStream.toString();
+		}
+	}
+	
+	
 	private Node parseTree;
 	private SymbolTable symbolTable;
-	
-	private HashMap<Symbol, String> stringPool; 
-	private int stringPoolCount;
 	private Writer io;
-	private Scope global;
+	private AssyLanguage language;
 	
-	public Assembler(Node parseTree, SymbolTable symbolTable) {
+	public Assembler(Node parseTree, SymbolTable symbolTable, Class<AssyLanguage> Language) throws Exception {
 		this.parseTree = parseTree;
 		this.symbolTable = symbolTable;
-		
-		this.stringPool = new HashMap<Symbol, String>();
-		this.stringPoolCount = 0;
 		this.io = new Writer();
-		this.global = new Scope(this.io);
+		this.language = Language.getDeclaredConstructor().newInstance();
 	}
 	
 	public String assemble() {
 		// Create a global string pool
-		createAndOutputStringPool();
+		language.assembleGlobal();
 		
 		// Indicate start of program main
-		io.println("");
-		io.println(".text");
-		io.println(".globl main   # Begin program");
-		io.println("main:");
-		io.indent();
+		language.assembleHeader();
 		
 		// Crawl tree
 		// Any function declarations found
 		// will be stored into SymbolTable as type FUNCTION
-		assembleNode(this.parseTree);
+		language.assembleNode(this.parseTree);
 		
 		// Indicate end of program main
 		io.println("");
@@ -44,84 +90,8 @@ public class Assembler {
 		
 		// Output all functions
 		// All functions are considered global
-		outputFunctions();
+		language.assembleFooter();
 		
 		return this.io.toString();
-	}
-	
-	private void assembleNode(Node pn) {
-		boolean isNonTerminal = (pn.getRule() != null);
-		if (isNonTerminal) {
-			assembleNonTerminal(pn);
-		}
-		else {
-			assembleTerminal(pn);
-		}
-	}
-	
-	private void assembleNonTerminal(Node pn) {
-		NonTerminal rule = pn.getRule();
-		switch (rule) {
-		case _FUNCDEF_:
-			// Save all functions into SymbolTable
-			// To be processed and output at the end of file
-			Symbol symbol = pn.childNodes().get(1).getSymbol();
-			symbol.setType(Symbol.Type.FUNCTION);
-			symbol.setParseTree(pn);
-			
-			// Do not parse this tree now
-			return;
-		default:
-			break;
-		}
-		
-		// Iterate
-		for (Node child : pn) {
-			if (child != null) {
-				assembleNode(child);
-			}
-		}
-	}
-	
-	private void assembleTerminal(Node pn) {
-		
-	}
-	
-	/**
-	 * createStringPool
-	 * 
-	 * Find all string literals and create 
-	 * global string pool with these values,
-	 * naming them along the way. 
-	 *  
-	 */
-	private void createAndOutputStringPool() {
-		io.println(".data         # String pool");
-		
-		// Indent the next block
-		io.indent();
-		for (Symbol symbol : this.symbolTable) {
-			if (symbol.getType() == Symbol.Type.STRING) {
-				// String found
-				// Name it by autoincrement, 
-				// then add it to the string pool
-				String name = String.format("str%d", stringPoolCount++);
-				symbol.setName(name);
-				io.println("%s:\t.asciiz %s", name, symbol.getValue());
-			}
-		}
-		// Finished this block
-		io.outdent();
-	}
-	
-	/**
-	 * outputFunctions
-	 * 
-	 * All functions are stored in the SymbolTable as type FUNCTION.
-	 * Output all functions at once at the end of the file
-	 * 
-	 */
-	private void outputFunctions() {
-		
 	}
 }
