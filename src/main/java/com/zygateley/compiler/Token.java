@@ -16,7 +16,6 @@
  */
 package com.zygateley.compiler;
 
-import com.zygateley.compiler.Basic.*;
 import java.util.regex.*;
 import java.util.stream.*;
 
@@ -397,7 +396,7 @@ enum NonTerminal implements Token {
 				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
 				 follow(new int[] {Token.EOF, Token.CURLY_CLOSE})),
 	
-	_FUNCDEF_	(Token._FUNCDEF_, Basic.Element.FUNCDEF,
+	_FUNCDEF_	(Token._FUNCDEF_, Element.FUNCDEF,
 				 firstTerminalsAndPattern(Token.FUNCTION, Token.FUNCTION, Token.VAR, Token.PAREN_OPEN, Token._PARAMS0_, Token.PAREN_CLOSE, Token._SCOPE_),
 				 Token.commonFollow1),
 	
@@ -415,16 +414,16 @@ enum NonTerminal implements Token {
 		 	 	 firstTerminalsAndPattern(Token.combineArrays(Token._STMT_FIRST, Token.CURLY_OPEN), Token._BLOCKSTMT_),
 		 	 	 Token.commonFollow2),
 	
-	_IF_		(Token._IF_, Basic.Element.IF,
+	_IF_		(Token._IF_, Element.IF,
 			 	 firstTerminalsAndPattern(Token.IF, Token.IF, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE, Token._THEN_),
 			 	 Token.commonFollow1),
 	
-	_THEN_		(Token._THEN_, Basic.Element.THEN,
+	_THEN_		(Token._THEN_, Element.THEN,
 				 firstTerminalsAndPattern(Token.CURLY_OPEN, Token._BLOCK_, Token._ELSEIF_),
 			 	 firstTerminalsAndPattern(Token._STMT_FIRST, Token._STMT_, Token._ELSEIF_),
 			 	 Token.commonFollow1),
 	
-	_ELSEIF_	(Token._ELSEIF_, Basic.Element.ELSE,
+	_ELSEIF_	(Token._ELSEIF_, Element.ELSE,
 				 firstTerminalsAndPattern(Token.ELSEIF, Token.ELSEIF, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE, Token._THEN_),
 			 	 firstTerminalsAndPattern(Token.ELSE, Token.ELSE, Token._BLOCKSTMT_),
 			 	 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
@@ -580,7 +579,7 @@ enum NonTerminal implements Token {
 		}
 	}
 	
-	public final Basic.Element basicType;
+	public final Element basicElement;
 	public final int tokenValue;
 	public final Pattern[] patterns;
 	public final PrecedencePattern precedencePattern;
@@ -589,12 +588,12 @@ enum NonTerminal implements Token {
 	/**
 	 * Constructor --> Empty wrapper, not part of any CFG or Precedence rule
 	 */
-	private NonTerminal(int tokenValue, Basic.Element basicType) {
+	private NonTerminal(int tokenValue, Element basicElement) {
 		this.tokenValue = tokenValue;
 		this.patterns = null;
 		this.precedencePattern = null;
 		this.FOLLOW = null;
-		this.basicType = basicType;
+		this.basicElement = basicElement;
 	}
 	/**
 	 * Constructor --> Parse by expediting from FIRST set
@@ -608,9 +607,9 @@ enum NonTerminal implements Token {
 	 * 		// Followed by one single
 	 * 		follow()
 	 */
-	private NonTerminal(int tokenValue, Basic.Element basicType, int[][]... patterns) {
+	private NonTerminal(int tokenValue, Element basicType, int[][]... patterns) {
 		this.tokenValue = tokenValue;
-		this.basicType = basicType;
+		this.basicElement = basicType;
 		this.patterns = new Pattern[patterns.length - 1];
 		// Therefore, skip last item
 		for (int i = 0; i < patterns.length - 1; i++) {
@@ -647,7 +646,7 @@ enum NonTerminal implements Token {
 		this.patterns = null;
 		this.precedencePattern = new PrecedencePattern(splitAt, leftRule, rightRule, direction, nonTerminalWrapper);
 		this.FOLLOW = null;
-		this.basicType = Element.PASS;
+		this.basicElement = Element.PASS;
 	}
 	
 	public boolean isTerminal() { return false; }

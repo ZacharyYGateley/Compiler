@@ -1,7 +1,5 @@
 package com.zygateley.compiler;
 
-import com.zygateley.compiler.Basic.*;
-
 /**
  * Crawl syntaxTree<Node> looking for BasicToken.Elements
  * 	For each element, 
@@ -18,7 +16,7 @@ import com.zygateley.compiler.Basic.*;
  *
  */
 public class Optimizer {
-	public static Node optimize(ParseNode syntaxTree) {
+	public static Node optimize(Node syntaxTree) {
 		Node optimizedTree = new Node(Element.PASS, null, false);
 		crawlChildren(syntaxTree, optimizedTree);
 		return optimizedTree;
@@ -33,16 +31,16 @@ public class Optimizer {
 	 * @param parseParentNode
 	 * @param optimizedParentNode
 	 */
-	private static void crawlChildren(ParseNode parseParentNode, Node optimizedParentNode) {
+	private static void crawlChildren(Node parseParentNode, Node optimizedParentNode) {
 		NonTerminal nonTerminal;
 		Terminal terminal;
 		for (Node childNodeAsBasic : parseParentNode) {
-			ParseNode parseChildNode = (ParseNode) childNodeAsBasic;
+			Node parseChildNode = (Node) childNodeAsBasic;
 			// Get basic element type
 			Element basicElement;
 			nonTerminal = parseChildNode.getRule();
 			if (nonTerminal != null) {
-				basicElement = nonTerminal.basicType;
+				basicElement = nonTerminal.basicElement;
 			}
 			else {
 				terminal = parseChildNode.getToken();

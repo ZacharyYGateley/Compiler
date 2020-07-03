@@ -4,17 +4,17 @@ import java.io.*;
 import java.util.*;
 
 public class PythonTranslator {
-	private ParseNode syntaxTree;
+	private Node syntaxTree;
 	private StringBuilder stringBuilder;
 	private FileWriter fileWriter;
 	private int currentIndent;
 	private boolean newLine;
 	
-	public PythonTranslator(ParseNode syntaxTree) {
+	public PythonTranslator(Node syntaxTree) {
 		this.syntaxTree = syntaxTree;
 		this.stringBuilder = new StringBuilder();
 	}
-	public PythonTranslator(ParseNode syntaxTree, FileWriter fileWriter) {
+	public PythonTranslator(Node syntaxTree, FileWriter fileWriter) {
 		this.syntaxTree = syntaxTree;
 		this.fileWriter = fileWriter;
 	}
@@ -50,15 +50,15 @@ public class PythonTranslator {
 			return fileWriter.toString();
 		}
 	}
-	private void crawlChildrenAndTranslate(Basic.Node parent) throws IOException {
+	private void crawlChildrenAndTranslate(Node parent) throws IOException {
 		if (parent == null) return;
-		for (Basic.Node child : parent) {
+		for (Node child : parent) {
 			if (child != null) translateNode(child);
 		}
 	}
-	private void translateNode(Basic.Node nodeAsBasic) throws IOException {
+	private void translateNode(Node nodeAsBasic) throws IOException {
 		if (nodeAsBasic == null) return;
-		ParseNode node = (ParseNode) nodeAsBasic;
+		Node node = (Node) nodeAsBasic;
 		
 		int childCount = node.getChildCount();
 		
@@ -68,15 +68,15 @@ public class PythonTranslator {
 		
 		// Try NonTerminal
 		NonTerminal rule = node.getRule();
-		ParseNode firstChild = (ParseNode) node.getFirstChild();
+		Node firstChild = (Node) node.getFirstChild();
 		if (rule != null) {
 			switch (rule) {
 			case _FUNCDEF_:
 				print("def ");
-				ParseNode nextChild = firstChild;
+				Node nextChild = firstChild;
 				for (int i = 0; i < childCount - 1; i++) {
 					translateNode(nextChild);
-					nextChild = (ParseNode) nextChild.getNextSibling();
+					nextChild = (Node) nextChild.getNextSibling();
 				}
 				println(":");
 				currentIndent++;

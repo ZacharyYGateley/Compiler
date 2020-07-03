@@ -2,184 +2,6 @@ package com.zygateley.compiler;
 
 import java.util.*;
 
-import com.zygateley.compiler.Basic.Node;
-
-/**
- * The syntaxTree is composed of Nodes.
- * Each node may be a 
- * 		NonTerminal: nonTerminal = nonTerminal
- * 					 childNodes = ArrayList<Node> of children
- * 					 terminal = null
- * 						EXCEPT for precedence rules (see mergeOperands in precedence stream)
- * 					
- * 					 
- * 		or Terminal: terminal = Terminal
- * 					 childNodes = null (no children --> leaf Node)
- * 					 May contain 
- * 						a symbol from the SymbolTable 
- * 							e.g. VAR has a symbol. PLUS does not.
- * 							This is indicated by Terminal.symbolType
- * 					 	or a value
- * 							either LITERAL value
- * 							or inherited from Terminal.exactString
- *  
- * Both NonTerminals and Terminals may be negated
- * 
- * @author Zachary Gateley
- *
- */
-class ParseNode extends Basic.Node  {
-	/*
-	// Name is used for more readable toString
-	private String _name_;
-	
-	// Non-binary tree structure
-	private ParseNode parent = null;
-	private ParseNode rightSibling = null;
-	private ParseNode firstChild = null;
-	private ParseNode lastChild = null;
-	private int childCount = 0;
-	
-	// Terminal or NonTerminal
-	private boolean negated = false;
-	*/
-	
-	// NonTerminals
-	private NonTerminal nonTerminal = null;
-	
-	// Terminals
-	private Terminal terminal = null;
-	private Symbol symbol = null;
-	private String value = null;
-	
-	
-	// CONSTRUCTORS
-	/**
-	 * Non-leaf node
-	 * 
-	 * @param nonTerminal rule for this node
-	 */
-	public ParseNode(NonTerminal nonTerminal) {
-		super(null, null, false);
-		this.nonTerminal = nonTerminal;
-
-		// toString override value
-		this._name_ = nonTerminal + "";
-	}	
-	/**
-	 * Non-leaf node
-	 * 
-	 * @param nonTerminal rule for this node
-	 * @param operatorTerminal Terminal operator string
-	 */
-	public ParseNode(NonTerminal nonTerminal, Terminal operatorTerminal) {
-		super(null, null, false);
-		this.nonTerminal = nonTerminal;
-		this.terminal = operatorTerminal;
-
-		// toString override value
-		this._name_ = nonTerminal + " (" + operatorTerminal + ")";
-	}
-	/**
-	 * Leaf node
-	 * 
-	 * @param terminal Token terminal 
-	 * @param symbol Symbol item from the SymbolTable, may be null
-	 * @param value may be a LITERAL value or the exactString from terminal
-	 */
-	public ParseNode(Terminal terminal, Symbol symbol, String value) {
-		super(null, null, false);
-		this.terminal = terminal;
-		this.symbol = symbol;
-		this.value = value;
-
-		// toString override value
-		String type = "";
-		if (symbol != null) {
-			type = (symbol.getType() != null ? symbol.getType()+"" : symbol.getName());
-		}
-		this._name_ = (symbol != null ? "(" + type + ") " : "") + terminal;
-	}
-	
-	// CFG and Symbols
-	public NonTerminal getRule() {
-		return this.nonTerminal;
-	}
-	public Terminal getToken() {
-		return this.terminal;
-	}
-	public Symbol getSymbol() {
-		return this.symbol;
-	}
-	public String getValue() {
-		return this.value;
-	}
-	/*
-	// Traversal
-	public int getChildCount() {
-		return this.childCount;
-	}
-	public void setParent(ParseNode parent) {
-		this.parent = parent;
-	}	
-	public ParseNode getNextSibling() {
-		return this.rightSibling;
-	}
-	public ParseNode getFirstChild() {
-		return this.firstChild;
-	}
-	public ParseNode getChild(int desiredIndex) {
-		int count = 0;
-		ParseNode childAt = this.firstChild;
-		for (; count < desiredIndex && childAt != null; count++) {
-			childAt = childAt.rightSibling;
-		}
-		if (count == desiredIndex) {
-			return childAt;
-		}
-		else {
-			return null;
-		}
-	}
-	public void addChild(final ParseNode newChild) {
-		// Will be null anyway
-		if (newChild == null) {
-			return;
-		}
-		
-		newChild.setParent(this);
-		if (this.lastChild == null) {
-			// New child is the first
-			this.firstChild = this.lastChild = newChild;
-		}
-		else {
-			// Add to right of last child
-			this.lastChild.rightSibling = newChild;
-			this.lastChild = newChild;
-		}
-		this.childCount++;
-	}
-	
-	// Negation
-	public boolean isNegated() {
-		return this.negated;
-	}
-	@Override
-	public Iterator<Node> iterator() {
-		ArrayList<Node> childList = new ArrayList<>();
-		ParseNode child = this.firstChild;
-		while (child != null) {
-			childList.add(child);
-			child = (ParseNode) child.rightSibling;
-		}
-		return childList.iterator();
-	}
-	@Override
-	public String toString() {
-		return _name_;
-	}
-	*/
-}
 
 /**
  * Parse exceptions thrown by fatalError()
@@ -241,7 +63,7 @@ public class Parser {
 	 * @return Node root of resulting syntax tree
 	 * @throws ParseException
 	 */
-	public ParseNode parse(boolean verbose) throws ParseException {
+	public Node parse(boolean verbose) throws ParseException {
 		this.verbose = verbose;
 		return parse();
 	}
@@ -251,7 +73,7 @@ public class Parser {
 	 * @return Node root of resulting syntax tree
 	 * @throws ParseException
 	 */
-	public ParseNode parse() throws ParseException {
+	public Node parse() throws ParseException {
 		// Reset parsing parameters
 		depth = 0;
 		
@@ -266,7 +88,7 @@ public class Parser {
 		// The starting rule MUST be a CFG rule
 		// Precedence rules depend on parent rules and their respective follow sets
 		NonTerminal startingRule = NonTerminal.getNonTerminal(Token.startingRule);
-		ParseNode syntaxTree = parseCFGRule(startingRule, tokenStream.length());
+		Node syntaxTree = parseCFGRule(startingRule, tokenStream.length());
 		
 		StreamItem nextItem = tokenStream.peekLeft();
 		if (nextItem == null || nextItem.token != Terminal.EOF) {
@@ -295,14 +117,14 @@ public class Parser {
 	 * @return
 	 * @throws ParseException
 	 */
-	private ParseNode toCFGStream(NonTerminal ruleCFG, int startPosition, int endPosition) throws ParseException {
+	private Node toCFGStream(NonTerminal ruleCFG, int startPosition, int endPosition) throws ParseException {
 		if (verbose) {
 			this.printVerbose("// --> To CFG stream from Precedence stream");
 			this.printVerbose("//");
 		}
 		tokenStream.setLeftIndex(startPosition);
 		tokenStream.setRightIndexExcl(endPosition);
-		ParseNode syntaxSubtree = parseCFGRule(ruleCFG, endPosition);
+		Node syntaxSubtree = parseCFGRule(ruleCFG, endPosition);
 		if (verbose) {
 			this.printVerbose("//");
 			this.printVerbose("// <-- To Precedence stream from CFG stream");
@@ -321,9 +143,9 @@ public class Parser {
 	 * @return Node root of resulting parse subtree 
 	 * @throws ParseException
 	 */
-	private ParseNode parseCFGRule(NonTerminal rule, int endPosition) throws ParseException {
+	private Node parseCFGRule(NonTerminal rule, int endPosition) throws ParseException {
 		// Begin new subtree
-		ParseNode syntaxSubtree = new ParseNode(rule);
+		Node syntaxSubtree = new Node(rule);
 		
 		// Skip all EMPTY tokens
 		// These are only used to hasEpsilon and inFollow
@@ -421,7 +243,7 @@ public class Parser {
 			else {
 				depth++;
 				NonTerminal nextRule = (NonTerminal) patternToken;
-				ParseNode next;
+				Node next;
 				if (!nextRule.isPrecedenceRule()) {
 					next = parseCFGRule(nextRule, endPosition);
 				}
@@ -464,7 +286,7 @@ public class Parser {
 	 * @return
 	 * @throws ParseException
 	 */
-	private ParseNode toPrecedenceStream(NonTerminal precedenceRule, NonTerminal parentRule, int startPosition, int maxEndPosition) throws ParseException {
+	private Node toPrecedenceStream(NonTerminal precedenceRule, NonTerminal parentRule, int startPosition, int maxEndPosition) throws ParseException {
 		// Start parsing this precedence non-terminal
 		if (verbose) {
 			this.printVerbose("// --> To CFG stream from Precedence stream");
@@ -583,7 +405,7 @@ public class Parser {
 		// Otherwise, there is a stream to parse
 		
 		// And parse using the precedence rule until the determined end position
-		ParseNode syntaxTree = this.parsePrecedenceRule(precedenceRule, startPosition, endPosition);
+		Node syntaxTree = this.parsePrecedenceRule(precedenceRule, startPosition, endPosition);
 		
 		// Reset stream parameters after already having read the stream
 		tokenStream.setLeftIndex(endPosition);
@@ -657,7 +479,7 @@ public class Parser {
 	 * @return parse subtree given for this span [startPosition, endPosition)
 	 * @throws ParseException
 	 */
-	private ParseNode parsePrecedenceRule(NonTerminal rule, int startPosition, int endPosition) throws ParseException {
+	private Node parsePrecedenceRule(NonTerminal rule, int startPosition, int endPosition) throws ParseException {
 		// Patterns split at these tokens
 		int[] splitTokens = rule.precedencePattern.splitTokens;
 		// If a split token is found, this is its Terminal.tokenValue
@@ -665,7 +487,7 @@ public class Parser {
 		
 		
 		if (startPosition == endPosition) {
-			return new ParseNode(Terminal.EMPTY, null, null);
+			return new Node(Terminal.EMPTY, null, null);
 		}
 		
 		// Make sure the stream is up-to-date
@@ -701,7 +523,7 @@ public class Parser {
 				if (item.syntaxSubtree == null) {
 					// Recur to get parse tree
 					// And set as these stream items' parse trees 
-					ParseNode embeddedTree = parsePrecedenceRule(rule, item.openGroupIndex + 1, item.closeGroupIndex);
+					Node embeddedTree = parsePrecedenceRule(rule, item.openGroupIndex + 1, item.closeGroupIndex);
 					StreamItem opener = tokenStream.peekAt(item.openGroupIndex);
 					opener.syntaxSubtree = item.syntaxSubtree = embeddedTree;
 					// Since we are passing a parse tree
@@ -768,7 +590,7 @@ public class Parser {
 		// We always exclude the endPosition, so
 		//		Send [startPosition, partition)
 		//		(if no match and searching left-to-right, partition==endPosition)
-		ParseNode leftOperand = null;
+		Node leftOperand = null;
 		if (startPosition < partition) {
 			// Get subsequent parse rule
 			NonTerminal leftRule = NonTerminal.getNonTerminal(rule.precedencePattern.leftRule);
@@ -795,7 +617,7 @@ public class Parser {
 		//		Send [partition + 1, endPosition)
 		// If there is no match, include the left side
 		//		send [partition, endPosition)
-		ParseNode rightOperand = null;
+		Node rightOperand = null;
 		int rightOffset = (haveMatch ? 1 : 0);
 		if (partition + rightOffset < endPosition) {
 			// Get parse rule
@@ -823,7 +645,7 @@ public class Parser {
 		
 		// Merge operands using the rule's wrapping class
 		NonTerminal wrappingClass = NonTerminal.getNonTerminal(rule.precedencePattern.nonTerminalWrapper);
-		ParseNode wrapper = mergeOperands(wrappingClass, leftOperand, rightOperand, splitToken);
+		Node wrapper = mergeOperands(wrappingClass, leftOperand, rightOperand, splitToken);
 		
 		// Set subtree negation as necessary
 		wrapper.setNegated(item.negated);
@@ -841,8 +663,8 @@ public class Parser {
 	 * @return Node parse subtree
 	 * @throws ParseException
 	 */
-	private ParseNode precedenceParseNextRule(NonTerminal nextRule, int startPosition, int endPosition) throws ParseException {
-		ParseNode parseSubtree;
+	private Node precedenceParseNextRule(NonTerminal nextRule, int startPosition, int endPosition) throws ParseException {
+		Node parseSubtree;
 		if (nextRule.isPrecedenceRule()) {
 			// Stay in precedence stream
 			parseSubtree = parsePrecedenceRule(nextRule, startPosition, endPosition);
@@ -901,17 +723,17 @@ public class Parser {
 	 * @param splitToken token to label wrapping class with
 	 * @return Node the resulting subtree
 	 */
-	private ParseNode mergeOperands(NonTerminal wrappingClass, ParseNode leftOperand, ParseNode rightOperand, Terminal splitToken) {
+	private Node mergeOperands(NonTerminal wrappingClass, Node leftOperand, Node rightOperand, Terminal splitToken) {
 		// Do not combine fully empty
 		boolean leftIsNull = (leftOperand == null);
 		boolean rightIsNull = (rightOperand == null);
 		if (leftIsNull && rightIsNull) {
-			return new ParseNode(splitToken, null, null);
+			return new Node(splitToken, null, null);
 		}
 		
 		// If both children have appropriate child nodes
 		// Create a new wrapper Node (NonTerminal.PrecedencePattern.nonTerminalWrapper)
-		ParseNode wrapper = new ParseNode(wrappingClass, splitToken);
+		Node wrapper = new Node(wrappingClass, splitToken);
 		wrapper.addChild(leftOperand);
 		wrapper.addChild(rightOperand);
 		
@@ -929,7 +751,7 @@ public class Parser {
 	 * @param value LITERAL value or matching terminal string
 	 * @return
 	 */
-	private ParseNode addTerminal(ParseNode parentNode, Terminal terminal, Symbol symbol, String value) {
+	private Node addTerminal(Node parentNode, Terminal terminal, Symbol symbol, String value) {
 		if (verbose) {
 			String tokenName = terminal + "";
 			String symbolString = "";
@@ -946,7 +768,7 @@ public class Parser {
 			}
 			this.printVerbose("  <Terminal " + tokenName + symbolString + ">");
 		}
-		ParseNode node = new ParseNode(terminal, symbol, value);
+		Node node = new Node(terminal, symbol, value);
 		parentNode.addChild(node);
 		return node;
 	}

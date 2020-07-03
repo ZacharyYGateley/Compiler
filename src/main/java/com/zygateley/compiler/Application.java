@@ -65,10 +65,10 @@ public class Application {
 		
 		// Build syntax tree
 		Parser parser = new Parser(tokenStream);
-		ParseNode syntaxTree = parser.parse(true);
-		if (syntaxTree instanceof ParseNode) {
+		Node syntaxTree = parser.parse(true);
+		if (syntaxTree instanceof Node) {
 			// Optimize parse tree
-			Basic.Node optimizedTree = Optimizer.optimize(syntaxTree);
+			Node optimizedTree = Optimizer.optimize(syntaxTree);
 			
 			// Run backend into appropriate language
 			PythonTranslator tr = new PythonTranslator(syntaxTree, targetFile);

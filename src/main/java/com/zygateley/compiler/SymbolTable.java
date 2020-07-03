@@ -16,7 +16,7 @@ class Symbol {
 	private String name;
 	private final String value;
 	private Type type;
-	private ParseNode parseTree;
+	private Node parseTree;
 	
 	public Symbol(String name) {
 		this.name = name;
@@ -56,7 +56,7 @@ class Symbol {
 		this.type = type;
 	}
 	
-	public void setParseTree(ParseNode parseTree) {
+	public void setParseTree(Node parseTree) {
 		this.parseTree = parseTree;
 	}
 	
