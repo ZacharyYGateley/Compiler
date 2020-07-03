@@ -46,6 +46,7 @@ public class Node implements Iterable<Node> {
 	
 	// Tree traversal
 	private Node parent = null;
+	private Node leftSibling = null;
 	private Node rightSibling = null;
 	private Node firstChild = null;
 	private Node lastChild = null;
@@ -104,6 +105,8 @@ public class Node implements Iterable<Node> {
 	// Constructors for Optimizer //
 	public Node(Element basicElement) {
 		this.basicElement = basicElement;
+		
+		this._name_ = basicElement + "";
 	}
 	/**
 	 * @param nonTerminal rule for this node
@@ -149,6 +152,12 @@ public class Node implements Iterable<Node> {
 	
 	
 	// Tree traversal
+	public Node getParent() {
+		return this.parent;
+	}
+	public Node getPreviousSibling() {
+		return this.leftSibling;
+	}
 	public Node getNextSibling() {
 		return this.rightSibling;
 	}
@@ -181,11 +190,38 @@ public class Node implements Iterable<Node> {
 		}
 		else {
 			// Add to right of last child
+			newChild.leftSibling = this.lastChild;
 			this.lastChild.rightSibling = newChild; 
 			this.lastChild = newChild;
 		}
 		
 		this.childCount++;
+	}
+	public Node pop() {
+		// Take care of parent
+		Node parent = this.parent;
+		if (parent != null) {
+			parent.childCount--;
+			if (parent.firstChild == this) {
+				parent.firstChild = this.rightSibling;
+			}
+			if (parent.lastChild == this) {
+				parent.lastChild = this.leftSibling;
+			}
+			this.parent = null;
+		}
+		
+		// Take care of left sibling and parent.firstChild (if necessary)
+		if (this.leftSibling != null) {
+			this.leftSibling.rightSibling = this.rightSibling;
+		}
+		
+		// Take care of right sibling and parent.lastChild (if necessary)
+		if (this.rightSibling != null) {
+			this.rightSibling.leftSibling = this.leftSibling;
+		}
+		
+		return this;
 	}
 	
 

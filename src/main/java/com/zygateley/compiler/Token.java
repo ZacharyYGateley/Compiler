@@ -251,7 +251,7 @@ public interface Token {
 
 enum Terminal implements Token {
 	// Terminals
-	EMPTY 		(Token.EMPTY, Element.NULL, "", "^\\s"),
+	EMPTY 		(Token.EMPTY, Element.STOP, "", "^\\s"),
 	SEMICOLON	(Token.SEMICOLON, Element.NULL, ";"),
 	COMMA		(Token.COMMA, Element.NULL, ","),
 	EQ 			(Token.EQ, Element.NULL, "="),
@@ -261,7 +261,7 @@ enum Terminal implements Token {
 	CURLY_CLOSE (Token.CURLY_CLOSE, Element.NULL, "}"),
 	SQUARE_OPEN (Token.SQUARE_OPEN, Element.NULL, "["),
 	SQUARE_CLOSE(Token.SQUARE_CLOSE, Element.NULL, "]"),
-	COMMENT		(Token.COMMENT, Symbol.Type.COMMENT, null, "", ("^/.*"), ("//[^\0]*(?:\r|\n|\f)?")),
+	COMMENT		(Token.COMMENT, Symbol.Type.COMMENT, Element.NULL, "", ("^/.*"), ("//[^\0]*(?:\r|\n|\f)?")),
 	
 	// PRIMITIVES
 	TRUE		(Token.TRUE, Element.LITERAL, "true"),

@@ -48,7 +48,7 @@ public class Application {
 		PushbackReader pushbackReader = FileIO.getReader(sourceFile);
 		String baseName = sourceFile.substring(0, sourceFile.lastIndexOf('.'));
 		String pythonFile = baseName + ".py";
-		FileWriter targetFile = FileIO.getWriter(pythonFile);
+		FileWriter targetFile = FileIO.getWriter(pythonFile, true);
 		// File already exists?
 		if (targetFile == null) {
 			return;
