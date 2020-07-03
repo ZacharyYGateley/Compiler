@@ -17,7 +17,7 @@ package com.zygateley.compiler;
  */
 public class Optimizer {
 	public static Node optimize(Node syntaxTree) {
-		Node optimizedTree = new Node(Element.PASS, null, false);
+		Node optimizedTree = new Node(Element.PASS);
 		crawlChildren(syntaxTree, optimizedTree);
 		return optimizedTree;
 	}
@@ -54,8 +54,12 @@ public class Optimizer {
 			if (basicElement != Element.NULL) {
 				Node optimizedRecursionNode = null;
 				if (basicElement != Element.PASS) {
-					// Non-pass elements have optimized types
-					Node optimizedChildNode = new Node(basicElement, optimizedParentNode, parseChildNode.isNegated());
+					// This parse tree node is a basic element
+					// Create new optimized node, duplicating contents of parse tree node
+					Node optimizedChildNode = new Node(basicElement, optimizedParentNode, 
+							parseChildNode.getRule(), parseChildNode.getToken(),
+							parseChildNode.getSymbol(), parseChildNode.getValue(),
+							parseChildNode.isNegated());
 					optimizedParentNode.addChild(optimizedChildNode);
 					
 					// Crawl children and add to optimized CHILD

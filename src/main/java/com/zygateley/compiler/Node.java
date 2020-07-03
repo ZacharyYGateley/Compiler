@@ -4,35 +4,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 
-enum Element {
-	// End of branch
-	NULL,
-	
-	// Skip this, continue into its children
-	PASS,
-	
-	// Control
-	SCOPE, IF, THEN, ELSE, 
-	// Definitions
-	FUNCDEF, PARAM, VARDEF,
-	// IO
-	OUTPUT, INPUT,
-	// Execution
-	CALCULATION, FUNCCALL,
-	// Logical
-	OR, AND, 
-	// Arithmetic
-	ADD, SUB, MULT, INTDIV,
-	// Comparison
-	EQEQ, NEQ, LT, LTEQ, GT, GTEQ, 
-	// Unary 
-	NOT,
-	
-	// Terminals
-	VAROUT, LITERAL
-}
-
-
 /**
  * The syntaxTree is composed of Nodes.
  * Each node may be a 
@@ -129,14 +100,24 @@ public class Node implements Iterable<Node> {
 		}
 		this._name_ = (symbol != null ? "(" + type + ") " : "") + terminal;
 	}
-	///////////////////////////////
-	// Constructor for Optimizer //
+	////////////////////////////////
+	// Constructors for Optimizer //
+	public Node(Element basicElement) {
+		this.basicElement = basicElement;
+	}
 	/**
 	 * @param nonTerminal rule for this node
 	 */
-	public Node(Element basicElement, Node parent, boolean negated) {
+	public Node(Element basicElement, Node parent, NonTerminal nonTerminal, 
+			Terminal terminal, Symbol symbol, String value, boolean negated) {
 		this.basicElement = basicElement;
 		this.parent = parent;
+		
+		// CFG and Grammar
+		this.nonTerminal = nonTerminal;
+		this.terminal = terminal;
+		this.symbol = symbol;
+		this.value = value;
 		this.negated = negated;
 
 		// toString override value
