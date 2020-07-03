@@ -1,6 +1,7 @@
 package com.zygateley.compiler;
 
-import com.zygateley.compiler.Element.Relationship;
+import java.util.*;
+import com.zygateley.compiler.Element.Transformation;
 
 /**
  * Crawl syntaxTree<Node> looking for BasicToken.Elements
@@ -19,7 +20,7 @@ import com.zygateley.compiler.Element.Relationship;
  */
 public class Optimizer {
 	public static Node optimize(Node syntaxTree) throws Exception {
-		Node optimizedTree = new Node(Element.PASS);
+		Node optimizedTree = new Node(Element.SCOPE);
 		crawlChildren(syntaxTree, optimizedTree);
 		return optimizedTree;
 	}
@@ -55,7 +56,7 @@ public class Optimizer {
 			// Skip NULL (non-process leaf branch) 
 			if (!basicElement.equals(Element.NULL)) {
 				Node optimizedRecursionNode = null;
-				if (!basicElement.equals(Element.PASS)) {
+				if (!basicElement.equals(Element.PASS) && !basicElement.equals(Element.STOP)) {
 					// This parse tree node is a basic element
 					// Create new optimized node, duplicating contents of parse tree node
 					Node optimizedChildNode = new Node(basicElement, optimizedParentNode, 
@@ -88,52 +89,64 @@ public class Optimizer {
 		return;
 	}
 	
-	private static Element toChildLeftSource = null;
-	private static void executeBinding(Element basicElement, Node optimizedNode) throws Exception {
+	/**
+	 * Execute any special bindings from Element.bindings
+	 * At time of writing:
+	 * 		Merge Left
+	 * 			Using left optimized sibling as a target
+	 * 			Merge this optimized node into the target
+	 * 			Result Elemen type may be modified 
+	 * 	
+	 *		Merge Left to Child
+	 *			Remove this optimized node from the tree
+	 *			And add it as a child to the previous optimized node
+	 * 
+	 * @param type
+	 * @param source
+	 * @throws Exception
+	 */
+	private static void executeBinding(Element type, Node source) throws Exception {
 		try {
-			if (basicElement.equals(toChildLeftSource)) {
-				// Add this element into the left sibling's children
-				Node leftNode = optimizedNode.getPreviousSibling();
-				leftNode.addChild(optimizedNode.pop());
-			}
-			else if (toChildLeftSource != null) {
-				// Only pull immediate siblings
-				toChildLeftSource = null;
-			}
-			
-			if (Element.isSpecialBinding(basicElement)) {
-				Relationship bindLeft = Element.getBindLeft(basicElement);
-				Relationship pullChildRight = Element.getPullChildRight(basicElement);
-				if (bindLeft != null) {
-					// Combine with left
-					
-					// Get parent and pop target and source
-					Node parent = optimizedNode.getParent();
-					Node target = optimizedNode.getPreviousSibling();
-					Node source = optimizedNode;
+			// Leftward bindings
+			Node target = source.getPreviousSibling();
+			if (target != null) {
+				Element leftSiblingType = (target != null ? target.getElementType() : null);
+		
+				// Merge this node into the next node
+				// With the Element result type found from Element.bindings 
+				Element resultType = Element.getMergeLeft(type, leftSiblingType);
+				boolean isMergeLeft = resultType != null;
+				if (isMergeLeft) {
+					// If we have a matching pattern, merge the node left
+					Node parent = source.getParent();
 					target.pop();
-					optimizedNode.pop();
+					source.pop();
 					
 					// Create new Node with left's properties but right's Element type
 					// No reason we shouldn't properly XOR negations
-					Node boundNode = new Node(
-							basicElement, parent, 
-							target.getRule(), target.getToken(),
+					// NonTerminal type no longer applies, superceded by basicElement type
+					source = new Node(
+							resultType, target.getParent(), 
+							null, target.getToken(),
 							target.getSymbol(), target.getValue(), target.isNegated() ^ source.isNegated()
 							); 
-					parent.addChild(boundNode);
+					parent.addChild(source);
 					
 					// Add all children from target, then all children from source
 					Node[] nodes = new Node[] { target, source };
 					for (Node n : nodes) for (Node c : n) {
-						boundNode.addChild(c);
+						source.addChild(c);
 					}
 				}
-				if (pullChildRight != null) {
-					// Pull all immediate right siblings of type (Element) Relationship.target
-					// into the children of this optimizedRecursionNode
-					// Source right child, target into this child
-					toChildLeftSource = pullChildRight.target;
+					
+				// Move this element to the child of the previous sibling ?
+				resultType = Element.getMergeLeftToChild(
+						type, leftSiblingType
+						);
+				boolean isMergeLeftToChild = (resultType != null);
+				if (isMergeLeftToChild) {
+					// Add this element into the left sibling's children
+					target.addChild(source.pop());
 				}
 			}
 		}

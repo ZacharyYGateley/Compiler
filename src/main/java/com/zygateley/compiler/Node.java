@@ -33,7 +33,7 @@ public class Node implements Iterable<Node> {
 	public String _name_;
 	
 	// Assembly element type
-	public final Element basicElement;
+	private final Element basicElement;
 	
 	// CFG and Symbol
 	// NonTerminals
@@ -124,13 +124,22 @@ public class Node implements Iterable<Node> {
 		this.negated = negated;
 
 		// toString override value
-		this._name_ = basicElement + "";
+		this._name_ = basicElement + (negated ? " -" : " ");
+		if (symbol != null) {
+			this._name_ += symbol;
+		}
+		if (terminal != null && terminal.exactString != null && !terminal.exactString.isBlank()) {
+			this._name_ += "(" + terminal.exactString + ")";
+		}
 		
 	}
 
 
 	
-	// CFG and Symbols
+	// Basic element, CFG, and Symbols
+	public Element getElementType() {
+		return this.basicElement;
+	}
 	public NonTerminal getRule() {
 		return this.nonTerminal;
 	}

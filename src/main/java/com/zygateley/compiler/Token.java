@@ -66,7 +66,6 @@ public interface Token {
 
 		FUNCTION = 		id.next(),
 		IF = 			id.next(),
-		ELSEIF = 		id.next(),
 		ELSE = 			id.next(),
 		
 		// Statement FIRST set
@@ -107,8 +106,8 @@ public interface Token {
 		_PARAMS0_ = 	id.next(),
 		_PARAMS1_ = 	id.next(),
 		_SCOPE_ = 		id.next(),
-		_IF_ =			id.next(),
-		_THEN_ = 		id.next(),
+		_IF_ =		id.next(),
+		_ELSE_ = 		id.next(),
 		_ELSEIF_ = 		id.next(),
 		_BLOCKSTMT_ = 	id.next(),
 		_BLOCK_ = 		id.next(),
@@ -221,7 +220,9 @@ public interface Token {
 			STRING
 	};
 	public static final int[][] commonFollow1 = new int[][] { combineArrays(_STMTS_FIRST, EOF, CURLY_CLOSE) };
-	public static final int[][] commonFollow2 = new int[][] { combineArrays(_STMTS_FIRST, EOF, CURLY_CLOSE, ELSEIF, ELSE) };
+	public static final int[][] commonFollow2 = new int[][] { combineArrays(_STMTS_FIRST, EOF, CURLY_CLOSE, 
+			//ELSEIF,
+			ELSE) };
 	public static final int[][] commonFollow3 = new int[][] { combineArrays(operatorSet, SEMICOLON, COMMA, PAREN_CLOSE) };
 	
 
@@ -251,8 +252,8 @@ public interface Token {
 
 enum Terminal implements Token {
 	// Terminals
-	EMPTY 		(Token.EMPTY, Element.STOP, "", "^\\s"),
-	SEMICOLON	(Token.SEMICOLON, Element.NULL, ";"),
+	EMPTY 		(Token.EMPTY, Element.NULL, "", "^\\s"),
+	SEMICOLON	(Token.SEMICOLON, Element.STOP, ";"),
 	COMMA		(Token.COMMA, Element.NULL, ","),
 	EQ 			(Token.EQ, Element.NULL, "="),
 	PAREN_OPEN	(Token.PAREN_OPEN, Element.NULL, "("),
@@ -260,7 +261,7 @@ enum Terminal implements Token {
 	CURLY_OPEN  (Token.CURLY_OPEN, Element.NULL, "{"),
 	CURLY_CLOSE (Token.CURLY_CLOSE, Element.NULL, "}"),
 	SQUARE_OPEN (Token.SQUARE_OPEN, Element.NULL, "["),
-	SQUARE_CLOSE(Token.SQUARE_CLOSE, Element.NULL, "]"),
+	SQUARE_CLOSE(Token.SQUARE_CLOSE, Element.STOP, "]"),
 	COMMENT		(Token.COMMENT, Symbol.Type.COMMENT, Element.NULL, "", ("^/.*"), ("//[^\0]*(?:\r|\n|\f)?")),
 	
 	// PRIMITIVES
@@ -271,9 +272,9 @@ enum Terminal implements Token {
 	
 	// Other reserved words
 	FUNCTION	(Token.FUNCTION, Element.NULL, "function"),
-	IF			(Token.IF, Element.NULL, "if"),
-	ELSEIF		(Token.ELSEIF, Element.NULL, "elseif"),
-	ELSE		(Token.ELSE, Element.NULL, "else"),
+	IF			(Token.IF, Element.IF, "if"),
+	ELSE		(Token.ELSE, Element.ELSE, "else"),
+	// ELSEIF exists as basic type but not as a token: ("else if")
 	
 	// Defined as <stmts> in CFG.xlsx
 	ECHO 		(Token.ECHO, Element.NULL, "echo"),
@@ -384,7 +385,7 @@ enum Terminal implements Token {
 enum NonTerminal implements Token {
 	// Patterns not precedence by FIRST Terminal
 	// SINGLE UNDERSCORE
-	_PROGRAM_	(Token._PROGRAM_, Element.PASS,
+	_PROGRAM_	(Token._PROGRAM_, Element.SCOPE,
 				 firstTerminalsAndPattern(Token.combineArrays(new int[] { Token.FUNCTION, Token.IF, Token.CURLY_OPEN }, Token._STMT_FIRST), Token._STMTS_),
 				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
 				 follow(Token.EOF)),
@@ -405,7 +406,7 @@ enum NonTerminal implements Token {
 				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
 				 follow(Token.PAREN_CLOSE)),
 	
-	_PARAMS1_	(Token._PARAMS1_, Element.PARAM,
+	_PARAMS1_	(Token._PARAMS1_, Element.PASS,
 				 firstTerminalsAndPattern(Token.COMMA, Token.COMMA, Token.VAR, Token._PARAMS1_),
 				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
 				 follow(Token.PAREN_CLOSE)),
@@ -414,22 +415,22 @@ enum NonTerminal implements Token {
 		 	 	 firstTerminalsAndPattern(Token.combineArrays(Token._STMT_FIRST, Token.CURLY_OPEN), Token._BLOCKSTMT_),
 		 	 	 Token.commonFollow2),
 	
-	_IF_		(Token._IF_, Element.IF,
-			 	 firstTerminalsAndPattern(Token.IF, Token.IF, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE, Token._THEN_),
+	_IF_		(Token._IF_, Element.PASS,
+			 	 firstTerminalsAndPattern(Token.IF, Token.IF, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE, Token._SCOPE_, Token._ELSE_),
 			 	 Token.commonFollow1),
 	
-	_THEN_		(Token._THEN_, Element.THEN,
-				 firstTerminalsAndPattern(Token.CURLY_OPEN, Token._BLOCK_, Token._ELSEIF_),
-			 	 firstTerminalsAndPattern(Token._STMT_FIRST, Token._STMT_, Token._ELSEIF_),
-			 	 Token.commonFollow1),
-	
-	_ELSEIF_	(Token._ELSEIF_, Element.ELSE,
-				 firstTerminalsAndPattern(Token.ELSEIF, Token.ELSEIF, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE, Token._THEN_),
-			 	 firstTerminalsAndPattern(Token.ELSE, Token.ELSE, Token._BLOCKSTMT_),
+	_ELSE_	    (Token._ELSE_, Element.PASS,
+			 	 firstTerminalsAndPattern(Token.ELSE, Token.ELSE, Token._ELSEIF_),
 			 	 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
 			 	 Token.commonFollow1),
 	
-	_BLOCKSTMT_	(Token._BLOCKSTMT_, Element.PASS,
+	_ELSEIF_	(Token._ELSEIF_, Element.PASS,
+			 	 firstTerminalsAndPattern(Token.IF, Token.IF, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE, Token._SCOPE_, Token._ELSE_),
+			 	 firstTerminalsAndPattern(IntStream.rangeClosed(1, id.id).toArray(), Token._SCOPE_),
+			 	 firstTerminalsAndPattern(Token.combineArrays(Token._STMT_FIRST, Token.CURLY_OPEN), Token._SCOPE_),
+			 	 Token.commonFollow1),
+	
+	_BLOCKSTMT_	(Token._BLOCKSTMT_, Element.STOP,
 			 	 firstTerminalsAndPattern(Token.CURLY_OPEN, Token._BLOCK_),
 			 	 firstTerminalsAndPattern(Token._STMT_FIRST, Token._STMT_),
 			 	 Token.commonFollow2),
@@ -518,8 +519,8 @@ enum NonTerminal implements Token {
 	__PRECEDENCE5__(Token.__PRECEDENCE5__, precedenceSplitAt(Token.operatorSetRank5), 	Token.__PRECEDENCE5__,	Token._VALUEOREXPR_,	Direction.RIGHT_TO_LEFT,	Token.__UNARY__),
 	// Placeholder
 	// All operations appear with this as parent to its two operands
-	__BINARY__	(Token.__BINARY__, Element.CALCULATION),
-	__UNARY__	(Token.__UNARY__, Element.CALCULATION);
+	__BINARY__	(Token.__BINARY__, Element.OPERATION),
+	__UNARY__	(Token.__UNARY__, Element.OPERATION);
 	
 	/**
 	 * Internal class for NonTerminals

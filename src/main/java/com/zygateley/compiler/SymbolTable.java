@@ -96,6 +96,11 @@ class Symbol {
 	public boolean equals(Symbol s) {
 		return this.equals(s.name, s.value, s.type);
 	}
+	
+	@Override
+	public String toString() {
+		return (this.getName() != null ? this.getName() : this.getValue());
+	}
 }
 
 public class SymbolTable implements Iterable<Symbol> {
