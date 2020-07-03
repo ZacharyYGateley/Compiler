@@ -25,7 +25,7 @@ class StreamItem {
 	public int closeGroupIndex = -1;
 	public int openGroupIndex = -1;
 	// During parsing, pointer to syntax subtree is stored here
-	public Node syntaxSubtree = null;
+	public ParseNode syntaxSubtree = null;
 	
 	// During parsing, this stream item may be marked as negated
 	public boolean negated = false;
