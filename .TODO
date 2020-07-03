@@ -10,6 +10,7 @@ unary ! double parses on expression operand
 
 
 Long term
+	Loops
 	Scope? Ought to come naturally in assembly. In Python... not so much.
 	Type checking for addition - Adding strings - Subtracting strings...? i.e. type checking
 	Token extends BasicToken for grammar selection
