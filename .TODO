@@ -1,8 +1,5 @@
 Output to assembly
 	Aliases and pulling/pushing from stack only when necessary
-	
-Optimize
-	Create BasicToken syntax tree that is readable by 
 
 NonTerminal constructors should take CFGPattern and PrecedencePattern as parameters  
 	Can make firstTerminalsAndPatterns and follow do the work of the NonTerminal constructor?
@@ -10,7 +7,6 @@ NonTerminal constructors should take CFGPattern and PrecedencePattern as paramet
 
 Build basic README. Make repository public.
 unary ! double parses on expression operand
-Node should not have param. It should have firstChild, and firstChild should have nextChild.
 
 
 Long term
