@@ -71,8 +71,8 @@ public class Application {
 			Node optimizedTree = Optimizer.optimize(syntaxTree);
 			
 			// Run backend into appropriate language
-			//PythonTranslator tr = new PythonTranslator(optimizedTree, targetFile);
-			PythonTranslator tr = new PythonTranslator(syntaxTree, targetFile);
+			PythonTranslator tr = new PythonTranslator(optimizedTree, targetFile);
+			//PythonTranslator tr = new PythonTranslator(syntaxTree, targetFile);
 			String output = tr.toPython();
 			System.out.println("\n\nGenerated code: \n\n\n" + output);
 		}

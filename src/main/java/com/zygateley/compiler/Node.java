@@ -173,6 +173,9 @@ public class Node implements Iterable<Node> {
 	public Node getFirstChild() {
 		return this.firstChild;
 	}
+	public Node getLastChild() {
+		return this.lastChild;
+	}
 	public int getChildCount() {
 		return this.childCount;
 	}
@@ -206,6 +209,29 @@ public class Node implements Iterable<Node> {
 		
 		this.childCount++;
 	}
+	public void addRightSibling(final Node newSibling) {
+		if (newSibling == null) return;
+		
+		// Upwards
+		newSibling.parent = this.parent;
+		this.parent.childCount++;
+		
+		// Downwards
+		if (this.parent.lastChild == this) {
+			this.parent.lastChild = newSibling;
+		}
+		
+		// Leftwards
+		if (this.rightSibling != null) {
+			this.rightSibling.leftSibling = newSibling;
+		}
+		newSibling.leftSibling = this;
+		
+		// Rightwards
+		newSibling.rightSibling = this.rightSibling;
+		this.rightSibling = newSibling;
+		
+	}
 	public Node pop() {
 		// Take care of parent
 		Node parent = this.parent;
@@ -229,6 +255,10 @@ public class Node implements Iterable<Node> {
 		if (this.rightSibling != null) {
 			this.rightSibling.leftSibling = this.leftSibling;
 		}
+		
+		// Clear siblings
+		this.rightSibling = null;
+		this.leftSibling = null;
 		
 		return this;
 	}

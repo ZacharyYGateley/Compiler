@@ -67,6 +67,7 @@ public interface Token {
 		FUNCTION = 		id.next(),
 		IF = 			id.next(),
 		ELSE = 			id.next(),
+		// ELSEIF exists as basic type but not as a token: ("else if")
 		
 		// Statement FIRST set
 		ECHO = 			id.next(),
@@ -262,7 +263,7 @@ enum Terminal implements Token {
 	CURLY_CLOSE (Token.CURLY_CLOSE, Element.NULL, "}"),
 	SQUARE_OPEN (Token.SQUARE_OPEN, Element.NULL, "["),
 	SQUARE_CLOSE(Token.SQUARE_CLOSE, Element.STOP, "]"),
-	COMMENT		(Token.COMMENT, Symbol.Type.COMMENT, Element.NULL, "", ("^/.*"), ("//[^\0]*(?:\r|\n|\f)?")),
+	COMMENT		(Token.COMMENT, Symbol.Type.COMMENT, Element.NULL, "", ("^/(?:/.*)?$"), ("//[^\0]*(?:\r|\n|\f)?")),
 	
 	// PRIMITIVES
 	TRUE		(Token.TRUE, Element.LITERAL, "true"),
@@ -303,16 +304,12 @@ enum Terminal implements Token {
 	public final String exactString;
 	public final Pattern regexStart;
 	public final Pattern regexFull;
+	public final Pattern regexNot;
 	public final Symbol.Type symbolType;
 	public final Element basicElement;
 
 	private Terminal(int tokenValue, Element basicElement,  String... matching) {
-		this.tokenValue = tokenValue;
-		this.symbolType = null;
-		this.exactString = (matching.length > 0) ? matching[0] : "";
-		this.regexStart = (matching.length > 1) ? Pattern.compile(matching[1]) : null;
-		this.regexFull = (matching.length > 2) ? Pattern.compile(matching[2]) : null;
-		this.basicElement = basicElement;
+		this(tokenValue, null, basicElement, matching);
 	}
 	private Terminal(int tokenValue, Symbol.Type symbolType, Element basicElement, String... matching) {
 		this.tokenValue = tokenValue;
@@ -321,6 +318,7 @@ enum Terminal implements Token {
 		this.exactString = (matching.length > 0) ? matching[0] : "";
 		this.regexStart = (matching.length > 1) ? Pattern.compile(matching[1]) : null;
 		this.regexFull = (matching.length > 2) ? Pattern.compile(matching[2]) : null;
+		this.regexNot = (matching.length > 3) ? Pattern.compile(matching[3]) : null;
 		this.basicElement = basicElement;
 	}
 	
@@ -390,7 +388,7 @@ enum NonTerminal implements Token {
 				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
 				 follow(Token.EOF)),
 	
-	_STMTS_		(Token._STMTS_, Element.PASS,
+	_STMTS_		(Token._STMTS_, Element.STOP,
 				 firstTerminalsAndPattern(Token.FUNCTION, Token._FUNCDEF_, Token._STMTS_),
 				 firstTerminalsAndPattern(Token.IF, Token._IF_, Token._STMTS_),
 				 firstTerminalsAndPattern(Token.combineArrays(Token._STMT_FIRST, Token.CURLY_OPEN), Token._BLOCKSTMT_, Token._STMTS_),
@@ -427,7 +425,6 @@ enum NonTerminal implements Token {
 	_ELSEIF_	(Token._ELSEIF_, Element.PASS,
 			 	 firstTerminalsAndPattern(Token.IF, Token.IF, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE, Token._SCOPE_, Token._ELSE_),
 			 	 firstTerminalsAndPattern(IntStream.rangeClosed(1, id.id).toArray(), Token._SCOPE_),
-			 	 firstTerminalsAndPattern(Token.combineArrays(Token._STMT_FIRST, Token.CURLY_OPEN), Token._SCOPE_),
 			 	 Token.commonFollow1),
 	
 	_BLOCKSTMT_	(Token._BLOCKSTMT_, Element.STOP,
@@ -472,7 +469,7 @@ enum NonTerminal implements Token {
 	_EXPR_		(Token._EXPR_, Element.PASS,
 				 // Send stream to precedence branch no matter what
 				 firstTerminalsAndPattern(IntStream.rangeClosed(1, id.id).toArray(), Token.__PRECEDENCE1__),
-	 			 follow(new int[] {Token.SEMICOLON, Token.PAREN_CLOSE})),
+	 			 follow(new int[] {Token.SEMICOLON, Token.PAREN_CLOSE, Token.COMMA})),
 	
 	_VALUE_		(Token._VALUE_, Element.PASS,
 				 firstTerminalsAndPattern(Token.VAR, Token._VAR_),

@@ -1,7 +1,6 @@
 package com.zygateley.compiler;
 
 import java.io.*;
-import java.util.*;
 
 public class PythonTranslator {
 	private Node syntaxTree;
@@ -56,125 +55,121 @@ public class PythonTranslator {
 			if (child != null) translateNode(child);
 		}
 	}
-	private void translateNode(Node nodeAsBasic) throws IOException {
-		if (nodeAsBasic == null) return;
-		Node node = (Node) nodeAsBasic;
+	private void translateNode(Node node) throws IOException {
+		if (node == null) return;
 		
-		int childCount = node.getChildCount();
 		
 		if (node.isNegated()) {
 			print("(-");
 		}
 		
 		// Try NonTerminal
-		NonTerminal rule = node.getRule();
+		Element element = node.getElementType();
 		Node firstChild = (Node) node.getFirstChild();
-		if (rule != null) {
-			switch (rule) {
-			case _FUNCDEF_:
+		Node nextChild;
+		int childCount = node.getChildCount();
+		if (element != null) {
+			switch (element) {
+			case FUNCDEF:
+				println();
+				// Function signature
 				print("def ");
-				Node nextChild = firstChild;
-				for (int i = 0; i < childCount - 1; i++) {
-					translateNode(nextChild);
-					nextChild = (Node) nextChild.getNextSibling();
-				}
+				// Function name
+				translateNode(firstChild);
+				print("(");
+				// Function parameters
+				nextChild = firstChild.getNextSibling();
+				// All but last child are parameters
+				printList(nextChild.getFirstChild(), nextChild.getChildCount());
+				print(")");
 				println(":");
+				
+				// Function body
 				currentIndent++;
+				translateNode(node.getLastChild());
+				currentIndent--;
+				println();
+				break;
+			case IF:
+				print("if ");
+				// Condition
+				translateNode(firstChild);
+				println(":");
+
+				// Body
+				currentIndent++;
+				nextChild = firstChild.getNextSibling();
 				translateNode(nextChild);
 				currentIndent--;
-				break;
-			case _IF_:
-				println();
-				print("if ");
-				// Expression
-				translateNode(node.getChild(2));
-				println(":");
-				currentIndent++;
-				translateNode(node.getChild(4));
-				currentIndent--;
-				translateNode(node.getChild(5));
-				break;
-			case _ELSEIF_:
-				// Can go into pattern starting with terminal elseif 
-				// or into pattern starting with terminal else
-				// or may be empty
-				println();
-				if (firstChild.getToken() == Terminal.IF) {
-					// Else if condition exists
-					print("elif ");
-					translateNode(node.getChild(2));
-					println(":");
-					currentIndent++;
-					translateNode(node.getChild(4));
-					currentIndent--;
-					translateNode(node.getChild(5));
-				}
-				else {
-					// Else condition exists
-					println("else:");
-					currentIndent++;
-					translateNode(node.getChild(0));
-					currentIndent--;
+				
+				// else / else if
+				nextChild = nextChild.getNextSibling();
+				if (nextChild != null) {
+					println();
+					if (Element.IF.equals(nextChild.getElementType())) {
+						print("el");
+						translateNode(nextChild);
+					}
+					else {
+						print("else:");
+						println();
+						currentIndent++;
+						translateNode(nextChild);
+						currentIndent--;
+						println();
+					}
 				}
 				break;
-			case _BLOCK_:
-				// Python does not contain if-then scopes, so just process normally
-				crawlChildrenAndTranslate(node);
-				break;
-			case _STMT_:
-				crawlChildrenAndTranslate(node);
-				println();
-				break;
-			case _ECHO_:
-				// Expressions all enclosed in parentheses,
-				// So no need to place them here
+			case OUTPUT:
 				print("print (");
 				crawlChildrenAndTranslate(node);
 				println(")");
 				break;
-			case _INPUT_:
-				translateNode(node.getChild(1));
-				print(" = input() ");
+			case INPUT:
+				translateNode(firstChild);
+				println(" = input()");
 				break;
-			case __BINARY__:
+			case OPERATION:
+				nextChild = firstChild.getNextSibling();
+				if (nextChild == null) {
+					// Unary
+					printTerminal(node.getToken());
+					translateNode(firstChild);
+				}
+				else {
+					// Binary
+					print("(");
+					translateNode(firstChild);
+					print(" ");
+					printTerminal(node.getToken());
+					print(" ");
+					translateNode(nextChild);
+					print(")");
+				}
+				break;
+			case FUNCCALL:
+				// Function name
+				printValue(node);
 				print("(");
-				translateNode(node.getChild(0));
-				print(" ");
-				printTerminal(node.getToken());
-				print(" ");
-				translateNode(node.getChild(1));
-				print(")");
+				
+				// Arguments
+				// All children are arguments
+				printList(firstChild, childCount);
+				
+				println(")");
 				break;
-			case __UNARY__:
-				printTerminal(node.getToken());
-				translateNode(node.getChild(0));
+			case VARDEF:
+				printValue(node);
+				print(" = ");
+				translateNode(node.getFirstChild());
+				println();
+				break;
+			case VAROUT:
+			case LITERAL:
+				printValue(node);
 				break;
 			default:
 				crawlChildrenAndTranslate(node);
-				break;
-			}
-		}
-		// Try Terminal
-		else {
-			Terminal t = node.getToken();
-			String value;
-			switch (t) {
-			case INT:
-				value = node.getValue();
-				print(value);
-				break;
-			case STRING:
-				print(node.getSymbol().getValue());
-				break;
-			case COMMENT:
-				value = "#" + node.getValue().substring(2);
-				print(value);
-				break;
-			case VAR:
-				print(node.getSymbol().getName());
-				break;
-			default:
-				printTerminal(t);
 				break;
 			}
 		}
@@ -184,6 +179,19 @@ public class PythonTranslator {
 		}
 		
 		return;
+	}
+	
+	private void printList(Node nextChild, int limit) throws IOException {
+		int count = 0;
+		boolean isFirstArgument = true;
+		while (nextChild != null && count++ < limit) {
+			if (!isFirstArgument) {
+				print(", ");
+			}
+			isFirstArgument = false;
+			translateNode(nextChild);
+			nextChild = nextChild.getNextSibling();
+		}
 	}
 	
 	private void print(String output) throws IOException {
@@ -204,12 +212,33 @@ public class PythonTranslator {
 			fileWriter.append(output);
 		}
 	}
+	private void printValue(Node node) throws IOException {
+		Terminal t = node.getToken();
+		String value;
+		switch (t) {
+		case INT:
+			value = node.getValue();
+			print(value);
+			break;
+		case STRING:
+			print(node.getSymbol().getValue());
+			break;
+		case COMMENT:
+			value = "#" + node.getValue().substring(2);
+			print(value);
+			break;
+		case VAR:
+			print(node.getSymbol().getName());
+			break;
+		default:
+			printTerminal(t);
+			break;
+		}
+	}
 	private void printTerminal(Terminal t) throws IOException {
 		// Try Terminal
 		switch (t) {
 		case FUNCTION:
-		case IF:
-		case ELSE:
 		case ECHO:
 		case CURLY_OPEN:
 		case CURLY_CLOSE:
@@ -238,6 +267,10 @@ public class PythonTranslator {
 			break;
 		case NOT:
 			print("~");
+			break;
+		case SLASH:
+			// For the moment, it is integer division
+			print("//");
 			break;
 		case PAREN_OPEN:
 			print(" (");

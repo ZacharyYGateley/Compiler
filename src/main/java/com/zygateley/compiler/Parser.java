@@ -42,8 +42,10 @@ public class Parser {
 	
 	// Verbose output shows an XML representation
 	// of the parse tree, indenting appropriately by depth 
-	private boolean verbose;
-	private int depth;
+	private boolean verbose = false;
+	// Show switches between streams
+	private boolean doublyVerbose = false;
+	private int depth = 0;
 	
 	/**
 	 * The only variable needed to instantiate a
@@ -53,7 +55,7 @@ public class Parser {
 	public Parser(TokenStream tokenStream) {
 		this.tokenStream = tokenStream;
 	}
-	
+
 	/**
 	 * Parse the TokenStream in verbose mode.
 	 * Outputs XML structure of parseTree
@@ -64,7 +66,21 @@ public class Parser {
 	 * @throws ParseException
 	 */
 	public Node parse(boolean verbose) throws ParseException {
+		return parse(verbose, false);
+	}
+	/**
+	 * Parse the TokenStream in verbose mode.
+	 * Outputs XML structure of parseTree
+	 * and shows switching between CFG stream and Precedence stream.  
+	 * 
+	 * @param verbose
+	 * @param doublyVerbose
+	 * @return Node root of resulting syntax tree
+	 * @throws ParseException
+	 */
+	public Node parse(boolean verbose, boolean doublyVerbose) throws ParseException {
 		this.verbose = verbose;
+		this.doublyVerbose = doublyVerbose;
 		return parse();
 	}
 	/**
@@ -118,14 +134,14 @@ public class Parser {
 	 * @throws ParseException
 	 */
 	private Node toCFGStream(NonTerminal ruleCFG, int startPosition, int endPosition) throws ParseException {
-		if (verbose) {
+		if (doublyVerbose) {
 			this.printVerbose("// --> To CFG stream from Precedence stream");
 			this.printVerbose("//");
 		}
 		tokenStream.setLeftIndex(startPosition);
 		tokenStream.setRightIndexExcl(endPosition);
 		Node syntaxSubtree = parseCFGRule(ruleCFG, endPosition);
-		if (verbose) {
+		if (doublyVerbose) {
 			this.printVerbose("//");
 			this.printVerbose("// <-- To Precedence stream from CFG stream");
 		}
@@ -288,7 +304,7 @@ public class Parser {
 	 */
 	private Node toPrecedenceStream(NonTerminal precedenceRule, NonTerminal parentRule, int startPosition, int maxEndPosition) throws ParseException {
 		// Start parsing this precedence non-terminal
-		if (verbose) {
+		if (doublyVerbose) {
 			this.printVerbose("// --> To CFG stream from Precedence stream");
 			this.printVerbose("//");
 		}
@@ -395,7 +411,7 @@ public class Parser {
 		// If not balanced parentheses, syntax error.
 		isBalanced = (openGroupCount == 0);
 		if (!isBalanced) {
-			this.fatalError("Fatal error: Incorrectly-balanced parentheses.");
+			this.fatalError("Syntax error: Incorrectly-balanced parentheses.");
 			return null;
 		}
 		if (!inFollow) {
@@ -412,7 +428,7 @@ public class Parser {
 		tokenStream.setRightIndexExcl(maxEndPosition);
 
 		// Finished parsing this precedence non-terminal
-		if (verbose) {
+		if (doublyVerbose) {
 			this.printVerbose("//");
 			this.printVerbose("// <-- To Precedence stream from CFG stream");
 		}
@@ -572,13 +588,10 @@ public class Parser {
 		
 		
 		final Terminal splitToken = Terminal.getTerminal(splitTokenValue);
-		if (verbose) {
+		if (doublyVerbose) {
 			this.printVerbose("//");
 			this.printVerbose("// Try " + rule + ": (" + (haveMatch ? "match: " + splitToken : "no match") + ")");
 			this.printVerbose(String.format("//     start=%d, partition=%d, end=%d", startPosition, partition, endPosition));
-			if (startPosition == partition && partition == endPosition) {
-				System.out.println("uh oh");
-			}
 		}
 
 		// For any passing to sub-rules, 
@@ -674,7 +687,7 @@ public class Parser {
 			// Send to CFG instead.
 			// In valid syntax, this happens for _VALUE_
 			
-			if (verbose) {
+			if (doublyVerbose) {
 				this.printVerbose("//");
 				printVerbose("// Capture by CFG " + nextRule);
 				this.printVerbose("//");

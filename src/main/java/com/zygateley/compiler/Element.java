@@ -129,33 +129,41 @@ public enum Element {
 
 		// if, else if , else
 		bindings.add(new Relationship(
+				IF,
+				new Transformation(Binding.MERGE_LEFT_TO_CHILD, IF, IF)
+				));
+		bindings.add(new Relationship(
 				ELSE,
 				// Merge if would result in valid if, elseif
-				new Transformation(Binding.MERGE_LEFT, IF, ELSEIF),
+				new Transformation(Binding.MERGE_LEFT, IF, IF)
 				// Otherwise, add as child to the left
-				new Transformation(Binding.MERGE_LEFT_TO_CHILD, IF, ELSE),
-				new Transformation(Binding.MERGE_LEFT_TO_CHILD, ELSEIF, ELSE)
+				//new Transformation(Binding.MERGE_LEFT_TO_CHILD, ELSEIF, ELSE)
 				));
 		bindings.add(new Relationship(
 				OPERATION,
-				new Transformation(Binding.MERGE_LEFT, IF, IF),
-				new Transformation(Binding.MERGE_LEFT, ELSEIF, ELSEIF)
+				new Transformation(Binding.MERGE_LEFT_TO_CHILD, IF, IF)
+				//new Transformation(Binding.MERGE_LEFT_TO_CHILD, ELSEIF, ELSEIF)
 				));
 		bindings.add(new Relationship(
 				VAROUT,
-				new Transformation(Binding.MERGE_LEFT, IF, IF),
-				new Transformation(Binding.MERGE_LEFT, ELSEIF, ELSEIF)
+				new Transformation(Binding.MERGE_LEFT_TO_CHILD, IF, IF)
+				//new Transformation(Binding.MERGE_LEFT_TO_CHILD, ELSEIF, ELSEIF)
 				));
 		bindings.add(new Relationship(
 				LITERAL,
-				new Transformation(Binding.MERGE_LEFT, IF, IF),
-				new Transformation(Binding.MERGE_LEFT, ELSEIF, ELSEIF)
+				new Transformation(Binding.MERGE_LEFT_TO_CHILD, IF, IF)
+				//new Transformation(Binding.MERGE_LEFT_TO_CHILD, ELSEIF, ELSEIF)
 				));
 		bindings.add(new Relationship(
 				SCOPE,
-				new Transformation(Binding.MERGE_LEFT, IF, IF),
-				new Transformation(Binding.MERGE_LEFT, ELSEIF, ELSEIF),
-				new Transformation(Binding.MERGE_LEFT, ELSE, ELSE)
+				new Transformation(Binding.MERGE_LEFT_TO_CHILD, IF, IF),
+				//new Transformation(Binding.MERGE_LEFT_TO_CHILD, ELSEIF, ELSEIF),
+				new Transformation(Binding.MERGE_LEFT_TO_CHILD, ELSE, ELSE)
+				));
+		
+		bindings.add(new Relationship(
+				VARDEF,
+				new Transformation(Binding.MERGE_LEFT, VAROUT, VARDEF)
 				));
 	}
 }
