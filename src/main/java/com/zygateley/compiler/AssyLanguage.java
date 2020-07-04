@@ -55,7 +55,7 @@ public abstract class AssyLanguage {
 		case _FUNCDEF_:
 			// Save all functions into SymbolTable
 			// To be processed and output at the end of file
-			Symbol symbol = pn.childNodes().get(1).getSymbol();
+			Symbol symbol = pn.getFirstChild().getNextSibling().getSymbol();
 			symbol.setType(Symbol.Type.FUNCTION);
 			symbol.setParseTree(pn);
 			
