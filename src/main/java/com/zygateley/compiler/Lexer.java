@@ -25,8 +25,8 @@ public class Lexer {
 		public boolean isPossibleMatch = true;
 		public boolean isFullMatch = true;
 	}
-	private static TerminalAndMatch[] thisRoundMatches = new TerminalAndMatch[Terminal.values().length];
-	private static TerminalAndMatch[] lastRoundMatches = new TerminalAndMatch[thisRoundMatches.length];
+	private TerminalAndMatch[] thisRoundMatches = new TerminalAndMatch[Terminal.values().length];
+	private TerminalAndMatch[] lastRoundMatches = new TerminalAndMatch[thisRoundMatches.length];
 	{
 		Terminal[] tokens = Terminal.values();
 		for (int i = 0; i < tokens.length; i++) {
@@ -268,7 +268,10 @@ public class Lexer {
 		}
 		else if (thisRule.symbolType == Symbol.Type.STRING) {
 			// Candidates for string pool
-			symbol = symbolTable.insert(newToken, thisRule.symbolType);
+			// During add, escape characters were set as double escape
+			// Unescape now
+			String unescaped = Symbol.unescapeJavaString(newToken); 
+			symbol = symbolTable.insert(unescaped, thisRule.symbolType);
 		}
 		else if (thisRule.symbolType != null) {
 			// All other literals

@@ -48,7 +48,7 @@ public class Application {
 		PushbackReader pushbackReader = FileIO.getReader(sourceFile);
 		String baseName = sourceFile.substring(0, sourceFile.lastIndexOf('.'));
 		String pythonFile = baseName + ".py";
-		FileWriter targetFile = FileIO.getWriter(pythonFile);
+		FileWriter targetFile = FileIO.getWriter(pythonFile, true);
 		// File already exists?
 		if (targetFile == null) {
 			return;
@@ -67,8 +67,12 @@ public class Application {
 		Parser parser = new Parser(tokenStream);
 		Node syntaxTree = parser.parse(true);
 		if (syntaxTree instanceof Node) {
+			// Optimize parse tree
+			Node optimizedTree = Optimizer.optimize(syntaxTree);
+			
 			// Run backend into appropriate language
-			Translator tr = new Translator(syntaxTree, targetFile);
+			PythonTranslator tr = new PythonTranslator(optimizedTree, targetFile);
+			//PythonTranslator tr = new PythonTranslator(syntaxTree, targetFile);
 			String output = tr.toPython();
 			System.out.println("\n\nGenerated code: \n\n\n" + output);
 		}

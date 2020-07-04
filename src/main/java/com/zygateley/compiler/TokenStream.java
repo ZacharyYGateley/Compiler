@@ -59,7 +59,7 @@ class StreamItem {
 		}
 		String symbolString = "";
 		if (this.symbol != null) {
-			symbolString = "\n\tSymbol: " + (this.symbol.getName() != null ? this.symbol.getName() : this.symbol.getValue());
+			symbolString = "\n\tSymbol: " + this.symbol;
 		}
 		String valueString = "";
 		if (this.value != null) {
