@@ -1,14 +1,16 @@
 Output to assembly
 	Aliases and pulling/pushing from stack only when necessary
 
-Can make firstTerminalsAndPatterns and follow do the work of the NonTerminal constructor?
-Make Token prettier :'-(
+NonTerminal constructors should take CFGPattern and PrecedencePattern as parameters  
+	Can make firstTerminalsAndPatterns and follow do the work of the NonTerminal constructor?
+	Make Token prettier :'-(
 
 Build basic README. Make repository public.
 unary ! double parses on expression operand
 
 
 Long term
+	Loops
 	Scope? Ought to come naturally in assembly. In Python... not so much.
 	Type checking for addition - Adding strings - Subtracting strings...? i.e. type checking
 	Token extends BasicToken for grammar selection

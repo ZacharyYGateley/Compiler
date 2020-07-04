@@ -1,17 +1,29 @@
-function inTheBeginning(what) {
-	if (!(1 == 2) && -3 + 6*3 > 5*2 + 4 || false) {
-		echo "In the beginning, there was " + what;
-	}
+function www(what, when, where) {
+	echo "What:\t" + what;
+	echo "When:\t" + when;
+	echo "Where:\t" + where;
 }
 
+echo "What, when, or where? ";
+input inp;
 
-inTheBeginning("." + "..?");
+dun = "Dunno";
+if (inp == "This") {
+	www(inp, dun, dun);
+}
+else if (inp == "Now") {
+	www(dun, inp, dun);
+}
+else if (inp == "Here") {
+	www(dun, dun, inp);
+}
+else {
+	www("I " + "wish " + "I " + "knew", dun, dun);
+}
 
-input what;
+if (true) {
+	echo "\nIt is working.";
+}
 
-inTheBeginning(what + ("!" + "!"));
-
-echo "Program finished. Press enter key to continue...";
-input what;
-
-// Please ignore this line
+b = (4 * 2 + 8 / 2) / 6 - 1;
+echo b;
