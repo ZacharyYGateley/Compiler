@@ -1,5 +1,6 @@
 # Build file
-/target/*
+target/*
+bin/*
 # Test native, python, and assembly output
 *.s
 *.py

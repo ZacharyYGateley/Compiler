@@ -30,7 +30,7 @@ public class FileIO {
 	}
 	public static FileWriter getWriter(String absolutePath, boolean force) throws IOException {
 		File file = new File(absolutePath);
-		if (!file.createNewFile()) {
+		if (!file.createNewFile() && !force) {
 			System.out.println("File already exists: " + absolutePath);
 			System.out.println("\t Overwrite to overwrite? (y / n)\n");
 			String response = ("" + (char) System.in.read()).toLowerCase();

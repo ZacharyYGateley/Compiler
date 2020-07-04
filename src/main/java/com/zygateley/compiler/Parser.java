@@ -2,141 +2,6 @@ package com.zygateley.compiler;
 
 import java.util.*;
 
-/**
- * The syntaxTree is composed of Nodes.
- * Each node may be a 
- * 		NonTerminal: nonTerminal = nonTerminal
- * 					 childNodes = ArrayList<Node> of children
- * 					 terminal = null
- * 						EXCEPT for precedence rules (see mergeOperands in precedence stream)
- * 					
- * 					 
- * 		or Terminal: terminal = Terminal
- * 					 childNodes = null (no children --> leaf Node)
- * 					 May contain 
- * 						a symbol from the SymbolTable 
- * 							e.g. VAR has a symbol. PLUS does not.
- * 							This is indicated by Terminal.symbolType
- * 					 	or a value
- * 							either LITERAL value
- * 							or inherited from Terminal.exactString
- *  
- * Both NonTerminals and Terminals may be negated
- * 
- * @author Zachary Gateley
- *
- */
-class Node implements Iterable<Node> {
-	// Name is used for more readable toString
-	private final String _name_;
-	
-	// NonTerminals
-	private NonTerminal nonTerminal = null;
-	private ArrayList<Node> childNodes;
-	
-	// Terminals
-	private Terminal terminal = null;
-	private Symbol symbol = null;
-	private String value = null;
-	
-	// Terminal or NonTerminal
-	private boolean negated = false;
-	
-	// CONSTRUCTORS
-	/**
-	 * Non-leaf node
-	 * 
-	 * @param nonTerminal rule for this node
-	 */
-	public Node(NonTerminal nonTerminal) {
-		this.nonTerminal = nonTerminal;
-		this.childNodes = new ArrayList<Node>();
-
-		// toString override value
-		this._name_ = nonTerminal + "";
-	}	
-	/**
-	 * Non-leaf node
-	 * 
-	 * @param nonTerminal rule for this node
-	 * @param operatorTerminal Terminal operator string
-	 */
-	public Node(NonTerminal nonTerminal, Terminal operatorTerminal) {
-		this.nonTerminal = nonTerminal;
-		this.terminal = operatorTerminal;
-		this.childNodes = new ArrayList<Node>();
-
-		// toString override value
-		this._name_ = nonTerminal + " (" + operatorTerminal + ")";
-	}
-	/**
-	 * Leaf node
-	 * 
-	 * @param terminal Token terminal 
-	 * @param symbol Symbol item from the SymbolTable, may be null
-	 * @param value may be a LITERAL value or the exactString from terminal
-	 */
-	public Node(Terminal terminal, Symbol symbol, String value) {
-		this.terminal = terminal;
-		this.symbol = symbol;
-		this.value = value;
-		// Leaf nodes do not have children
-		this.childNodes = null;
-
-		// toString override value
-		String type = "";
-		if (symbol != null) {
-			type = (symbol.getType() != null ? symbol.getType()+"" : symbol.getName());
-		}
-		this._name_ = (symbol != null ? "(" + type + ") " : "") + terminal;
-	}
-	
-	// Keep all fields protected
-	public NonTerminal getRule() {
-		return this.nonTerminal;
-	}
-	public Terminal getToken() {
-		return this.terminal;
-	}
-	public Symbol getSymbol() {
-		return this.symbol;
-	}
-	public String getValue() {
-		return this.value;
-	}
-	/**
-	 * @return a copy of the children of this Node
-	 */
-	public ArrayList<Node> childNodes() {
-		// Protect
-		if (this.childNodes == null) {
-			return null;
-		}
-		else {
-			return new ArrayList<Node>(this.childNodes);
-		}
-	}
-	public void addChild(final Node newChild) {
-		this.childNodes.add(newChild);
-	}
-	
-	// Negation
-	public boolean isNegated() {
-		return this.negated;
-	}
-	public void setNegated(boolean negated) {
-		this.negated = negated;
-	}
-	
-	@Override
-	public Iterator<Node> iterator() {
-		return this.childNodes.iterator();
-	}
-	@Override
-	public String toString() {
-		return _name_;
-	}
-}
 
 /**
  * Parse exceptions thrown by fatalError()
@@ -177,8 +42,10 @@ public class Parser {
 	
 	// Verbose output shows an XML representation
 	// of the parse tree, indenting appropriately by depth 
-	private boolean verbose;
-	private int depth;
+	private boolean verbose = false;
+	// Show switches between streams
+	private boolean doublyVerbose = false;
+	private int depth = 0;
 	
 	/**
 	 * The only variable needed to instantiate a
@@ -188,7 +55,7 @@ public class Parser {
 	public Parser(TokenStream tokenStream) {
 		this.tokenStream = tokenStream;
 	}
-	
+
 	/**
 	 * Parse the TokenStream in verbose mode.
 	 * Outputs XML structure of parseTree
@@ -199,7 +66,21 @@ public class Parser {
 	 * @throws ParseException
 	 */
 	public Node parse(boolean verbose) throws ParseException {
+		return parse(verbose, false);
+	}
+	/**
+	 * Parse the TokenStream in verbose mode.
+	 * Outputs XML structure of parseTree
+	 * and shows switching between CFG stream and Precedence stream.  
+	 * 
+	 * @param verbose
+	 * @param doublyVerbose
+	 * @return Node root of resulting syntax tree
+	 * @throws ParseException
+	 */
+	public Node parse(boolean verbose, boolean doublyVerbose) throws ParseException {
 		this.verbose = verbose;
+		this.doublyVerbose = doublyVerbose;
 		return parse();
 	}
 	/**
@@ -253,14 +134,14 @@ public class Parser {
 	 * @throws ParseException
 	 */
 	private Node toCFGStream(NonTerminal ruleCFG, int startPosition, int endPosition) throws ParseException {
-		if (verbose) {
+		if (doublyVerbose) {
 			this.printVerbose("// --> To CFG stream from Precedence stream");
 			this.printVerbose("//");
 		}
 		tokenStream.setLeftIndex(startPosition);
 		tokenStream.setRightIndexExcl(endPosition);
 		Node syntaxSubtree = parseCFGRule(ruleCFG, endPosition);
-		if (verbose) {
+		if (doublyVerbose) {
 			this.printVerbose("//");
 			this.printVerbose("// <-- To Precedence stream from CFG stream");
 		}
@@ -423,7 +304,7 @@ public class Parser {
 	 */
 	private Node toPrecedenceStream(NonTerminal precedenceRule, NonTerminal parentRule, int startPosition, int maxEndPosition) throws ParseException {
 		// Start parsing this precedence non-terminal
-		if (verbose) {
+		if (doublyVerbose) {
 			this.printVerbose("// --> To CFG stream from Precedence stream");
 			this.printVerbose("//");
 		}
@@ -530,7 +411,7 @@ public class Parser {
 		// If not balanced parentheses, syntax error.
 		isBalanced = (openGroupCount == 0);
 		if (!isBalanced) {
-			this.fatalError("Fatal error: Incorrectly-balanced parentheses.");
+			this.fatalError("Syntax error: Incorrectly-balanced parentheses.");
 			return null;
 		}
 		if (!inFollow) {
@@ -547,7 +428,7 @@ public class Parser {
 		tokenStream.setRightIndexExcl(maxEndPosition);
 
 		// Finished parsing this precedence non-terminal
-		if (verbose) {
+		if (doublyVerbose) {
 			this.printVerbose("//");
 			this.printVerbose("// <-- To Precedence stream from CFG stream");
 		}
@@ -707,13 +588,10 @@ public class Parser {
 		
 		
 		final Terminal splitToken = Terminal.getTerminal(splitTokenValue);
-		if (verbose) {
+		if (doublyVerbose) {
 			this.printVerbose("//");
 			this.printVerbose("// Try " + rule + ": (" + (haveMatch ? "match: " + splitToken : "no match") + ")");
 			this.printVerbose(String.format("//     start=%d, partition=%d, end=%d", startPosition, partition, endPosition));
-			if (startPosition == partition && partition == endPosition) {
-				System.out.println("uh oh");
-			}
 		}
 
 		// For any passing to sub-rules, 
@@ -809,7 +687,7 @@ public class Parser {
 			// Send to CFG instead.
 			// In valid syntax, this happens for _VALUE_
 			
-			if (verbose) {
+			if (doublyVerbose) {
 				this.printVerbose("//");
 				printVerbose("// Capture by CFG " + nextRule);
 				this.printVerbose("//");
