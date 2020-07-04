@@ -1,9 +1,14 @@
 Output to assembly
 	Aliases and pulling/pushing from stack only when necessary
 
-NonTerminal constructors should take CFGPattern and PrecedencePattern as parameters  
-	Can make firstTerminalsAndPatterns and follow do the work of the NonTerminal constructor?
-	Make Token prettier :'-(
+Token
+	NonTerminal constructors should take CFGPattern and PrecedencePattern as parameters  
+		Can make firstTerminalsAndPatterns and follow do the work of the 	NonTerminal constructor?
+		Make Token prettier :'-(
+	Should be Token, not Terminal or NonTerminal:
+		element type
+		Terminal only:
+			exactString, element type, etc
 
 Build basic README. Make repository public.
 unary ! double parses on expression operand
