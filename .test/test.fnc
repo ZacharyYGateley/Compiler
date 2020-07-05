@@ -1,28 +1,28 @@
 function www(what, when, where) {
-	echo "What:\t" + what;
-	echo "When:\t" + when;
-	echo "Where:\t" + where;
+  echo "What:\t" + what;
+  echo "When:\t" + when;
+  echo "Where:\t" + where;
 }
 
 echo "What, when, or where? ";
 input inp;
 
-dun = "Dunno";
-if (inp == "This") {
-	www(inp, dun, dun);
+unk = "Not entered";
+if (inp == "What") {
+  www("This", unk, unk);
 }
-else if (inp == "Now") {
-	www(dun, inp, dun);
+else if (inp == "When") {
+  www(unk, "Now", unk);
 }
-else if (inp == "Here") {
-	www(dun, dun, inp);
+else if (inp == "Where") {
+  www(unk, unk, "Here");
 }
 else {
-	www("I " + "wish " + "I " + "knew", dun, dun);
+  www("It " + "is " + "an " + "unknown", unk, unk);
 }
 
 if (true) {
-	echo "\nIt is working.";
+  echo "\nSecond IF statement after the first.";
 }
 
 b = (4 * 2 + 8 / 2) / 6 - 1;

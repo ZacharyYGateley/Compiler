@@ -1,5 +1,7 @@
 Output to assembly
 	Aliases and pulling/pushing from stack only when necessary
+Python translator
+	"currentIndent" --> "Depth"
 
 Token
 	NonTerminal constructors should take CFGPattern and PrecedencePattern as parameters  
@@ -13,6 +15,9 @@ Token
 Build basic README. Make repository public.
 unary ! double parses on expression operand
 
+Language additions
+	Loops
+	var initialization? e.g. "var b;"
 
 Long term
 	Loops

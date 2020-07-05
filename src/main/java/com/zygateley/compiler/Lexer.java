@@ -19,26 +19,36 @@ public class Lexer {
 	private SymbolTable symbolTable;
 	// Tokens are character-by-character
 	private StringBuilder tokenBuilder;
+	// Write to log file if not null
+	private FileWriter logFileWriter;
 	
-	class TerminalAndMatch {
+	/**
+	 * Mutable coupling of a given terminal
+	 * and whether it matches the current
+	 * token string.
+	 * 
+	 * @author Zachary Gateley
+	 *
+	 */
+	private class TerminalMatch {
 		public Terminal terminal;
 		public boolean isPossibleMatch = true;
 		public boolean isFullMatch = true;
 	}
-	private TerminalAndMatch[] thisRoundMatches = new TerminalAndMatch[Terminal.values().length];
-	private TerminalAndMatch[] lastRoundMatches = new TerminalAndMatch[thisRoundMatches.length];
+	private TerminalMatch[] thisRoundMatches = new TerminalMatch[Terminal.values().length];
+	private TerminalMatch[] lastRoundMatches = new TerminalMatch[thisRoundMatches.length];
 	{
 		Terminal[] tokens = Terminal.values();
 		for (int i = 0; i < tokens.length; i++) {
 			// This time token matches
-			TerminalAndMatch tm = new TerminalAndMatch();
+			TerminalMatch tm = new TerminalMatch();
 			tm.terminal = tokens[i];
 			tm.isPossibleMatch = true;
 			tm.isFullMatch = true;
 			thisRoundMatches[i] = tm;
 			
 			// Last time token matches
-			tm = new TerminalAndMatch();
+			tm = new TerminalMatch();
 			tm.terminal = tokens[i];
 			tm.isPossibleMatch = false;
 			tm.isFullMatch = false;
@@ -56,10 +66,14 @@ public class Lexer {
 	 * @param tokens Tokens output stream
 	 */
 	public Lexer(PushbackReader input, TokenStream output, SymbolTable symbolTable) {
+		this(input, output, symbolTable, null);
+	}
+	public Lexer(PushbackReader input, TokenStream output, SymbolTable symbolTable, FileWriter logFileWriter) {
 		this.stringReader = input;
 		this.tokenStream = output;
 		this.tokenBuilder = new StringBuilder();
 		this.symbolTable = symbolTable;
+		this.logFileWriter = logFileWriter;
 	}
 	
 	public void lex(boolean verbose) throws LexicalException, IOException {
@@ -67,9 +81,7 @@ public class Lexer {
 		lex();
 	}
 	public void lex() throws LexicalException, IOException {
-		if (verbose) {
-			System.out.println("<!-- Lexer started -->\n");
-		}
+		this.log("<!-- Lexer started -->\n");
 		
 		// Next character
 		resetMatches();
@@ -129,7 +141,9 @@ public class Lexer {
 				else if (thisRule == null) {
 					// This can happen when Terminal.regexStart matches 
 					// but Terminal.regexFull does not
-					throw new LexicalException("Lexical error at " + currentToken);
+					String message = "Lexical error at " + currentToken;
+					log(message);
+					throw new LexicalException(message);
 				}
 				// Otherwise, we have a valid rule
 				else {
@@ -145,9 +159,7 @@ public class Lexer {
 		// Finished, add EOF
 		createAddToken(Character.toString((char) 0), Terminal.EOF);
 		
-		if (verbose) {
-			System.out.println("\n<!-- Lexer finished -->\n\n");
-		}
+		log("\n<!-- Lexer finished -->\n\n");
 		
 		return;
 	}
@@ -169,12 +181,12 @@ public class Lexer {
 		//			ensures we do not incorrectly assume match on first char
 		for (int i = 0; i < thisRoundMatches.length; i++) {
 			// Reset this round matches
-			TerminalAndMatch thisTm = thisRoundMatches[i];
+			TerminalMatch thisTm = thisRoundMatches[i];
 			thisTm.isPossibleMatch 	= true;
 			thisTm.isFullMatch 		= false;
 
 			// Reset last round matches
-			TerminalAndMatch lastTm = lastRoundMatches[i];
+			TerminalMatch lastTm = lastRoundMatches[i];
 			lastTm.isPossibleMatch 	= false;
 			lastTm.isFullMatch 		= false;
 		}
@@ -189,7 +201,7 @@ public class Lexer {
 	private int getMatchCount(String partialToken) {
 		int matchCount = 0;
 		for (int i = 0; i < thisRoundMatches.length; i++) {
-			TerminalAndMatch tm = thisRoundMatches[i];
+			TerminalMatch tm = thisRoundMatches[i];
 			// Consider only those that still match
 			// First character: all matches set to true
 			if (tm.isPossibleMatch) {
@@ -208,7 +220,7 @@ public class Lexer {
 						tm.isFullMatch = true;
 					}
 					else {
-						TerminalAndMatch lastTm = lastRoundMatches[i];
+						TerminalMatch lastTm = lastRoundMatches[i];
 						if (lastTm.isFullMatch) {
 							// Had full match
 							// No longer have full match!
@@ -237,8 +249,8 @@ public class Lexer {
 	 */
 	private void copyThisToLast() {
 		for (int i = 0; i < thisRoundMatches.length; i++) {
-			TerminalAndMatch thisMatch = thisRoundMatches[i];
-			TerminalAndMatch lastMatch = lastRoundMatches[i];
+			TerminalMatch thisMatch = thisRoundMatches[i];
+			TerminalMatch lastMatch = lastRoundMatches[i];
 			lastMatch.isPossibleMatch = thisMatch.isPossibleMatch;
 			lastMatch.isFullMatch	  = thisMatch.isFullMatch;
 		}
@@ -250,7 +262,7 @@ public class Lexer {
 	 * @return Terminal first matching rule (priority by order)
 	 */
 	private Terminal getTerminalRuleFromLast(String fullToken) {
-		for (TerminalAndMatch tm : lastRoundMatches) {
+		for (TerminalMatch tm : lastRoundMatches) {
 			if (tm.isPossibleMatch) {
 				boolean isFullMatch = tm.terminal.isMatch(fullToken, true);
 				if (isFullMatch) return tm.terminal;
@@ -259,7 +271,7 @@ public class Lexer {
 		return null;
 	}
 	
-	private void createAddToken(String newToken, Terminal thisRule) {
+	private void createAddToken(String newToken, Terminal thisRule) throws IOException {
 		Symbol symbol = null;
 		String value = null;
 		if (thisRule == Terminal.VAR) {
@@ -286,7 +298,16 @@ public class Lexer {
 		if (verbose) {
 			StringBuilder sbtr = new StringBuilder(thisRule + "         ");
 			sbtr.setLength(10);
-			System.out.println("Lexer: " + sbtr.toString() + "\t( "+ newToken + " )");
+			log("Lexer: " + sbtr.toString() + "\t( "+ newToken + " )");
+		}
+	}
+	
+	private void log(String message) throws IOException {
+		if (this.verbose) {
+			System.out.println(message);
+		}
+		if (this.logFileWriter != null) { 
+			this.logFileWriter.append(message + "\r\n");
 		}
 	}
 }

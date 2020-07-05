@@ -267,22 +267,57 @@ public class Node implements Iterable<Node> {
 	
 	@Override
 	public String toString() {
+		return toString(true);
+	}
+	public String toString(boolean withChildren) {
 		StringBuilder output = new StringBuilder();
-		output.append(_name_ + "\n");
-		output.append("Children:\n\t");
-		for (Node childNode : this) {
-			output.append(childNode.toString(false) + " : "); 
+		Element element;
+		if (this.terminal != null) {
+			// Terminal
+			output.append(terminal + "");
+			element = terminal.basicElement;
+			if (element != Element.PASS && element != Element.NULL) {
+				output.append(" element=\"" + element + "\"");
+			}
+		}
+		else {
+			// NonTerminal
+			output.append(nonTerminal + "");
+			element = nonTerminal.basicElement;
+			if (element != Element.NULL) {
+				output.append(" element=\"" + element + "\"");
+			}
+		}
+		output.append(this.getParameterString());
+		
+		if (withChildren) {
+			output.append("\n");
+			output.append("Children:\n\t");
+			for (Node childNode : this) {
+				output.append(childNode.toString(false) + " : "); 
+			}
 		}
 		return output.toString();
 	}
-	
-	public String toString(boolean withChildren) {
-		if (!withChildren) {
-			return _name_;
+	public String getParameterString() {
+		StringBuilder output = new StringBuilder();
+		if (this.terminal != null) {
+			if (symbol != null) {
+				String name = symbol.getName();
+				if (name != null) output.append(" name=\"" + symbol.getName() + "\"");
+				String valueString = symbol.getValue();
+				if (valueString != null) output.append(" value=\"" + valueString + "\"");
+				Symbol.Type type = symbol.getType();
+				if (type != null) output.append(" type=\"" + type + "\" ");
+			}
+			else if (value != null && !value.isBlank()) {
+				output.append(" value=\"" + value + "\"");
+			}
 		}
 		else {
-			return toString();
+			
 		}
+		return output.toString();
 	}
 	
 	@Override

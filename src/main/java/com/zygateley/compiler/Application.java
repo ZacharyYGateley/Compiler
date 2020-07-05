@@ -46,41 +46,57 @@ public class Application {
 		
 		String sourceFile = FileIO.getAbsolutePath(".test/test.fnc");
 		PushbackReader pushbackReader = FileIO.getReader(sourceFile);
+		
 		String baseName = sourceFile.substring(0, sourceFile.lastIndexOf('.'));
-		String pythonFile = baseName + ".py";
-		FileWriter targetFile = FileIO.getWriter(pythonFile, true);
-		// File already exists?
-		if (targetFile == null) {
-			return;
-		}
+		
+		String logFileName = baseName + "_log.txt";
+		FileWriter logFile = FileIO.getWriter(logFileName, true);
+		// Will return null if file exists and user chooses not to override
+		
+		String pythonFileName = baseName + ".py";
+		FileWriter pythonFile = FileIO.getWriter(pythonFileName, true);
+		// Will return null if file exists and user chooses not to override
 		
 		// Objects passed to Parser
 		SymbolTable symbolTable = new SymbolTable();
 		TokenStream tokenStream = new TokenStream();
 		
-		// Break down into tokens 
-		// and populate symbol tree
-		Lexer lexer = new Lexer(pushbackReader, tokenStream, symbolTable);
-		lexer.lex(true);
-		
-		// Build syntax tree
-		Parser parser = new Parser(tokenStream);
-		Node syntaxTree = parser.parse(true);
-		if (syntaxTree instanceof Node) {
-			// Optimize parse tree
-			Node optimizedTree = Optimizer.optimize(syntaxTree);
+		// Make sure to close appropriate streams
+		try {
+			// Break down into tokens 
+			// and populate symbol tree
+			Lexer lexer = new Lexer(pushbackReader, tokenStream, symbolTable, logFile);
+			lexer.lex(true);
 			
-			// Run backend into appropriate language
-			PythonTranslator tr = new PythonTranslator(optimizedTree, targetFile);
-			//PythonTranslator tr = new PythonTranslator(syntaxTree, targetFile);
-			String output = tr.toPython();
-			System.out.println("\n\nGenerated code: \n\n\n" + output);
+			// Build syntax tree
+			Parser parser = new Parser(tokenStream, logFile);
+			Node syntaxTree = parser.parse(true);
+			if (syntaxTree instanceof Node) {
+				// Optimize parse tree
+				Optimizer optimizer = new Optimizer(logFile);
+				Node optimizedTree = optimizer.optimize(syntaxTree, true);
+				
+				// Run backend into appropriate language
+				PythonTranslator tr = new PythonTranslator(optimizedTree, pythonFile);
+				//PythonTranslator tr = new PythonTranslator(syntaxTree, targetFile);
+				tr.toPython();
+			}
+		
+			if (pythonFile != null) {
+				pythonFile.close();
+				System.out.println("Python translation written to:\n\t" + pythonFileName);
+			}
 		}
-		
-		pushbackReader.close();
-		targetFile.close();
-		
-		System.out.println("Python translation written to " + pythonFile);
+		finally {
+			// Always close pushbackReader
+			// and logFile
+			// pythonFile should be empty if there is an exception
+			pushbackReader.close();
+			if (logFile != null) {
+				logFile.close();
+				System.out.println("Compilation log written to:\n\t" + logFileName);
+			}
+		}
 		
 		//Assembler a = new Assembler(syntaxTree, st);
 		//output = a.assemble();
