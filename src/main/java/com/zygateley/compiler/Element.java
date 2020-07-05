@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
  */
 public enum Element {
 	// End of statement
-	STOP,
+	REFLOW_LIMIT,
 	
 	// End of branch
 	NULL,

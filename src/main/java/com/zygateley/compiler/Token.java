@@ -254,7 +254,7 @@ public interface Token {
 enum Terminal implements Token {
 	// Terminals
 	EMPTY 		(Token.EMPTY, Element.NULL, "", "^\\s"),
-	SEMICOLON	(Token.SEMICOLON, Element.STOP, ";"),
+	SEMICOLON	(Token.SEMICOLON, Element.NULL, ";"),
 	COMMA		(Token.COMMA, Element.NULL, ","),
 	EQ 			(Token.EQ, Element.NULL, "="),
 	PAREN_OPEN	(Token.PAREN_OPEN, Element.NULL, "("),
@@ -262,7 +262,7 @@ enum Terminal implements Token {
 	CURLY_OPEN  (Token.CURLY_OPEN, Element.NULL, "{"),
 	CURLY_CLOSE (Token.CURLY_CLOSE, Element.NULL, "}"),
 	SQUARE_OPEN (Token.SQUARE_OPEN, Element.NULL, "["),
-	SQUARE_CLOSE(Token.SQUARE_CLOSE, Element.STOP, "]"),
+	SQUARE_CLOSE(Token.SQUARE_CLOSE, Element.NULL, "]"),
 	COMMENT		(Token.COMMENT, Symbol.Type.COMMENT, Element.NULL, "", ("^/(?:/.*)?$"), ("//[^\0]*(?:\r|\n|\f)?")),
 	
 	// PRIMITIVES
@@ -388,7 +388,7 @@ enum NonTerminal implements Token {
 				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
 				 follow(Token.EOF)),
 	
-	_STMTS_		(Token._STMTS_, Element.STOP,
+	_STMTS_		(Token._STMTS_, Element.REFLOW_LIMIT,
 				 firstTerminalsAndPattern(Token.FUNCTION, Token._FUNCDEF_, Token._STMTS_),
 				 firstTerminalsAndPattern(Token.IF, Token._IF_, Token._STMTS_),
 				 firstTerminalsAndPattern(Token.combineArrays(Token._STMT_FIRST, Token.CURLY_OPEN), Token._BLOCKSTMT_, Token._STMTS_),
@@ -427,7 +427,7 @@ enum NonTerminal implements Token {
 			 	 firstTerminalsAndPattern(IntStream.rangeClosed(1, id.id).toArray(), Token._SCOPE_),
 			 	 Token.commonFollow1),
 	
-	_BLOCKSTMT_	(Token._BLOCKSTMT_, Element.STOP,
+	_BLOCKSTMT_	(Token._BLOCKSTMT_, Element.PASS,
 			 	 firstTerminalsAndPattern(Token.CURLY_OPEN, Token._BLOCK_),
 			 	 firstTerminalsAndPattern(Token._STMT_FIRST, Token._STMT_),
 			 	 Token.commonFollow2),

@@ -271,24 +271,23 @@ public class Node implements Iterable<Node> {
 	}
 	public String toString(boolean withChildren) {
 		StringBuilder output = new StringBuilder();
-		Element element;
+		Element element = Element.NULL;
 		if (this.terminal != null) {
 			// Terminal
 			output.append(terminal + "");
-			element = terminal.basicElement;
-			if (element != Element.PASS && element != Element.NULL) {
-				output.append(" element=\"" + element + "\"");
+			if (terminal.basicElement != Element.PASS) {
+				element = terminal.basicElement;
 			}
 		}
 		else {
 			// NonTerminal
 			output.append(nonTerminal + "");
 			element = nonTerminal.basicElement;
-			if (element != Element.NULL) {
-				output.append(" element=\"" + element + "\"");
-			}
 		}
-		output.append(this.getParameterString());
+		if (element != Element.NULL) {
+			output.append(getParameterString("element", element+""));
+		}
+		output.append(this.getAllParametersString());
 		
 		if (withChildren) {
 			output.append("\n");
@@ -299,19 +298,22 @@ public class Node implements Iterable<Node> {
 		}
 		return output.toString();
 	}
-	public String getParameterString() {
+	public static String getParameterString(String name, String value) {
+		return " " + name + "=\"" + value.replaceAll("\"",  "&quot;") + "\"";
+	}
+	public String getAllParametersString() {
 		StringBuilder output = new StringBuilder();
 		if (this.terminal != null) {
 			if (symbol != null) {
 				String name = symbol.getName();
-				if (name != null) output.append(" name=\"" + symbol.getName() + "\"");
-				String valueString = symbol.getValue();
-				if (valueString != null) output.append(" value=\"" + valueString + "\"");
+				if (name != null) output.append(getParameterString("name", name));
+				String value = symbol.getValue();
+				if (value != null) output.append(getParameterString("value", value));
 				Symbol.Type type = symbol.getType();
-				if (type != null) output.append(" type=\"" + type + "\" ");
+				if (type != null) output.append(getParameterString("type", type.toString()));
 			}
-			else if (value != null && !value.isBlank()) {
-				output.append(" value=\"" + value + "\"");
+			else if (this.value != null && !this.value.isBlank()) {
+				output.append(getParameterString("value", this.value));
 			}
 		}
 		else {

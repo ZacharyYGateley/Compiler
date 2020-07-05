@@ -2,6 +2,7 @@
 target/*
 bin/*
 # Test native, python, and assembly output
+.test/*
 *.s
 *.py
 # Excel temporary files

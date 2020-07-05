@@ -4,7 +4,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 import com.zygateley.compiler.Element.Reflow;
-import com.zygateley.compiler.Element.Reflow.*;
 
 /**
  * Crawl syntaxTree<Node> looking for BasicToken.Elements
@@ -45,22 +44,22 @@ public class Optimizer {
 		Node optimizedTree = new Node(Element.SCOPE);
 		
 		// Build intermediate optimized tree with STOPs
-		crawlParseTreeBuildOptimizedTree(syntaxTree, optimizedTree);
+		buildOptimizedTreeFrom(syntaxTree, optimizedTree);
 		this.depth = 1;
-		this.log("<!-- Intermediate optimized syntax tree :: -->\n");
-		this.logTree(optimizedTree);
+		this.log("<!-- Begin: Intermediate optimized syntax tree -->\n");
+		this.logTree(optimizedTree, true);
 		this.log("");
-		this.log("<!-- :: Intermediate optimized syntax tree -->\n");
+		this.log("<!-- End: Intermediate optimized syntax tree -->\n");
 		
 		// Condense tree to optimized by removing STOPs
-		amendOptimizedTreeRemoveStops(optimizedTree);
+		cleanOptimizedTree(optimizedTree);
 
 		this.depth = 1;
 		this.log("");
-		this.log("<!-- Fully optimized syntax tree :: -->\n");
-		this.logTree(optimizedTree);
+		this.log("<!-- Begin: Fully optimized syntax tree-->\n");
+		this.logTree(optimizedTree, false);
 		this.log("");
-		this.log("<!-- :: Fully optimized syntax tree -->\n");
+		this.log("<!-- End: Fully optimized syntax tree -->\n");
 
 		this.depth = 0;
 		this.log("<!-- Middle stage optimization finished -->\n\n");
@@ -77,46 +76,73 @@ public class Optimizer {
 	 * 		see crawlChildren for rules
 	 * 
 	 */
-	private void crawlParseTreeBuildOptimizedTree(Node parseTree, Node optimizedTree) throws Exception {
+	private void buildOptimizedTreeFrom(Node parseTree, Node optimizedTree) throws Exception {
 		// crawlChildren does not process parent node, 
 		// so the top-level node in a tree is not processed unless
 		// we explicitly make it a child to a dummy parent
-		Node treeHolder = new Node(Element.STOP);
+		Node treeHolder = new Node(Element.REFLOW_LIMIT);
 		treeHolder.addChild(parseTree);
-		crawlParseChildrenBuildOptimizedSubtree(treeHolder, optimizedTree);
+		buildOptimizedSubtree(treeHolder, optimizedTree);
 	}
 	
 	/**
 	 * 
-	 * Crawl the parse tree
+	 * Crawl the parse tree<br /><br />
 	 * 
-	 * Build new tree optimizedTree BESIDE parseTree
-	 * 		parseTree is unmodified
-	 * 		optimizedTree is built from the ground up using
-	 * 			the following rules
-	 * 		
-	 * 	crawl parseTree while observing Element basicElement types
+	 * Build new tree optimizedTree BESIDE parseTree<br />
+	 * 1) ParseTree is unmodified.<br />
+	 * 2) OptimizedTree is built from the ground up using
+	 * 			the following rules.
+	 * <ul>
+	 * <li>Crawl parseTree while observing Element basicElement types
+	 * 		<ul>
+	 * 		<li>
 	 * 		Element.PASS:
 	 * 			Skip this node
-	 * 		Element.STOP:
-	 * 			Add node, shows delineation between rules
-	 * 		Otherwise:
-	 * 			Add a new optimized node to the tree
-	 * 				as a sibling to the last optimized node
-	 * 				built from this same branch
-	 * 			If the parse tree node has children,
-	 * 				use the above rules on the parse sub tree
-	 * 				adding to the children of the new optimized node
+	 * 		</li>
+	 * 		<li>
+	 * 		Element.REFLOW_LIMIT:
+	 * 			New node in optimized tree
+	 * 				No reflow bindings may traverse this node
+	 * 		</li>
+	 * 		<li>
+	 * 		Otherwise: 
+	 * 			New node in optimized tree
 	 * 
-	 * Notes: 
+	 * 		</li>
+	 * 		</ul
+	 * </li>
+	 * <li>Schema :: new nodes in the optimized tree
+	 * 		<ul>
+	 * 		<li> 
+	 * 		Direct descendents in parse tree
+	 * 			correspond to direct discendents in optimized tree
+	 * 		</li>
+	 * 		<li>
+	 * 		First cousins in parse tree, 
+	 * 			no matter how many times removed
+	 * 			correspond to siblings in optimized tree
+	 * 
+	 * 		</li>
+	 * 		</ul>
+	 * </li>
+	 * </ul>
+	 * <br />
+	 * <strong>Additional notes:</strong>
+	 * <ul>
+	 * <li> 
 	 * 		Recursion will always go to next level in parseTree
-	 * 			But may not go to next level in optimizedTree (Element.PASS ignores parse node)
+	 * 			but may not go to next level in optimizedTree (Element.PASS ignores parse node)
+	 * </li>
+	 * <li>
 	 * 		Temporary STOP nodes prevent improper Element.bindings
+	 * </li>
+	 * </ul>
 	 * 
-	 * @param parseParentNode
-	 * @param optimizedParentNode
+	 * @param parseParentNode subtree corresponding to a node from the parse tree
+	 * @param optimizedParentNode node from the optimized tree to build in place
 	 */
-	private void crawlParseChildrenBuildOptimizedSubtree(Node parseParentNode, Node optimizedParentNode) throws Exception {
+	private void buildOptimizedSubtree(Node parseParentNode, Node optimizedParentNode) throws Exception {
 		NonTerminal nonTerminal;
 		Terminal terminal;
 		for (Node childNodeAsBasic : parseParentNode) {
@@ -160,14 +186,14 @@ public class Optimizer {
 				// Output new XML structure
 				// and recur (if appropriate)
 				if (parseChildNode.getChildCount() > 0) {
-					crawlParseChildrenBuildOptimizedSubtree(parseChildNode, optimizedRecursionNode);
+					buildOptimizedSubtree(parseChildNode, optimizedRecursionNode);
 				}
 				
 				
 				// If this Element type has a special binding,
 				// execute binding as necessary
 				// Does not apply to PASS or STOP
-				if (!Element.PASS.equals(basicElement) && !Element.STOP.equals(basicElement)) {
+				if (!Element.PASS.equals(basicElement) && !Element.REFLOW_LIMIT.equals(basicElement)) {
 					executeBinding(basicElement, optimizedRecursionNode, true);
 				}
 			}
@@ -256,28 +282,36 @@ public class Optimizer {
 	}
 	
 	/**
-	 * Stops are used to indicate divisions between possible Element.bindings
+	 * REFLOW_LIMITs are used to indicate divisions between possible Element.reflowBindings<br /><br />
+	 * 
 	 * For example:
+	 * <pre>
 	 * 		IF     VAROUT
 	 * 	  /  |  \
 	 *   ..  ..  ..
-	 *   
-	 *   VAROUT will merge into IF as a child
-	 *   But we do not want this, so we place a stop
+	 * </pre>
+	 * <br />
+	 *   VAROUT will merge into IF as a child.
+	 *   If we do not want this, we place a stop.
+	 * <br />
 	 *
-	 * 		IF     STOP    VAROUT
+	 * <pre>
+	 * 		 REFLOW_LIMIT
+	 * 		  /        \
+	 * 		IF        VAROUT
 	 * 	  /  |  \
 	 *   ..  ..  ..
-	 *   
+	 * </pre>
+	 * <br />
 	 *   Now the pattern (IF <-- VAROUT) does not exist.
 	 *   This method removes all stops from the tree
 	 *   
-	 * @param optimizedNode
+	 * @param optimizedNode node corresponding to root of subtree of optimized tree
 	 */
-	private Node amendOptimizedTreeRemoveStops(Node optimizedNode) { 
+	private Node cleanOptimizedTree(Node optimizedNode) { 
 		Node nextNode;
 		Element nodeElement = optimizedNode.getElementType();
-		if (Element.STOP.equals(nodeElement)) {
+		if (Element.REFLOW_LIMIT.equals(nodeElement)) {
 			// Stop element found
 			// Remove all children and place as right siblings to STOP
 			Node lastChild = optimizedNode.getLastChild();
@@ -297,40 +331,50 @@ public class Optimizer {
 			// Remove all STOP progeny from non-STOP node
 			Node child = optimizedNode.getFirstChild();
 			while (child != null) {
-				child = amendOptimizedTreeRemoveStops(child);
+				child = cleanOptimizedTree(child);
 			}
 			nextNode = optimizedNode.getNextSibling();
 		}
 		return nextNode;
 	}
 	
-	private void logTree(Node optimizedNode) throws IOException {
+	/**
+	 * Output the XML structure of this tree in indented format. <br />
+	 * Depends on Optimizer.depth to be accurate.
+	 * 
+	 * @param optimizedNode node corresponding to root of subtree in optimized tree 
+	 * @param showToken true: show Terminal or NonTerminal which correspond to node
+	 * @throws IOException
+	 */
+	private void logTree(Node optimizedNode, boolean showToken) throws IOException {
 		if (!this.verbose || this.logFileWriter == null) return;
 		
 		for (Node child : optimizedNode) {
 			if (child.getChildCount() == 0) {
 				// Leave node
-				log(child);
+				log(child, showToken);
 			}
 			else {
 				// Open branch
-				log(child, true);
+				log(child, true, showToken);
 				depth++;
-				logTree(child);
+				logTree(child, showToken);
 				depth--;
 				// Close branch
-				log(child, false);
+				log(child, false, showToken);
 			}
 		}
 	}
 	
-	private void log(Node optimizedNode) throws IOException {
-		log(optimizedNode, true, true);
+	private void log(Node optimizedNode, boolean showToken) throws IOException {
+		// Terminal node
+		log(optimizedNode, true, true, showToken);
 	}
-	private void log(Node optimizedNode, boolean openNode) throws IOException {
-		log(optimizedNode, openNode, false);
+	private void log(Node optimizedNode, boolean openNode, boolean showToken) throws IOException {
+		// NonTerminal node
+		log(optimizedNode, openNode, false, showToken);
 	}
-	private void log(Node optimizedNode, boolean openNode, boolean noChildren) throws IOException {
+	private void log(Node optimizedNode, boolean openNode, boolean noChildren, boolean showToken) throws IOException {
 		if (!this.verbose || this.logFileWriter == null) return;
 		
 		Element element = optimizedNode.getElementType();
@@ -340,7 +384,25 @@ public class Optimizer {
 		}
 		
 		StringBuilder output = new StringBuilder();
-		output.append("<" + optimizedNode.getElementType() + optimizedNode.getParameterString());
+		output.append("<" + optimizedNode.getElementType());
+		if (showToken) {
+			String tokenName = "";
+			String tokenValue = "";
+			NonTerminal nonTerminal = optimizedNode.getRule();
+			if (nonTerminal != null) {
+				tokenName = "NonTerminal";
+				tokenValue = nonTerminal + "";
+			}
+			Terminal terminal = optimizedNode.getToken();
+			if (terminal != null) {
+				tokenName = "Terminal";
+				tokenValue = terminal + "";
+			}
+			if (!tokenName.isBlank()) {
+				output.append(Node.getParameterString(tokenName, tokenValue));
+			}
+		}
+		output.append(optimizedNode.getAllParametersString());
 		if (noChildren) {
 			output.append(" /");
 		}
