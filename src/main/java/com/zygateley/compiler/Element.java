@@ -21,11 +21,13 @@ public enum Element {
 	// End of branch
 	NULL,
 	
-	// Skip this, continue into its children
+	// For optimization,
+	// Skip this node in raw parse tree, continue into its children
+	// Most NonTerminals in a CFG should have this element type
 	PASS,
 	
 	// Control
-	SCOPE, IF, ELSEIF, ELSE, 
+	SCOPE, IF, 
 	// Definitions
 	FUNCDEF, PARAM, VARDEF,
 	// IO
@@ -41,7 +43,7 @@ public enum Element {
 	// Unary 
 	NOT,
 	
-	// Terminals
+	// Terminal values
 	VAROUT, LITERAL;
 	
 	// Build language
@@ -176,32 +178,20 @@ public enum Element {
 				new ReflowTransformation(Reflow.MERGE_LEFT_TO_CHILD, IF, IF)
 				));
 		reflowBindings.add(new ReflowRelationship(
-				ELSE,
-				// Merge if would result in valid if, elseif
-				new ReflowTransformation(Reflow.MERGE_LEFT, IF, IF)
-				// Otherwise, add as child to the left
-				//new Transformation(Binding.MERGE_LEFT_TO_CHILD, ELSEIF, ELSE)
-				));
-		reflowBindings.add(new ReflowRelationship(
 				OPERATION,
 				new ReflowTransformation(Reflow.MERGE_LEFT_TO_CHILD, IF, IF)
-				//new Transformation(Binding.MERGE_LEFT_TO_CHILD, ELSEIF, ELSEIF)
 				));
 		reflowBindings.add(new ReflowRelationship(
 				VAROUT,
 				new ReflowTransformation(Reflow.MERGE_LEFT_TO_CHILD, IF, IF)
-				//new Transformation(Binding.MERGE_LEFT_TO_CHILD, ELSEIF, ELSEIF)
 				));
 		reflowBindings.add(new ReflowRelationship(
 				LITERAL,
 				new ReflowTransformation(Reflow.MERGE_LEFT_TO_CHILD, IF, IF)
-				//new Transformation(Binding.MERGE_LEFT_TO_CHILD, ELSEIF, ELSEIF)
 				));
 		reflowBindings.add(new ReflowRelationship(
 				SCOPE,
-				new ReflowTransformation(Reflow.MERGE_LEFT_TO_CHILD, IF, IF),
-				//new Transformation(Binding.MERGE_LEFT_TO_CHILD, ELSEIF, ELSEIF),
-				new ReflowTransformation(Reflow.MERGE_LEFT_TO_CHILD, ELSE, ELSE)
+				new ReflowTransformation(Reflow.MERGE_LEFT_TO_CHILD, IF, IF)
 				));
 		
 		reflowBindings.add(new ReflowRelationship(

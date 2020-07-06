@@ -274,7 +274,7 @@ enum Terminal implements Token {
 	// Other reserved words
 	FUNCTION	(Token.FUNCTION, Element.NULL, "function"),
 	IF			(Token.IF, Element.IF, "if"),
-	ELSE		(Token.ELSE, Element.ELSE, "else"),
+	ELSE		(Token.ELSE, Element.NULL, "else"),
 	// ELSEIF exists as basic type but not as a token: ("else if")
 	
 	// Defined as <stmts> in CFG.xlsx
@@ -459,12 +459,6 @@ enum NonTerminal implements Token {
 	_VARDEF_	(Token._VARDEF_, Element.VARDEF,
 				 firstTerminalsAndPattern(Token.EQ, Token.EQ, Token._EXPR_),
 				 follow(Token.SEMICOLON)),
-
-	_VALUEOREXPR_ (Token._VALUEOREXPR_,	Element.PASS,
-				 firstTerminalsAndPattern(Token.combineArrays(Token.primitiveSet, Token.VAR), Token._VALUE_),
-			 	 firstTerminalsAndPattern(Token.PAREN_OPEN, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE),
-			 	 Token.commonFollow3
-			 	 ),
 	
 	_EXPR_		(Token._EXPR_, Element.PASS,
 				 // Send stream to precedence branch no matter what
@@ -495,7 +489,7 @@ enum NonTerminal implements Token {
 				 follow(Token.PAREN_CLOSE)),
 	
 	_ARGS1_		(Token._ARGS1_, Element.PASS,
-				 firstTerminalsAndPattern(Token.COMMA, Token.COMMA, Token._VALUE_, Token._ARGS1_),
+				 firstTerminalsAndPattern(Token.COMMA, Token.COMMA, Token._EXPR_, Token._ARGS1_),
 				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
 				 follow(Token.PAREN_CLOSE)),
 	
@@ -513,7 +507,7 @@ enum NonTerminal implements Token {
 	__PRECEDENCE2__(Token.__PRECEDENCE2__, precedenceSplitAt(Token.operatorSetRank2), 	Token.__PRECEDENCE2__, 	Token.__PRECEDENCE3__,	Direction.RIGHT_TO_LEFT,	Token.__BINARY__),
 	__PRECEDENCE3__(Token.__PRECEDENCE3__, precedenceSplitAt(Token.operatorSetRank3), 	Token.__PRECEDENCE3__, 	Token.__PRECEDENCE4__,	Direction.RIGHT_TO_LEFT,	Token.__BINARY__),
 	__PRECEDENCE4__(Token.__PRECEDENCE4__, precedenceSplitAt(Token.operatorSetRank4), 	Token.__PRECEDENCE4__, 	Token.__PRECEDENCE5__,	Direction.RIGHT_TO_LEFT,	Token.__BINARY__),
-	__PRECEDENCE5__(Token.__PRECEDENCE5__, precedenceSplitAt(Token.operatorSetRank5), 	Token.__PRECEDENCE5__,	Token._VALUEOREXPR_,	Direction.RIGHT_TO_LEFT,	Token.__UNARY__),
+	__PRECEDENCE5__(Token.__PRECEDENCE5__, precedenceSplitAt(Token.operatorSetRank5), 	Token.__PRECEDENCE5__,	Token._VALUE_,	Direction.RIGHT_TO_LEFT,	Token.__UNARY__),
 	// Placeholder
 	// All operations appear with this as parent to its two operands
 	__BINARY__	(Token.__BINARY__, Element.OPERATION),

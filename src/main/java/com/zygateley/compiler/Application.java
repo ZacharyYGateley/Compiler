@@ -44,7 +44,7 @@ public class Application {
 				*/
 		//PushbackReader sr = new PushbackReader(new StringReader("aj();"));
 		
-		String sourceFile = FileIO.getAbsolutePath(".test/test.fnc");
+		String sourceFile = FileIO.getAbsolutePath("Examples/Example2.fnc");
 		PushbackReader pushbackReader = FileIO.getReader(sourceFile);
 		
 		String baseName = sourceFile.substring(0, sourceFile.lastIndexOf('.'));

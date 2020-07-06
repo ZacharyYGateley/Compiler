@@ -96,8 +96,7 @@ public class Lexer {
 			}
 			else {
 				// Valid character
-				// Must escape backslashes before adding them to tokenBuilder
-				nextIn = (char) readIn == '\\' ? "\\\\" : Character.toString((char) readIn);
+				nextIn = Character.toString((char) readIn);
 			}
 			// Add new character to token itself, not token stream
 			tokenBuilder.append(nextIn);
@@ -278,12 +277,8 @@ public class Lexer {
 			// Variable name
 			symbol = symbolTable.insert(newToken);
 		}
-		else if (thisRule.symbolType == Symbol.Type.STRING) {
-			// Candidates for string pool
-			// During add, escape characters were set as double escape
-			// Unescape now
-			String unescaped = Symbol.unescapeJavaString(newToken); 
-			symbol = symbolTable.insert(unescaped, thisRule.symbolType);
+		else if (thisRule.symbolType == Symbol.Type.STRING) { 
+			symbol = symbolTable.insert(newToken, thisRule.symbolType);
 		}
 		else if (thisRule.symbolType != null) {
 			// All other literals
@@ -293,12 +288,16 @@ public class Lexer {
 			// All non-literals inherit their value from the rule
 			value = thisRule.exactString;
 		}
-		tokenStream.writeRight(thisRule, symbol, value);
+		if (thisRule != Terminal.COMMENT) {
+			// Do not consider comments
+			// They can short circuit single-command if/elseif/else
+			tokenStream.write(thisRule, symbol, value);
+		}
 		
 		if (verbose) {
 			StringBuilder sbtr = new StringBuilder(thisRule + "         ");
 			sbtr.setLength(10);
-			log("Lexer: " + sbtr.toString() + "\t( "+ newToken + " )");
+			log("Token: " + sbtr.toString() + "\t( "+ newToken + " )");
 		}
 	}
 	

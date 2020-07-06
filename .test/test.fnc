@@ -1,3 +1,5 @@
+// "\nPlease enter which to echo: \"first\" or \"second\"";
+
 function www(what, when, where) {
   echo "What:\t" + what;
   echo "When:\t" + when;
