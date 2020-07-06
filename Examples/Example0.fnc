@@ -1,3 +1,4 @@
-// Set a variable to a value then output it
-b = "Hello, World";
-echo b;
+// Run a condition then output Hello, World
+if (true) {
+	echo "Hello, World";
+}

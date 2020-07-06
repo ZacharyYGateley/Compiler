@@ -15,25 +15,36 @@ import java.util.stream.Collectors;
  *
  */
 public enum Element {
-	// End of statement
-	REFLOW_LIMIT,
+	/////
+	// NONTERMINAL Elements
 	
-	// End of branch
-	NULL,
+	// End of statement
+	REFLOW_LIMIT (true),
 	
 	// For optimization,
 	// Skip this node in raw parse tree, continue into its children
 	// Most NonTerminals in a CFG should have this element type
-	PASS,
+	PASS (true),
 	
 	// Control
 	SCOPE, IF, 
 	// Definitions
-	FUNCDEF, PARAM, VARDEF,
+	FUNCDEF, VARDEF,
+	// Execution
+	FUNCCALL, OPERATION,
 	// IO
 	OUTPUT, INPUT,
-	// Execution
-	OPERATION, FUNCCALL,
+	// Temporary holding variables for clarity
+	PARAMETERS (true), ARGUMENTS (true), 
+	
+	
+	
+	/////
+	// TERMINAL Elements
+	
+	// End of branch
+	NULL (true),
+	
 	// Logical
 	OR, AND, 
 	// Arithmetic
@@ -43,15 +54,27 @@ public enum Element {
 	// Unary 
 	NOT,
 	
-	// Terminal values
-	VAROUT, LITERAL;
+	// Values
+	VARIABLE, LITERAL;
+	
+	public final boolean isTemporary;
+	
+	private Element() {
+		this.isTemporary = false;
+	}
+	private Element(boolean isTemporary) {
+		this.isTemporary = isTemporary;
+	}
 	
 	// Build language
 	// Additional bindings as required
 	public static enum Reflow {
-		// Merge this Node to the left, keeping this Node's Element type
-		MERGE_LEFT,			// new combineNodes(target, source) w/ target children then source children
-		MERGE_LEFT_TO_CHILD // target.addChild(source) 
+		MOVE_UPWARDS_AND_LEFT,	// move source to become target's (== parent's) left sibling
+		MOVE_RIGHT_TO_CHILD,	// target.insertChild(0, source)
+		MOVE_LEFT_TO_CHILD, 	// target.addChild(source)
+		
+		@Deprecated
+		MERGE_LEFT,			 	// new combined node (target & source) w/ target children then source children
 	}
 	// Immutable transformation
 	private static class ReflowTransformation {
@@ -166,37 +189,51 @@ public enum Element {
 	static {
 		// Long term: add method to build these for support for multiple languages
 		
+		/*
 		// VAROUT FUNCCALL --> FUNCCALL
 		reflowBindings.add(new ReflowRelationship(
 				FUNCCALL, 
-				new ReflowTransformation(Reflow.MERGE_LEFT, VAROUT, FUNCCALL)
+				new ReflowTransformation(Reflow.MERGE_LEFT, VARIABLE, FUNCCALL)
 				));
-
-		// if, else if , else
+		*/
+		reflowBindings.add(new ReflowRelationship(
+				VARIABLE,
+				// Function Name
+				new ReflowTransformation(Reflow.MOVE_RIGHT_TO_CHILD, FUNCDEF, FUNCDEF),
+				new ReflowTransformation(Reflow.MOVE_RIGHT_TO_CHILD, FUNCCALL, FUNCCALL),
+				// Function parameters or arguments
+				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, PARAMETERS, VARIABLE),
+				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, ARGUMENTS, VARIABLE),
+				// Variable name
+				new ReflowTransformation(Reflow.MOVE_RIGHT_TO_CHILD, VARDEF, VARDEF),
+				// If condition
+				new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, IF, IF)
+				));
 		reflowBindings.add(new ReflowRelationship(
 				IF,
-				new ReflowTransformation(Reflow.MERGE_LEFT_TO_CHILD, IF, IF)
+				// Else code
+				new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, IF, IF)
 				));
 		reflowBindings.add(new ReflowRelationship(
 				OPERATION,
-				new ReflowTransformation(Reflow.MERGE_LEFT_TO_CHILD, IF, IF)
-				));
-		reflowBindings.add(new ReflowRelationship(
-				VAROUT,
-				new ReflowTransformation(Reflow.MERGE_LEFT_TO_CHILD, IF, IF)
+				// If condition
+				new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, IF, OPERATION),
+				// Function parameters and arguments
+				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, PARAMETERS, OPERATION),
+				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, ARGUMENTS, OPERATION)
 				));
 		reflowBindings.add(new ReflowRelationship(
 				LITERAL,
-				new ReflowTransformation(Reflow.MERGE_LEFT_TO_CHILD, IF, IF)
+				// If condition
+				new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, IF, LITERAL),
+				// Function parameters and arguments
+				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, PARAMETERS, LITERAL),
+				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, ARGUMENTS, LITERAL)
 				));
 		reflowBindings.add(new ReflowRelationship(
 				SCOPE,
-				new ReflowTransformation(Reflow.MERGE_LEFT_TO_CHILD, IF, IF)
-				));
-		
-		reflowBindings.add(new ReflowRelationship(
-				VARDEF,
-				new ReflowTransformation(Reflow.MERGE_LEFT, VAROUT, VARDEF)
+				// As code corresponding to condition==true
+				new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, IF, IF)
 				));
 	}
 }
