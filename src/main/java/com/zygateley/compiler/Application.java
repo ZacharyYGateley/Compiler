@@ -44,7 +44,7 @@ public class Application {
 				*/
 		//PushbackReader sr = new PushbackReader(new StringReader("aj();"));
 		
-		String sourceFile = FileIO.getAbsolutePath("Examples/Example2.fnc");
+		String sourceFile = FileIO.getAbsolutePath("Examples/Example0.fnc");
 		PushbackReader pushbackReader = FileIO.getReader(sourceFile);
 		
 		String baseName = sourceFile.substring(0, sourceFile.lastIndexOf('.'));
@@ -76,10 +76,11 @@ public class Application {
 				Optimizer optimizer = new Optimizer(logFile);
 				Node optimizedTree = optimizer.optimize(syntaxTree, true);
 				
-				// Run backend into appropriate language
-				PythonTranslator tr = new PythonTranslator(optimizedTree, pythonFile);
-				//PythonTranslator tr = new PythonTranslator(syntaxTree, targetFile);
-				tr.toPython();
+				// Translate into Python
+				if (pythonFile != null) {
+					PythonTranslator translator = new PythonTranslator(optimizedTree, pythonFile);
+					translator.toPython();
+				}
 			}
 		
 			if (pythonFile != null) {

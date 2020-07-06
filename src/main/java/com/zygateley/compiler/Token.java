@@ -72,7 +72,7 @@ public interface Token {
 		// Statement FIRST set
 		ECHO = 			id.next(),
 		INPUT = 		id.next(),
-		VAR = 			id.next();
+		VARIABLE = 			id.next();
 	
 	// Operator set
 	public final static int firstOperator = id.id;
@@ -120,7 +120,7 @@ public interface Token {
 		_VALUEOREXPR_ = id.next(),
 		_EXPR_ = 		id.next(),
 		_VALUE_ = 		id.next(),
-		_VAR_ = 		id.next(),
+		_VARIABLE_ = 		id.next(),
 		_VAREXPR_ = 	id.next(),
 		_FUNCCALL_ = 	id.next(),
 		_ARGS0_ = 		id.next(),
@@ -180,12 +180,12 @@ public interface Token {
 		return array;
 	}
 	public static final int[] _STMT_FIRST = {
-			VAR,
+			VARIABLE,
 			INPUT,
 			ECHO,
 			COMMENT
 	};
-	public static final int[] _STMTS_FIRST = combineArrays(_STMT_FIRST, FUNCTION, IF, CURLY_OPEN, VAR, ECHO);
+	public static final int[] _STMTS_FIRST = combineArrays(_STMT_FIRST, FUNCTION, IF, CURLY_OPEN, VARIABLE, ECHO);
 
 	public final static int[] operatorSetRank1 = {
 			AND,
@@ -280,7 +280,7 @@ enum Terminal implements Token {
 	// Defined as <stmts> in CFG.xlsx
 	ECHO 		(Token.ECHO, Element.NULL, "echo"),
 	INPUT		(Token.INPUT, Element.NULL, "input"),
-	VAR			(Token.VAR, Symbol.Type.VAR, Element.VAROUT, "", ("^[a-zA-Z_][a-zA-Z\\d_]*")),
+	VARIABLE	(Token.VARIABLE, Symbol.Type.VAR, Element.VARIABLE, "", ("^[a-zA-Z_][a-zA-Z\\d_]*")),
 	// Any reserved words must be declared before VAR
 
 	// Defined as <ops> in CFG.xlsx
@@ -396,16 +396,16 @@ enum NonTerminal implements Token {
 				 follow(new int[] {Token.EOF, Token.CURLY_CLOSE})),
 	
 	_FUNCDEF_	(Token._FUNCDEF_, Element.FUNCDEF,
-				 firstTerminalsAndPattern(Token.FUNCTION, Token.FUNCTION, Token.VAR, Token.PAREN_OPEN, Token._PARAMS0_, Token.PAREN_CLOSE, Token._SCOPE_),
+				 firstTerminalsAndPattern(Token.FUNCTION, Token.FUNCTION, Token.VARIABLE, Token.PAREN_OPEN, Token._PARAMS0_, Token.PAREN_CLOSE, Token._SCOPE_),
 				 Token.commonFollow1),
 	
-	_PARAMS0_	(Token._PARAMS0_, Element.PARAM,
-				 firstTerminalsAndPattern(Token.VAR, Token.VAR, Token._PARAMS1_),
+	_PARAMS0_	(Token._PARAMS0_, Element.PARAMETERS,
+				 firstTerminalsAndPattern(Token.VARIABLE, Token.VARIABLE, Token._PARAMS1_),
 				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
 				 follow(Token.PAREN_CLOSE)),
 	
 	_PARAMS1_	(Token._PARAMS1_, Element.PASS,
-				 firstTerminalsAndPattern(Token.COMMA, Token.COMMA, Token.VAR, Token._PARAMS1_),
+				 firstTerminalsAndPattern(Token.COMMA, Token.COMMA, Token.VARIABLE, Token._PARAMS1_),
 				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
 				 follow(Token.PAREN_CLOSE)),
 	
@@ -440,7 +440,7 @@ enum NonTerminal implements Token {
 			 	 firstTerminalsAndPattern(Token.ECHO, Token._ECHO_, Token.SEMICOLON),
 			 	 firstTerminalsAndPattern(Token.INPUT, Token._INPUT_, Token.SEMICOLON),
 			 	 firstTerminalsAndPattern(Token.COMMENT, Token.COMMENT),
-				 firstTerminalsAndPattern(Token.VAR, Token.VAR, Token._VARSTMT_, Token.SEMICOLON),
+				 firstTerminalsAndPattern(Token.VARIABLE, Token.VARIABLE, Token._VARSTMT_, Token.SEMICOLON),
 				 Token.commonFollow2),
 	
 	_ECHO_		(Token._ECHO_, Element.OUTPUT,
@@ -448,7 +448,7 @@ enum NonTerminal implements Token {
 				 follow(Token.SEMICOLON)),
 	
 	_INPUT_		(Token._INPUT_, Element.INPUT,
-				 firstTerminalsAndPattern(Token.INPUT, Token.INPUT, Token.VAR),
+				 firstTerminalsAndPattern(Token.INPUT, Token.INPUT, Token.VARIABLE),
 				 follow(Token.SEMICOLON)),
 
 	_VARSTMT_	(Token._VARSTMT_, Element.PASS,
@@ -466,12 +466,12 @@ enum NonTerminal implements Token {
 	 			 follow(new int[] {Token.SEMICOLON, Token.PAREN_CLOSE, Token.COMMA})),
 	
 	_VALUE_		(Token._VALUE_, Element.PASS,
-				 firstTerminalsAndPattern(Token.VAR, Token._VAR_),
+				 firstTerminalsAndPattern(Token.VARIABLE, Token._VARIABLE_),
 				 firstTerminalsAndPattern(Token.primitiveSet, Token._LITERAL_),
 				 Token.commonFollow3),
 	
-	_VAR_		(Token._VAR_, Element.PASS,
-				 firstTerminalsAndPattern(Token.VAR, Token.VAR, Token._VAREXPR_),
+	_VARIABLE_	(Token._VARIABLE_, Element.PASS,
+				 firstTerminalsAndPattern(Token.VARIABLE, Token.VARIABLE, Token._VAREXPR_),
 				 Token.commonFollow3),
 	
 	_VAREXPR_	(Token._VAREXPR_, Element.PASS,
@@ -483,8 +483,8 @@ enum NonTerminal implements Token {
 				 firstTerminalsAndPattern(Token.PAREN_OPEN, Token.PAREN_OPEN, Token._ARGS0_, Token.PAREN_CLOSE),
 				 Token.commonFollow3),
 	
-	_ARGS0_		(Token._ARGS0_, Element.PASS,
-				 firstTerminalsAndPattern(Token.combineArrays(Token.combineArrays(Token.operatorSet, Token.VAR, Token.PLUS, Token.MINUS, Token.PAREN_OPEN), Token.primitiveSet), Token._EXPR_, Token._ARGS1_),
+	_ARGS0_		(Token._ARGS0_, Element.ARGUMENTS,
+				 firstTerminalsAndPattern(Token.combineArrays(Token.combineArrays(Token.operatorSet, Token.VARIABLE, Token.PLUS, Token.MINUS, Token.PAREN_OPEN), Token.primitiveSet), Token._EXPR_, Token._ARGS1_),
 				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
 				 follow(Token.PAREN_CLOSE)),
 	

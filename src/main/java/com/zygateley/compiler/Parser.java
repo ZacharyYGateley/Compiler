@@ -747,8 +747,9 @@ public class Parser {
 	 * @param wrappingClass
 	 * @param splitToken token to label wrapping class with
 	 * @return Node the resulting subtree
+	 * @throws IOException 
 	 */
-	private Node mergeOperands(NonTerminal wrappingClass, Node leftOperand, Node rightOperand, Terminal splitToken) {
+	private Node mergeOperands(NonTerminal wrappingClass, Node leftOperand, Node rightOperand, Terminal splitToken) throws IOException {
 		// Do not combine fully empty
 		boolean leftIsNull = (leftOperand == null);
 		boolean rightIsNull = (rightOperand == null);
@@ -756,8 +757,6 @@ public class Parser {
 			return new Node(splitToken, null, null);
 		}
 		
-		// If both children have appropriate child nodes
-		// Create a new wrapper Node (NonTerminal.PrecedencePattern.nonTerminalWrapper)
 		Node wrapper = new Node(wrappingClass, splitToken);
 		wrapper.addChild(leftOperand);
 		wrapper.addChild(rightOperand);

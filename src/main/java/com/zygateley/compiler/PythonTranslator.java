@@ -6,7 +6,7 @@ public class PythonTranslator {
 	private Node syntaxTree;
 	private StringBuilder stringBuilder;
 	private FileWriter fileWriter;
-	private int currentIndent;
+	private int depth;
 	private boolean newLine;
 	
 	public PythonTranslator(Node syntaxTree) {
@@ -24,7 +24,7 @@ public class PythonTranslator {
 	 */
 	public String toPython() throws IOException {
 		// Restart string builder if translator has already been called
-		currentIndent = 0;
+		depth = 0;
 		if (stringBuilder != null) {
 			stringBuilder.setLength(0);
 		}
@@ -66,7 +66,10 @@ public class PythonTranslator {
 		// Try NonTerminal
 		Element element = node.getElementType();
 		Node firstChild = (Node) node.getFirstChild();
-		Node nextChild;
+		Node nextChild = null;
+		if (firstChild != null) {
+			nextChild = firstChild.getNextSibling();
+		}
 		int childCount = node.getChildCount();
 		if (element != null) {
 			switch (element) {
@@ -78,16 +81,25 @@ public class PythonTranslator {
 				translateNode(firstChild);
 				print("(");
 				// Function parameters
-				nextChild = firstChild.getNextSibling();
-				// All but last child are parameters
-				printList(nextChild.getFirstChild(), nextChild.getChildCount());
+				Node lastChild = node.getLastChild();
+				// All following children except the last are parameters
+				if (firstChild.getNextSibling() != lastChild) {
+					printList(nextChild, node.getChildCount() - 2);
+				}
 				print(")");
 				println(":");
 				
 				// Function body
-				currentIndent++;
-				translateNode(node.getLastChild());
-				currentIndent--;
+				depth++;
+				if (lastChild.getChildCount() == 0) {
+					// No children
+					print("pass");
+				}
+				else {
+					// Output code
+					translateNode(lastChild);
+				}
+				depth--;
 				println();
 				break;
 			case IF:
@@ -97,10 +109,12 @@ public class PythonTranslator {
 				println(":");
 
 				// Body
-				currentIndent++;
-				nextChild = firstChild.getNextSibling();
+				depth++;
 				translateNode(nextChild);
-				currentIndent--;
+				if (nextChild.getChildCount() == 0) {
+					print("pass");
+				}
+				depth--;
 				
 				// else / else if
 				nextChild = nextChild.getNextSibling();
@@ -113,9 +127,12 @@ public class PythonTranslator {
 					else {
 						print("else:");
 						println();
-						currentIndent++;
+						depth++;
 						translateNode(nextChild);
-						currentIndent--;
+						if (nextChild.getChildCount() == 0) {
+							print("pass");
+						}
+						depth--;
 						println();
 					}
 				}
@@ -130,7 +147,6 @@ public class PythonTranslator {
 				println(" = input()");
 				break;
 			case OPERATION:
-				nextChild = firstChild.getNextSibling();
 				if (nextChild == null) {
 					// Unary
 					printTerminal(node.getToken());
@@ -149,22 +165,22 @@ public class PythonTranslator {
 				break;
 			case FUNCCALL:
 				// Function name
-				printValue(node);
+				translateNode(firstChild);
 				print("(");
 				
 				// Arguments
-				// All children are arguments
-				printList(firstChild, childCount);
+				// All following children are arguments
+				printList(nextChild, childCount);
 				
 				println(")");
 				break;
 			case VARDEF:
-				printValue(node);
+				translateNode(firstChild);
 				print(" = ");
-				translateNode(node.getFirstChild());
+				translateNode(nextChild);
 				println();
 				break;
-			case VAROUT:
+			case VARIABLE:
 			case LITERAL:
 				printValue(node);
 				break;
@@ -196,7 +212,7 @@ public class PythonTranslator {
 	
 	private void print(String output) throws IOException {
 		if (newLine) {
-			String indent = "    ".repeat(currentIndent);
+			String indent = "    ".repeat(depth);
 			if (stringBuilder != null) {
 				stringBuilder.append(indent);
 			}
@@ -227,7 +243,7 @@ public class PythonTranslator {
 			value = "#" + node.getValue().substring(2);
 			print(value);
 			break;
-		case VAR:
+		case VARIABLE:
 			print(node.getSymbol().getName());
 			break;
 		default:
