@@ -4,6 +4,7 @@ Output to assembly
 Elementary OPERATIONs to their respective operations (AND, OR, ADD, etc)
 Elementary LITERALs to their respective literals (BOOLEAN, INTEGER, STRING)
 
+
 Token
 	Token should be an interface
 	All terminals and non-terminals should be added once as enums
