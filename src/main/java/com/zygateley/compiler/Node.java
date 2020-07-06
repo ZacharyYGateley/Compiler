@@ -192,6 +192,27 @@ public class Node implements Iterable<Node> {
 			return null;
 		}
 	}
+	/**
+	 * Return the position of the passed Node
+	 * within this Node's children.
+	 * If not found, it returns the 
+	 * index of this Node's last child +1
+	 * 
+	 * @param childNode node to find within this Node's children
+	 * @return index of this node in siblings or last position + 1 if not found
+	 */
+	public int indexOf(Node childNode) {
+		int runningIndex = 0;
+		Node childAt = this.firstChild;
+		while (childAt != null) {
+			if (childAt == childNode) {
+				return runningIndex;
+			}
+			childAt = childAt.rightSibling;
+			runningIndex++;
+		}
+		return runningIndex;
+	}
 	public void addChild(final Node newChild) {
 		if (newChild == null) return;
 		
@@ -208,6 +229,54 @@ public class Node implements Iterable<Node> {
 		}
 		
 		this.childCount++;
+	}
+	/**
+	 * Insert a child into this parent
+	 * at the position indicated. 
+	 * If a child exists at this index,
+	 * push the child at the position to the right.
+	 * If a child does not exist at this index,
+	 * add the child to the end of the child list.
+	 * 
+	 * @param index
+	 * @param newChild
+	 */
+	public void insertChild(int index, final Node newChild) {
+		if (newChild == null) return;
+		
+		Node currentChild = getChild(index);
+		if (currentChild != null) {
+			// Push children right and insert
+			
+			// Upwards
+			newChild.parent = this;
+			this.childCount++;
+			
+			// If at beginning of children
+			if (currentChild.leftSibling == null) {
+				// Downwards
+				this.firstChild = newChild;
+				
+				// Left
+				// (Nothing to do)
+			}
+			else {
+				// Downwards
+				// (Nothing to do)
+				
+				// Left
+				newChild.leftSibling = currentChild.leftSibling;
+				currentChild.leftSibling.rightSibling = newChild;
+			}
+
+			// Right
+			newChild.rightSibling = currentChild;
+			currentChild.leftSibling = newChild;
+		}
+		else {
+			// Append to end of list
+			this.addChild(newChild);
+		}
 	}
 	public void addRightSibling(final Node newSibling) {
 		if (newSibling == null) return;
@@ -272,17 +341,25 @@ public class Node implements Iterable<Node> {
 	public String toString(boolean withChildren) {
 		StringBuilder output = new StringBuilder();
 		Element element = Element.NULL;
-		if (this.terminal != null) {
-			// Terminal
-			output.append(terminal + "");
-			if (terminal.basicElement != Element.PASS) {
-				element = terminal.basicElement;
-			}
+		boolean isEmpty = true;
+		if (this.basicElement != null) {
+			element = this.basicElement;
 		}
-		else {
+		if (this.nonTerminal != null) {
 			// NonTerminal
 			output.append(nonTerminal + "");
 			element = nonTerminal.basicElement;
+			isEmpty = false;
+		}
+		if (this.terminal != null) {
+			// Terminal
+			if (isEmpty) {
+				output.append(terminal + "");
+				if (Element.NULL.equals(element) && terminal.basicElement != Element.PASS) {
+					element = terminal.basicElement;
+				}
+			}
+			else output.append(getParameterString("terminal", terminal + ""));
 		}
 		if (element != Element.NULL) {
 			output.append(getParameterString("element", element+""));

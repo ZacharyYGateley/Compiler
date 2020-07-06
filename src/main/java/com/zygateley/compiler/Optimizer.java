@@ -43,23 +43,31 @@ public class Optimizer {
 		
 		Node optimizedTree = new Node(Element.SCOPE);
 		
-		// Build intermediate optimized tree with STOPs
+		// Build stage 1 optimized tree with REFLOW_LIMITs
 		buildOptimizedTreeFrom(syntaxTree, optimizedTree);
 		this.depth = 1;
-		this.log("<!-- Begin: Intermediate optimized syntax tree -->\n");
+		this.log("<!-- Begin: Stage 1 optimized syntax tree -->\n");
 		this.logTree(optimizedTree, true);
 		this.log("");
-		this.log("<!-- End: Intermediate optimized syntax tree -->\n");
+		this.log("<!-- End: Stage 1 optimized syntax tree -->\n");
 		
-		// Condense tree to optimized by removing STOPs
+		// Execute any reflow bindings
+		crawlAndApplyReflow(optimizedTree);
+		this.depth = 1;
+		this.log("<!-- Begin: Stage 2 optimized syntax tree -->\n");
+		this.logTree(optimizedTree, true);
+		this.log("");
+		this.log("<!-- End: Stage 2 optimized syntax tree -->\n");
+		
+		// Condense tree to optimized by removing all temporary element nodes
+		// (Node.basicElement.isTemporary --> remove)
 		cleanOptimizedTree(optimizedTree);
-
 		this.depth = 1;
 		this.log("");
-		this.log("<!-- Begin: Fully optimized syntax tree-->\n");
+		this.log("<!-- Begin: Final optimized syntax tree-->\n");
 		this.logTree(optimizedTree, false);
 		this.log("");
-		this.log("<!-- End: Fully optimized syntax tree -->\n");
+		this.log("<!-- End: Final optimized syntax tree -->\n");
 
 		this.depth = 0;
 		this.log("<!-- Middle stage optimization finished -->\n\n");
@@ -187,31 +195,46 @@ public class Optimizer {
 				// Output new XML structure
 				// and recur (if appropriate)
 				if (parseChildNode.getChildCount() > 0) {
-					if (parseChildNode.isNegated()) {
-						System.out.println("abc");
-					}
 					buildOptimizedSubtree(parseChildNode, optimizedRecursionNode, parseChildNode.isNegated() ^ isNextNegated);
-				}
-				
-				
-				// If this Element type has a special binding,
-				// execute binding as necessary
-				// Does not apply to PASS or STOP
-				if (!Element.PASS.equals(basicElement) && !Element.REFLOW_LIMIT.equals(basicElement)) {
-					executeBinding(basicElement, optimizedRecursionNode, true);
 				}
 			}
 		}
 		return;
 	}
 	
+	private void crawlAndApplyReflow(Node optimizedNode) throws Exception {
+		if (!this.verbose || this.logFileWriter == null) return;
+		
+		for (Node child : optimizedNode) {
+			// Execute reflow on this node, if it applies
+			// Does not apply to REFLOW_LIMIT
+			// (or PASS, which has already been ignored--not in tree)
+			Element basicElement = child.getElementType();
+			if (!Element.REFLOW_LIMIT.equals(basicElement)) {
+				applyReflow(child, true);
+			}
+			
+			if (child.getChildCount() == 0) {
+				// Leave node
+			}
+			else {
+				// Open branch
+				depth++;
+				
+				crawlAndApplyReflow(child);
+				depth--;
+				// Close branch
+			}
+		}
+	}
+	
 	/**
-	 * Execute any special bindings from Element.bindings
+	 * Apply any special bindings from Element.bindings
 	 * At time of writing:
 	 * 		Merge Left
 	 * 			Using left optimized sibling as a target
 	 * 			Merge this optimized node into the target
-	 * 			Result Elemen type may be modified 
+	 * 			Result Element type may be modified 
 	 * 	
 	 *		Merge Left to Child
 	 *			Remove this optimized node from the tree
@@ -221,61 +244,110 @@ public class Optimizer {
 	 * @param source
 	 * @throws Exception
 	 */
-	private void executeBinding(final Element sourceType, final Node source, final boolean allowMerge) throws Exception {
+	private void applyReflow(final Node source, final boolean allowMerge) throws Exception {
 		try {
+			Element sourceType = source.getElementType();
+			
+			// Upwards bindings
+			Node parent = source.getParent();
+			{
+				Node target = parent;
+				Element targetType = (target != null ? target.getElementType() : null);
+				
+				// Move this element to the child of the next sibling?
+				Element resultType = Element.getReflowResult(
+						Reflow.MOVE_UPWARDS_AND_LEFT,
+						sourceType, targetType
+						);
+				boolean isUpwardsRightToChild = (resultType != null);
+				if (isUpwardsRightToChild) {
+					// Add this element as a left sibling of its parent
+					int targetIndex = target.getParent().indexOf(target); 
+					target.getParent().insertChild(targetIndex, source.pop());
+					// Do not allow any additional shifting
+					return;
+				}
+			}
+			
+			// Rightward bindings
+			Node rightTarget = source.getNextSibling();
+			if (rightTarget != null) {
+				Element targetType = (rightTarget != null ? rightTarget.getElementType() : null);
+				
+				// Move this element to the child of the next sibling?
+				Element resultType = Element.getReflowResult(
+						Reflow.MOVE_RIGHT_TO_CHILD,
+						sourceType, targetType
+						);
+				boolean isMergeRightToChild = (resultType != null);
+				if (isMergeRightToChild) {
+					// Add this element as first Node in right sibling's children
+					rightTarget.insertChild(0, source.pop());
+					// Do not allow any additional downward shifting (toChild) merges
+					// MERGE_RIGHT not defined
+					/*
+					// Do any right merges as necessary
+					executeReflow(source, true);
+					*/
+					return;
+				}
+			}
+			
 			// Leftward bindings
-			Node target = source.getPreviousSibling();
-			if (target != null) {
-				Element leftSiblingType = (target != null ? target.getElementType() : null);
-		
+			Node leftTarget = source.getPreviousSibling();
+			if (leftTarget != null) {
+				Element targetType = (leftTarget != null ? leftTarget.getElementType() : null);
+				
+				/*
 				// Merge this node into the next node
 				// With the Element result type found from Element.bindings
 				Element resultType1 = Element.getReflowResult(
 						Reflow.MERGE_LEFT, 
-						sourceType, leftSiblingType
+						sourceType, targetType
 						);
 				boolean isMergeLeft = resultType1 != null;
 				if (allowMerge && isMergeLeft) {
 					// If we have a matching pattern, merge the node left
-					Node parent = source.getParent();
-					target.pop();
+					int indexBookmark = parent.indexOf(leftTarget);
+					leftTarget.pop();
 					source.pop();
 					
 					// Create new Node with left's properties but right's Element type
 					// No reason we shouldn't properly XOR negations
 					// NonTerminal type no longer applies, superceded by basicElement type
 					Node mergedNode = new Node(
-							resultType1, target.getParent(), 
-							null, target.getToken(),
-							target.getSymbol(), target.getValue(), target.isNegated() ^ source.isNegated()
+							resultType1, leftTarget.getParent(), 
+							null, leftTarget.getToken(),
+							leftTarget.getSymbol(), leftTarget.getValue(), leftTarget.isNegated() ^ source.isNegated()
 							); 
-					parent.addChild(mergedNode);
+					parent.insertChild(indexBookmark, mergedNode);
 					
 					// Add all children from target, then all children from source
-					Node[] nodes = new Node[] { target, source };
-					for (Node n : nodes) {
+					Node[] childSources = new Node[] { leftTarget, source };
+					for (Node n : childSources) {
 						for (Node c : n) {
 							mergedNode.addChild(c);
 						}
 					}
 					
 					// Source has changed, recur executeBinding and return
-					executeBinding(resultType1, mergedNode, false);
+					executeReflow(mergedNode, false);
 					return;
 				}
-					
+				*/
+				
 				// Move this element to the child of the previous sibling ?
-				Element resultType2 = Element.getReflowResult(
-						Reflow.MERGE_LEFT_TO_CHILD,
-						sourceType, leftSiblingType
+				Element resultType = Element.getReflowResult(
+						Reflow.MOVE_LEFT_TO_CHILD,
+						sourceType, targetType
 						);
-				boolean isMergeLeftToChild = (resultType2 != null);
+				boolean isMergeLeftToChild = (resultType != null);
 				if (isMergeLeftToChild) {
 					// Add this element into the left sibling's children
-					target.addChild(source.pop());
+					leftTarget.addChild(source.pop());
 					// Do any left merges as necessary
-					// Do not allow any downward shifting (toChild) merges
-					executeBinding(sourceType, source, true);
+					// true == Do not allow any additional downward shifting (toChild) merges
+					applyReflow(source, true);
 					return;
 				}
 			}
@@ -286,8 +358,13 @@ public class Optimizer {
 	}
 	
 	/**
+	 * There are a handful of Elements that are temporary (Element.isTemporary).
+	 * These elements are used for reflow bindings.
+	 * All reflow bindings have been executed, 
+	 * so all temporary elements may now be removed.
+	 * <p>
 	 * REFLOW_LIMITs are used to indicate divisions between possible Element.reflowBindings<br /><br />
-	 * 
+	 * </p>
 	 * For example:
 	 * <pre>
 	 * 		IF     VAROUT
@@ -315,8 +392,8 @@ public class Optimizer {
 	private Node cleanOptimizedTree(Node optimizedNode) { 
 		Node nextNode;
 		Element nodeElement = optimizedNode.getElementType();
-		if (Element.REFLOW_LIMIT.equals(nodeElement)) {
-			// Stop element found
+		if (nodeElement.isTemporary) {
+			// Temporary element found
 			// Remove all children and place as right siblings to STOP
 			Node lastChild = optimizedNode.getLastChild();
 			while (lastChild != null) {
@@ -389,6 +466,13 @@ public class Optimizer {
 		
 		StringBuilder output = new StringBuilder();
 		output.append("<" + optimizedNode.getElementType());
+		if (Element.OPERATION.equals(element)) {
+			// Show specific operation
+			Terminal terminal = optimizedNode.getToken();
+			if (terminal != null && terminal.basicElement != null) {
+				output.append(Node.getParameterString("operation", terminal.basicElement + ""));
+			}
+		}
 		if (showToken) {
 			String tokenName = "";
 			String tokenValue = "";
