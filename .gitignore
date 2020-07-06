@@ -9,4 +9,6 @@ bin/*
 ~$*.xlsx
 # Eclipse plugins and settings
 .dbeaver/*
+.dbeaver/.credentials-config.json.bak
+.dbeaver/.data-sources.json.bak
 .settings/*
