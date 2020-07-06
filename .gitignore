@@ -7,3 +7,6 @@ bin/*
 *.py
 # Excel temporary files
 ~$*.xlsx
+# Eclipse plugins and settings
+.dbeaver/*
+.settings/*
