@@ -82,7 +82,7 @@ public class Optimizer {
 		// we explicitly make it a child to a dummy parent
 		Node treeHolder = new Node(Element.REFLOW_LIMIT);
 		treeHolder.addChild(parseTree);
-		buildOptimizedSubtree(treeHolder, optimizedTree);
+		buildOptimizedSubtree(treeHolder, optimizedTree, false);
 	}
 	
 	/**
@@ -141,8 +141,9 @@ public class Optimizer {
 	 * 
 	 * @param parseParentNode subtree corresponding to a node from the parse tree
 	 * @param optimizedParentNode node from the optimized tree to build in place
+	 * @param isNextNegated a PASS element was negated, apply to the next optimized node
 	 */
-	private void buildOptimizedSubtree(Node parseParentNode, Node optimizedParentNode) throws Exception {
+	private void buildOptimizedSubtree(Node parseParentNode, Node optimizedParentNode, boolean isNextNegated) throws Exception {
 		NonTerminal nonTerminal;
 		Terminal terminal;
 		for (Node childNodeAsBasic : parseParentNode) {
@@ -170,7 +171,7 @@ public class Optimizer {
 					Node optimizedChildNode = new Node(basicElement, optimizedParentNode, 
 							parseChildNode.getRule(), parseChildNode.getToken(),
 							parseChildNode.getSymbol(), parseChildNode.getValue(),
-							parseChildNode.isNegated());
+							isNextNegated);
 					optimizedParentNode.addChild(optimizedChildNode);
 					
 					// Crawl children and add as childen to new optimized node
@@ -186,7 +187,10 @@ public class Optimizer {
 				// Output new XML structure
 				// and recur (if appropriate)
 				if (parseChildNode.getChildCount() > 0) {
-					buildOptimizedSubtree(parseChildNode, optimizedRecursionNode);
+					if (parseChildNode.isNegated()) {
+						System.out.println("abc");
+					}
+					buildOptimizedSubtree(parseChildNode, optimizedRecursionNode, parseChildNode.isNegated() ^ isNextNegated);
 				}
 				
 				
@@ -402,7 +406,7 @@ public class Optimizer {
 				output.append(Node.getParameterString(tokenName, tokenValue));
 			}
 		}
-		output.append(optimizedNode.getAllParametersString());
+		output.append(optimizedNode.getStringAllParameters());
 		if (noChildren) {
 			output.append(" /");
 		}

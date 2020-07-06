@@ -187,7 +187,7 @@ public class Parser {
         		this.log("<" + rule.toString().replaceAll("_",  "") + " />");
         	}
         	else {
-        		this.fatalError("Syntax error 1: Production rule terminated prematurely.");
+        		this.fatalError("Syntax error: Production rule terminated prematurely.");
         	}
         	return null;
     	}
@@ -264,10 +264,6 @@ public class Parser {
 				
 				// Add new terminal
 				Node terminalNode = addTerminal(syntaxSubtree, item.token, item.symbol, item.value);
-				
-				if (verbose) {
-					log(terminalNode);
-				}
 			}
 			// NonTerminals
 			// Recur into parseRule
@@ -793,16 +789,21 @@ public class Parser {
 	private void log(Node node) throws IOException {
 		if (!this.verbose || this.logFileWriter == null) return;
 		
+		boolean isTerminal = node.getToken() != null;
+		
 		StringBuilder output = new StringBuilder();
 		output.append("<");
 		output.append(node.toString(false));
-		if (node.getToken() != null) {
+		if (isTerminal) {
 			// Terminal
 			output.append(" /");
+			depth++;
 		}
 		output.append(">");
 		
 		this.log(output.toString());
+		
+		if (isTerminal) depth--;
 	}
 	
 	private void log(String message) throws IOException {

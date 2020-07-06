@@ -3,6 +3,9 @@ Output to assembly
 Python translator
 	"currentIndent" --> "Depth"
 
+Build basic README. Make repository public.
+OPTIMIZATION.md
+
 Token
 	NonTerminal constructors should take CFGPattern and PrecedencePattern as parameters  
 		Can make firstTerminalsAndPatterns and follow do the work of the 	NonTerminal constructor?
@@ -12,7 +15,6 @@ Token
 		Terminal only:
 			exactString, element type, etc
 
-Build basic README. Make repository public.
 unary ! double parses on expression operand
 
 Language additions

@@ -110,7 +110,7 @@ public class TokenStream {
 		return this.tokens.get(this.rightIndexExcl - 1);
 	}
 	
-	public void writeRight(Terminal token, Symbol symbol, String value) {
+	public void write(Terminal token, Symbol symbol, String value) {
 		this.tokens.add(new StreamItem(token, symbol, value));
 		this.rightIndexExcl++;
 		this.capacity++;

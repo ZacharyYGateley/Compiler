@@ -42,7 +42,7 @@ public class Node implements Iterable<Node> {
 	private Terminal terminal = null;
 	private Symbol symbol = null;
 	private String value = null;
-	private boolean negated = false;
+	private boolean isNegated = false;
 	
 	// Tree traversal
 	private Node parent = null;
@@ -121,7 +121,7 @@ public class Node implements Iterable<Node> {
 		this.terminal = terminal;
 		this.symbol = symbol;
 		this.value = value;
-		this.negated = negated;
+		this.isNegated = negated;
 
 		// toString override value
 		this._name_ = basicElement + (negated ? " -" : " ");
@@ -153,10 +153,10 @@ public class Node implements Iterable<Node> {
 		return this.value;
 	}
 	public boolean isNegated() {
-		return this.negated;
+		return this.isNegated;
 	}
 	public void setNegated(boolean negated) {
-		this.negated = negated;
+		this.isNegated = negated;
 	}
 	
 	
@@ -287,7 +287,7 @@ public class Node implements Iterable<Node> {
 		if (element != Element.NULL) {
 			output.append(getParameterString("element", element+""));
 		}
-		output.append(this.getAllParametersString());
+		output.append(this.getStringAllParameters());
 		
 		if (withChildren) {
 			output.append("\n");
@@ -301,8 +301,11 @@ public class Node implements Iterable<Node> {
 	public static String getParameterString(String name, String value) {
 		return " " + name + "=\"" + value.replaceAll("\"",  "&quot;") + "\"";
 	}
-	public String getAllParametersString() {
+	public String getStringAllParameters() {
 		StringBuilder output = new StringBuilder();
+		if (this.isNegated) {
+			output.append(getParameterString("negated", "true"));
+		}
 		if (this.terminal != null) {
 			if (symbol != null) {
 				String name = symbol.getName();
