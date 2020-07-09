@@ -1,5 +1,7 @@
 package com.zygateley.compiler;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 
 
@@ -39,6 +41,7 @@ class ParseException extends Exception {
  */
 public class Parser {
 	private TokenStream tokenStream;
+	private FileWriter logFileWriter;
 	
 	// Verbose output shows an XML representation
 	// of the parse tree, indenting appropriately by depth 
@@ -53,7 +56,11 @@ public class Parser {
 	 * @param tokenStream
 	 */
 	public Parser(TokenStream tokenStream) {
+		this(tokenStream, null);
+	}
+	public Parser(TokenStream tokenStream, FileWriter logFileWriter) {
 		this.tokenStream = tokenStream;
+		this.logFileWriter = logFileWriter;
 	}
 
 	/**
@@ -64,8 +71,9 @@ public class Parser {
 	 * @param verbose
 	 * @return Node root of resulting syntax tree
 	 * @throws ParseException
+	 * @throws IOException 
 	 */
-	public Node parse(boolean verbose) throws ParseException {
+	public Node parse(boolean verbose) throws ParseException, IOException {
 		return parse(verbose, false);
 	}
 	/**
@@ -77,8 +85,9 @@ public class Parser {
 	 * @param doublyVerbose
 	 * @return Node root of resulting syntax tree
 	 * @throws ParseException
+	 * @throws IOException 
 	 */
-	public Node parse(boolean verbose, boolean doublyVerbose) throws ParseException {
+	public Node parse(boolean verbose, boolean doublyVerbose) throws ParseException, IOException {
 		this.verbose = verbose;
 		this.doublyVerbose = doublyVerbose;
 		return parse();
@@ -88,17 +97,16 @@ public class Parser {
 	 * 
 	 * @return Node root of resulting syntax tree
 	 * @throws ParseException
+	 * @throws IOException 
 	 */
-	public Node parse() throws ParseException {
+	public Node parse() throws ParseException, IOException {
 		// Reset parsing parameters
 		depth = 0;
 		
-		if (verbose) {
-			System.out.println("<!-- Parsing initiated -->\n");
+		this.log("<!-- Parsing initiated -->\n");
 
-			this.printVerbose("// --> To CFG stream");
-			this.printVerbose("//");
-		}
+		this.log("// --> To CFG stream");
+		this.log("//");
 		
 		// Root node of syntax tree
 		// The starting rule MUST be a CFG rule
@@ -112,12 +120,10 @@ public class Parser {
 			return null;
 		}
 				
-		if (verbose) {
-			this.printVerbose("//");
-			this.printVerbose("// <-- From CFG stream");
-			
-			System.out.println("\n<!-- Parsing finished -->\n");
-		}
+		this.log("//");
+		this.log("// <-- From CFG stream");
+		
+		this.log("\n<!-- Parsing finished -->\n\n");
 		
 		return syntaxTree;
 	}
@@ -132,18 +138,19 @@ public class Parser {
 	 * @param endPosition exclusive
 	 * @return
 	 * @throws ParseException
+	 * @throws IOException 
 	 */
-	private Node toCFGStream(NonTerminal ruleCFG, int startPosition, int endPosition) throws ParseException {
+	private Node toCFGStream(NonTerminal ruleCFG, int startPosition, int endPosition) throws ParseException, IOException {
 		if (doublyVerbose) {
-			this.printVerbose("// --> To CFG stream from Precedence stream");
-			this.printVerbose("//");
+			this.log("// --> To CFG stream from Precedence stream");
+			this.log("//");
 		}
 		tokenStream.setLeftIndex(startPosition);
 		tokenStream.setRightIndexExcl(endPosition);
 		Node syntaxSubtree = parseCFGRule(ruleCFG, endPosition);
 		if (doublyVerbose) {
-			this.printVerbose("//");
-			this.printVerbose("// <-- To Precedence stream from CFG stream");
+			this.log("//");
+			this.log("// <-- To Precedence stream from CFG stream");
 		}
 		return syntaxSubtree;
 	}
@@ -158,8 +165,9 @@ public class Parser {
 	 * @param endPosition exclusive in TokenStream
 	 * @return Node root of resulting parse subtree 
 	 * @throws ParseException
+	 * @throws IOException 
 	 */
-	private Node parseCFGRule(NonTerminal rule, int endPosition) throws ParseException {
+	private Node parseCFGRule(NonTerminal rule, int endPosition) throws ParseException, IOException {
 		// Begin new subtree
 		Node syntaxSubtree = new Node(rule);
 		
@@ -176,10 +184,10 @@ public class Parser {
         	boolean inFollow = rule.inFollow(t);
         	if (hasEpsilon && inFollow) {
         		// Empty string has been utilized for this rule
-        		if (verbose) this.printVerbose("<" + rule.toString().replaceAll("_",  "") + " />");
+        		this.log("<" + rule.toString().replaceAll("_",  "") + " />");
         	}
         	else {
-        		this.fatalError("Syntax error 1: Production rule terminated prematurely.");
+        		this.fatalError("Syntax error: Production rule terminated prematurely.");
         	}
         	return null;
     	}
@@ -187,7 +195,10 @@ public class Parser {
     	// Starting building this NonTerminal
 		int[] pattern = rule.patterns[indexInFirst].PATTERN;
 		
-		if (verbose) this.printVerbose("<" + rule.toString().replaceAll("_",  "") + ">");
+		// Show XML structure 
+		if (verbose) {
+			log(syntaxSubtree);
+		}
 		
 		// Get rules in order
 		// If any of the rules is a NonTerminal, recur
@@ -252,7 +263,7 @@ public class Parser {
 				}
 				
 				// Add new terminal
-				addTerminal(syntaxSubtree, item.token, item.symbol, item.value);
+				Node terminalNode = addTerminal(syntaxSubtree, item.token, item.symbol, item.value);
 			}
 			// NonTerminals
 			// Recur into parseRule
@@ -278,9 +289,7 @@ public class Parser {
 		}
 		
 		// Finished building this NonTerminal
-		if (verbose) {
-			this.printVerbose("</" + rule.toString().replaceAll("_",  "") + ">");
-		}
+		this.log("</" + rule + ">");
 		
 		return syntaxSubtree;
 	}
@@ -301,12 +310,13 @@ public class Parser {
 	 * @param parentRule to determine when to stop stream for precedence rule
 	 * @return
 	 * @throws ParseException
+	 * @throws IOException 
 	 */
-	private Node toPrecedenceStream(NonTerminal precedenceRule, NonTerminal parentRule, int startPosition, int maxEndPosition) throws ParseException {
+	private Node toPrecedenceStream(NonTerminal precedenceRule, NonTerminal parentRule, int startPosition, int maxEndPosition) throws ParseException, IOException {
 		// Start parsing this precedence non-terminal
 		if (doublyVerbose) {
-			this.printVerbose("// --> To CFG stream from Precedence stream");
-			this.printVerbose("//");
+			this.log("// --> To CFG stream from Precedence stream");
+			this.log("//");
 		}
 		
 		// Make sure stream positioning is correct
@@ -429,8 +439,8 @@ public class Parser {
 
 		// Finished parsing this precedence non-terminal
 		if (doublyVerbose) {
-			this.printVerbose("//");
-			this.printVerbose("// <-- To Precedence stream from CFG stream");
+			this.log("//");
+			this.log("// <-- To Precedence stream from CFG stream");
 		}
 		
 		return syntaxTree;
@@ -494,8 +504,9 @@ public class Parser {
 	 * @param endPosition in tokenStream exclusive
 	 * @return parse subtree given for this span [startPosition, endPosition)
 	 * @throws ParseException
+	 * @throws IOException 
 	 */
-	private Node parsePrecedenceRule(NonTerminal rule, int startPosition, int endPosition) throws ParseException {
+	private Node parsePrecedenceRule(NonTerminal rule, int startPosition, int endPosition) throws ParseException, IOException {
 		// Patterns split at these tokens
 		int[] splitTokens = rule.precedencePattern.splitTokens;
 		// If a split token is found, this is its Terminal.tokenValue
@@ -589,9 +600,9 @@ public class Parser {
 		
 		final Terminal splitToken = Terminal.getTerminal(splitTokenValue);
 		if (doublyVerbose) {
-			this.printVerbose("//");
-			this.printVerbose("// Try " + rule + ": (" + (haveMatch ? "match: " + splitToken : "no match") + ")");
-			this.printVerbose(String.format("//     start=%d, partition=%d, end=%d", startPosition, partition, endPosition));
+			this.log("//");
+			this.log("// Try " + rule + ": (" + (haveMatch ? "match: " + splitToken : "no match") + ")");
+			this.log(String.format("//     start=%d, partition=%d, end=%d", startPosition, partition, endPosition));
 		}
 
 		// For any passing to sub-rules, 
@@ -675,8 +686,9 @@ public class Parser {
 	 * @param endPosition exclusive
 	 * @return Node parse subtree
 	 * @throws ParseException
+	 * @throws IOException 
 	 */
-	private Node precedenceParseNextRule(NonTerminal nextRule, int startPosition, int endPosition) throws ParseException {
+	private Node precedenceParseNextRule(NonTerminal nextRule, int startPosition, int endPosition) throws ParseException, IOException {
 		Node parseSubtree;
 		if (nextRule.isPrecedenceRule()) {
 			// Stay in precedence stream
@@ -688,9 +700,9 @@ public class Parser {
 			// In valid syntax, this happens for _VALUE_
 			
 			if (doublyVerbose) {
-				this.printVerbose("//");
-				printVerbose("// Capture by CFG " + nextRule);
-				this.printVerbose("//");
+				this.log("//");
+				this.log("// Capture by CFG " + nextRule);
+				this.log("//");
 			}
 			
 			// Extend the stream span to include the FOLLOW character (CFG requires this)
@@ -735,8 +747,9 @@ public class Parser {
 	 * @param wrappingClass
 	 * @param splitToken token to label wrapping class with
 	 * @return Node the resulting subtree
+	 * @throws IOException 
 	 */
-	private Node mergeOperands(NonTerminal wrappingClass, Node leftOperand, Node rightOperand, Terminal splitToken) {
+	private Node mergeOperands(NonTerminal wrappingClass, Node leftOperand, Node rightOperand, Terminal splitToken) throws IOException {
 		// Do not combine fully empty
 		boolean leftIsNull = (leftOperand == null);
 		boolean rightIsNull = (rightOperand == null);
@@ -744,8 +757,6 @@ public class Parser {
 			return new Node(splitToken, null, null);
 		}
 		
-		// If both children have appropriate child nodes
-		// Create a new wrapper Node (NonTerminal.PrecedencePattern.nonTerminalWrapper)
 		Node wrapper = new Node(wrappingClass, splitToken);
 		wrapper.addChild(leftOperand);
 		wrapper.addChild(rightOperand);
@@ -763,35 +774,54 @@ public class Parser {
 	 * @param symbol from SymbolTable or null
 	 * @param value LITERAL value or matching terminal string
 	 * @return
+	 * @throws IOException 
 	 */
-	private Node addTerminal(Node parentNode, Terminal terminal, Symbol symbol, String value) {
-		if (verbose) {
-			String tokenName = terminal + "";
-			String symbolString = "";
-			if (symbol != null) {
-				String name = symbol.getName();
-				if (name != null) symbolString += " name=\"" + symbol.getName() + "\"";
-				String valueString = symbol.getValue();
-				if (valueString != null) symbolString += " value=\"" + valueString + "\"";
-				Symbol.Type type = symbol.getType();
-				if (type != null) symbolString = " type=\"" + type + "\" ";
-			}
-			else if (value != null && !value.isBlank()) {
-				symbolString += " value=" + value + "\"";
-			}
-			this.printVerbose("  <Terminal " + tokenName + symbolString + ">");
-		}
+	private Node addTerminal(Node parentNode, Terminal terminal, Symbol symbol, String value) throws IOException {
 		Node node = new Node(terminal, symbol, value);
 		parentNode.addChild(node);
+		
+		log(node);
+		
 		return node;
 	}
 	
-	private void printVerbose(String message) {
-		for (int i = 0; i < depth; i++) System.out.print("  ");
-		System.out.println(message);
+	private void log(Node node) throws IOException {
+		if (!this.verbose || this.logFileWriter == null) return;
+		
+		boolean isTerminal = node.getToken() != null;
+		
+		StringBuilder output = new StringBuilder();
+		output.append("<");
+		output.append(node.toString(false));
+		if (isTerminal) {
+			// Terminal
+			output.append(" /");
+			depth++;
+		}
+		output.append(">");
+		
+		this.log(output.toString());
+		
+		if (isTerminal) depth--;
 	}
 	
-	private void fatalError(String err) throws ParseException {
+	private void log(String message) throws IOException {
+		if (!this.verbose || this.logFileWriter == null) return;
+		
+		StringBuilder output = new StringBuilder();
+		for (int i = 0; i < depth; i++) output.append("  ");
+		output.append(message);
+		output.append("\n");
+		
+		if (verbose) {
+			System.out.print(output);
+		}
+		if (logFileWriter != null) {
+			logFileWriter.append(output);
+		}
+	}
+	
+	private void fatalError(String err) throws ParseException, IOException {
 		String stream = "End of stream";
 		if (!this.tokenStream.isEmpty()) {
 			int leftPos = this.tokenStream.getLeftIndex();
@@ -804,6 +834,8 @@ public class Parser {
 				stream = this.tokenStream.toString();
 			}
 		}
-		throw new ParseException("\n" + err + "\nAt...\n" + stream + "\n");
+		String error = "\n" + err + "\nAt...\n" + stream + "\n";
+		this.log(error);
+		throw new ParseException(error);
 	}
 }

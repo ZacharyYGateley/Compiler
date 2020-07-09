@@ -72,7 +72,7 @@ public interface Token {
 		// Statement FIRST set
 		ECHO = 			id.next(),
 		INPUT = 		id.next(),
-		VAR = 			id.next();
+		VARIABLE = 			id.next();
 	
 	// Operator set
 	public final static int firstOperator = id.id;
@@ -120,7 +120,7 @@ public interface Token {
 		_VALUEOREXPR_ = id.next(),
 		_EXPR_ = 		id.next(),
 		_VALUE_ = 		id.next(),
-		_VAR_ = 		id.next(),
+		_VARIABLE_ = 		id.next(),
 		_VAREXPR_ = 	id.next(),
 		_FUNCCALL_ = 	id.next(),
 		_ARGS0_ = 		id.next(),
@@ -180,12 +180,12 @@ public interface Token {
 		return array;
 	}
 	public static final int[] _STMT_FIRST = {
-			VAR,
+			VARIABLE,
 			INPUT,
 			ECHO,
 			COMMENT
 	};
-	public static final int[] _STMTS_FIRST = combineArrays(_STMT_FIRST, FUNCTION, IF, CURLY_OPEN, VAR, ECHO);
+	public static final int[] _STMTS_FIRST = combineArrays(_STMT_FIRST, FUNCTION, IF, CURLY_OPEN, VARIABLE, ECHO);
 
 	public final static int[] operatorSetRank1 = {
 			AND,
@@ -254,7 +254,7 @@ public interface Token {
 enum Terminal implements Token {
 	// Terminals
 	EMPTY 		(Token.EMPTY, Element.NULL, "", "^\\s"),
-	SEMICOLON	(Token.SEMICOLON, Element.STOP, ";"),
+	SEMICOLON	(Token.SEMICOLON, Element.NULL, ";"),
 	COMMA		(Token.COMMA, Element.NULL, ","),
 	EQ 			(Token.EQ, Element.NULL, "="),
 	PAREN_OPEN	(Token.PAREN_OPEN, Element.NULL, "("),
@@ -262,7 +262,7 @@ enum Terminal implements Token {
 	CURLY_OPEN  (Token.CURLY_OPEN, Element.NULL, "{"),
 	CURLY_CLOSE (Token.CURLY_CLOSE, Element.NULL, "}"),
 	SQUARE_OPEN (Token.SQUARE_OPEN, Element.NULL, "["),
-	SQUARE_CLOSE(Token.SQUARE_CLOSE, Element.STOP, "]"),
+	SQUARE_CLOSE(Token.SQUARE_CLOSE, Element.NULL, "]"),
 	COMMENT		(Token.COMMENT, Symbol.Type.COMMENT, Element.NULL, "", ("^/(?:/.*)?$"), ("//[^\0]*(?:\r|\n|\f)?")),
 	
 	// PRIMITIVES
@@ -274,13 +274,13 @@ enum Terminal implements Token {
 	// Other reserved words
 	FUNCTION	(Token.FUNCTION, Element.NULL, "function"),
 	IF			(Token.IF, Element.IF, "if"),
-	ELSE		(Token.ELSE, Element.ELSE, "else"),
+	ELSE		(Token.ELSE, Element.NULL, "else"),
 	// ELSEIF exists as basic type but not as a token: ("else if")
 	
 	// Defined as <stmts> in CFG.xlsx
 	ECHO 		(Token.ECHO, Element.NULL, "echo"),
 	INPUT		(Token.INPUT, Element.NULL, "input"),
-	VAR			(Token.VAR, Symbol.Type.VAR, Element.VAROUT, "", ("^[a-zA-Z_][a-zA-Z\\d_]*")),
+	VARIABLE	(Token.VARIABLE, Symbol.Type.VAR, Element.VARIABLE, "", ("^[a-zA-Z_][a-zA-Z\\d_]*")),
 	// Any reserved words must be declared before VAR
 
 	// Defined as <ops> in CFG.xlsx
@@ -388,7 +388,7 @@ enum NonTerminal implements Token {
 				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
 				 follow(Token.EOF)),
 	
-	_STMTS_		(Token._STMTS_, Element.STOP,
+	_STMTS_		(Token._STMTS_, Element.REFLOW_LIMIT,
 				 firstTerminalsAndPattern(Token.FUNCTION, Token._FUNCDEF_, Token._STMTS_),
 				 firstTerminalsAndPattern(Token.IF, Token._IF_, Token._STMTS_),
 				 firstTerminalsAndPattern(Token.combineArrays(Token._STMT_FIRST, Token.CURLY_OPEN), Token._BLOCKSTMT_, Token._STMTS_),
@@ -396,16 +396,16 @@ enum NonTerminal implements Token {
 				 follow(new int[] {Token.EOF, Token.CURLY_CLOSE})),
 	
 	_FUNCDEF_	(Token._FUNCDEF_, Element.FUNCDEF,
-				 firstTerminalsAndPattern(Token.FUNCTION, Token.FUNCTION, Token.VAR, Token.PAREN_OPEN, Token._PARAMS0_, Token.PAREN_CLOSE, Token._SCOPE_),
+				 firstTerminalsAndPattern(Token.FUNCTION, Token.FUNCTION, Token.VARIABLE, Token.PAREN_OPEN, Token._PARAMS0_, Token.PAREN_CLOSE, Token._SCOPE_),
 				 Token.commonFollow1),
 	
-	_PARAMS0_	(Token._PARAMS0_, Element.PARAM,
-				 firstTerminalsAndPattern(Token.VAR, Token.VAR, Token._PARAMS1_),
+	_PARAMS0_	(Token._PARAMS0_, Element.PARAMETERS,
+				 firstTerminalsAndPattern(Token.VARIABLE, Token.VARIABLE, Token._PARAMS1_),
 				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
 				 follow(Token.PAREN_CLOSE)),
 	
 	_PARAMS1_	(Token._PARAMS1_, Element.PASS,
-				 firstTerminalsAndPattern(Token.COMMA, Token.COMMA, Token.VAR, Token._PARAMS1_),
+				 firstTerminalsAndPattern(Token.COMMA, Token.COMMA, Token.VARIABLE, Token._PARAMS1_),
 				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
 				 follow(Token.PAREN_CLOSE)),
 	
@@ -427,7 +427,7 @@ enum NonTerminal implements Token {
 			 	 firstTerminalsAndPattern(IntStream.rangeClosed(1, id.id).toArray(), Token._SCOPE_),
 			 	 Token.commonFollow1),
 	
-	_BLOCKSTMT_	(Token._BLOCKSTMT_, Element.STOP,
+	_BLOCKSTMT_	(Token._BLOCKSTMT_, Element.PASS,
 			 	 firstTerminalsAndPattern(Token.CURLY_OPEN, Token._BLOCK_),
 			 	 firstTerminalsAndPattern(Token._STMT_FIRST, Token._STMT_),
 			 	 Token.commonFollow2),
@@ -440,7 +440,7 @@ enum NonTerminal implements Token {
 			 	 firstTerminalsAndPattern(Token.ECHO, Token._ECHO_, Token.SEMICOLON),
 			 	 firstTerminalsAndPattern(Token.INPUT, Token._INPUT_, Token.SEMICOLON),
 			 	 firstTerminalsAndPattern(Token.COMMENT, Token.COMMENT),
-				 firstTerminalsAndPattern(Token.VAR, Token.VAR, Token._VARSTMT_, Token.SEMICOLON),
+				 firstTerminalsAndPattern(Token.VARIABLE, Token.VARIABLE, Token._VARSTMT_, Token.SEMICOLON),
 				 Token.commonFollow2),
 	
 	_ECHO_		(Token._ECHO_, Element.OUTPUT,
@@ -448,7 +448,7 @@ enum NonTerminal implements Token {
 				 follow(Token.SEMICOLON)),
 	
 	_INPUT_		(Token._INPUT_, Element.INPUT,
-				 firstTerminalsAndPattern(Token.INPUT, Token.INPUT, Token.VAR),
+				 firstTerminalsAndPattern(Token.INPUT, Token.INPUT, Token.VARIABLE),
 				 follow(Token.SEMICOLON)),
 
 	_VARSTMT_	(Token._VARSTMT_, Element.PASS,
@@ -459,12 +459,6 @@ enum NonTerminal implements Token {
 	_VARDEF_	(Token._VARDEF_, Element.VARDEF,
 				 firstTerminalsAndPattern(Token.EQ, Token.EQ, Token._EXPR_),
 				 follow(Token.SEMICOLON)),
-
-	_VALUEOREXPR_ (Token._VALUEOREXPR_,	Element.PASS,
-				 firstTerminalsAndPattern(Token.combineArrays(Token.primitiveSet, Token.VAR), Token._VALUE_),
-			 	 firstTerminalsAndPattern(Token.PAREN_OPEN, Token.PAREN_OPEN, Token._EXPR_, Token.PAREN_CLOSE),
-			 	 Token.commonFollow3
-			 	 ),
 	
 	_EXPR_		(Token._EXPR_, Element.PASS,
 				 // Send stream to precedence branch no matter what
@@ -472,12 +466,12 @@ enum NonTerminal implements Token {
 	 			 follow(new int[] {Token.SEMICOLON, Token.PAREN_CLOSE, Token.COMMA})),
 	
 	_VALUE_		(Token._VALUE_, Element.PASS,
-				 firstTerminalsAndPattern(Token.VAR, Token._VAR_),
+				 firstTerminalsAndPattern(Token.VARIABLE, Token._VARIABLE_),
 				 firstTerminalsAndPattern(Token.primitiveSet, Token._LITERAL_),
 				 Token.commonFollow3),
 	
-	_VAR_		(Token._VAR_, Element.PASS,
-				 firstTerminalsAndPattern(Token.VAR, Token.VAR, Token._VAREXPR_),
+	_VARIABLE_	(Token._VARIABLE_, Element.PASS,
+				 firstTerminalsAndPattern(Token.VARIABLE, Token.VARIABLE, Token._VAREXPR_),
 				 Token.commonFollow3),
 	
 	_VAREXPR_	(Token._VAREXPR_, Element.PASS,
@@ -489,13 +483,13 @@ enum NonTerminal implements Token {
 				 firstTerminalsAndPattern(Token.PAREN_OPEN, Token.PAREN_OPEN, Token._ARGS0_, Token.PAREN_CLOSE),
 				 Token.commonFollow3),
 	
-	_ARGS0_		(Token._ARGS0_, Element.PASS,
-				 firstTerminalsAndPattern(Token.combineArrays(Token.combineArrays(Token.operatorSet, Token.VAR, Token.PLUS, Token.MINUS, Token.PAREN_OPEN), Token.primitiveSet), Token._EXPR_, Token._ARGS1_),
+	_ARGS0_		(Token._ARGS0_, Element.ARGUMENTS,
+				 firstTerminalsAndPattern(Token.combineArrays(Token.combineArrays(Token.operatorSet, Token.VARIABLE, Token.PLUS, Token.MINUS, Token.PAREN_OPEN), Token.primitiveSet), Token._EXPR_, Token._ARGS1_),
 				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
 				 follow(Token.PAREN_CLOSE)),
 	
 	_ARGS1_		(Token._ARGS1_, Element.PASS,
-				 firstTerminalsAndPattern(Token.COMMA, Token.COMMA, Token._VALUE_, Token._ARGS1_),
+				 firstTerminalsAndPattern(Token.COMMA, Token.COMMA, Token._EXPR_, Token._ARGS1_),
 				 firstTerminalsAndPattern(Token.EMPTY, Token.EMPTY),
 				 follow(Token.PAREN_CLOSE)),
 	
@@ -513,7 +507,7 @@ enum NonTerminal implements Token {
 	__PRECEDENCE2__(Token.__PRECEDENCE2__, precedenceSplitAt(Token.operatorSetRank2), 	Token.__PRECEDENCE2__, 	Token.__PRECEDENCE3__,	Direction.RIGHT_TO_LEFT,	Token.__BINARY__),
 	__PRECEDENCE3__(Token.__PRECEDENCE3__, precedenceSplitAt(Token.operatorSetRank3), 	Token.__PRECEDENCE3__, 	Token.__PRECEDENCE4__,	Direction.RIGHT_TO_LEFT,	Token.__BINARY__),
 	__PRECEDENCE4__(Token.__PRECEDENCE4__, precedenceSplitAt(Token.operatorSetRank4), 	Token.__PRECEDENCE4__, 	Token.__PRECEDENCE5__,	Direction.RIGHT_TO_LEFT,	Token.__BINARY__),
-	__PRECEDENCE5__(Token.__PRECEDENCE5__, precedenceSplitAt(Token.operatorSetRank5), 	Token.__PRECEDENCE5__,	Token._VALUEOREXPR_,	Direction.RIGHT_TO_LEFT,	Token.__UNARY__),
+	__PRECEDENCE5__(Token.__PRECEDENCE5__, precedenceSplitAt(Token.operatorSetRank5), 	Token.__PRECEDENCE5__,	Token._VALUE_,	Direction.RIGHT_TO_LEFT,	Token.__UNARY__),
 	// Placeholder
 	// All operations appear with this as parent to its two operands
 	__BINARY__	(Token.__BINARY__, Element.OPERATION),

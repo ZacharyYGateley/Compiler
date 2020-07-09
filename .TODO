@@ -1,22 +1,37 @@
 Output to assembly
 	Aliases and pulling/pushing from stack only when necessary
 
-NonTerminal constructors should take CFGPattern and PrecedencePattern as parameters  
-	Can make firstTerminalsAndPatterns and follow do the work of the NonTerminal constructor?
-	Make Token prettier :'-(
+Elementary OPERATIONs to their respective operations (AND, OR, ADD, etc)
+Elementary LITERALs to their respective literals (BOOLEAN, INTEGER, STRING)
 
-Build basic README. Make repository public.
+
+Token
+	Token should be an interface
+	All terminals and non-terminals should be added once as enums
+	All rules should be added after static initialization
+
+	NonTerminal constructors should take CFGPattern and PrecedencePattern as parameters  
+		Can make firstTerminalsAndPatterns and follow do the work of the 	NonTerminal constructor?
+		Make Token prettier :'-(
+	Should be Token, not Terminal or NonTerminal:
+		element type
+		Terminal only:
+			exactString, element type, etc
+
+Nodes traversal and node values should be split
+	A la inherit Node
+
 unary ! double parses on expression operand
 
+Language additions
+	Loops
 
 Long term
-	Loops
 	Scope? Ought to come naturally in assembly. In Python... not so much.
 	Type checking for addition - Adding strings - Subtracting strings...? i.e. type checking
 	Token extends BasicToken for grammar selection
 		Can auto-build Token.java based on some grammar input?
 		Combine backend functions into NonTerminal rule declarations? if possible and is clean
 	TokenStream rightIndex should be inclusive?
-	Make traversing parseTree more data hidden
 	SymbolTable types are a little strange.
 	wait command? on any key press
