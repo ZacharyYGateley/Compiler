@@ -266,10 +266,10 @@ enum Terminal implements Token {
 	COMMENT		(Token.COMMENT, Symbol.Type.COMMENT, Element.NULL, "", ("^/(?:/.*)?$"), ("//[^\0]*(?:\r|\n|\f)?")),
 	
 	// PRIMITIVES
-	TRUE		(Token.TRUE, Element.LITERAL, "true"),
-	FALSE		(Token.FALSE, Element.LITERAL, "false"),
-	INT 		(Token.INT, Symbol.Type.INT, Element.LITERAL, "", ("^\\d*")),
-	STRING      (Token.STRING, Symbol.Type.STRING, Element.LITERAL, "", ("^\".*"), ("^\"(?:(?:.*(?:[^\\\\]))?(?:\\\\{2})*)?\"$")),
+	TRUE		(Token.TRUE, Element.BOOLEAN, "true"),
+	FALSE		(Token.FALSE, Element.BOOLEAN, "false"),
+	INT 		(Token.INT, Symbol.Type.INTEGER, Element.INTEGER, "", ("^\\d*")),
+	STRING      (Token.STRING, Symbol.Type.STRING, Element.STRING, "", ("^\".*"), ("^\"(?:(?:.*(?:[^\\\\]))?(?:\\\\{2})*)?\"$")),
 	
 	// Other reserved words
 	FUNCTION	(Token.FUNCTION, Element.NULL, "function"),

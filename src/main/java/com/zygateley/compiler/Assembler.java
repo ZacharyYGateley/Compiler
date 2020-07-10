@@ -1,6 +1,7 @@
 package com.zygateley.compiler;
 
-import com.zygateley.compiler.AssyLanguage.*;
+import java.io.FileWriter;
+import java.lang.Exception;
 import java.util.*;
 
 public class Assembler {
@@ -9,16 +10,20 @@ public class Assembler {
 	private Writer io;
 	private AssyLanguage language;
 	
-	public Assembler(Node parseTree, SymbolTable symbolTable, Class<AssyLanguage> Language) throws Exception {
+	public Assembler(Node parseTree, SymbolTable symbolTable, Class<? extends AssyLanguage> Language) throws Exception {
+		this(parseTree, symbolTable, Language, null);
+	}
+	public Assembler(Node parseTree, SymbolTable symbolTable, Class<? extends AssyLanguage> Language, FileWriter fileWriter) throws Exception {
 		this.parseTree = parseTree;
 		this.symbolTable = symbolTable;
-		this.io = new Writer();
-		this.language = Language.getDeclaredConstructor().newInstance();
+		this.io = new Writer(fileWriter);
+		// Initialize new instance of the assembly language
+		this.language = Language.getDeclaredConstructor(Assembler.Writer.class, SymbolTable.class).newInstance(this.io, symbolTable);
 	}
 	
-	public String assemble() {
+	public String assemble() throws Exception {
 		// Create a global string pool
-		language.assembleGlobal();
+		language.assembleDataSection();
 		
 		// Indicate start of program main
 		language.assembleHeader();
@@ -29,8 +34,7 @@ public class Assembler {
 		language.assembleNode(this.parseTree);
 		
 		// Indicate end of program main
-		io.println("");
-		io.println("jr $ra        # EOF program");
+		language.assembleFinish();
 		
 		// Output all functions
 		// All functions are considered global
@@ -40,24 +44,33 @@ public class Assembler {
 	}
 
 	public static class Writer {
-		private final StringBuilder outputStream;
+		private final StringBuilder stringBuilder;
+		private final FileWriter fileWriter;
 		private int currentIndent;
 		
 		public Writer() {
-			outputStream = new StringBuilder();
+			this(null);
+		}
+		public Writer(FileWriter fileWriter) {
+			stringBuilder = new StringBuilder();
+			this.fileWriter = fileWriter;
 			currentIndent = 0;
 		}
 		
-		public void print(String s) {
-			print(s);
+		public void print(String s) throws Exception {
+			stringBuilder.append(s);
+			if (fileWriter instanceof FileWriter) {
+				fileWriter.append(s);
+			}
 		}
-		public void print(String s, Object... formatters) {
+		public void print(String s, Object... formatters) throws Exception {
 			// Indent as necessary
-			for (int i = 0; i < currentIndent; i++) outputStream.append("    ");
+			for (int i = 0; i < currentIndent; i++) stringBuilder.append("    ");
 			
 			// Format strings as necessary
 			if (formatters.length > 0) {
-				outputStream.append(String.format(s, (Object[]) formatters));
+				String outputString = String.format(s, (Object[]) formatters);
+				print (outputString);
 				
 				// Promote in LRU all variables used
 				for (Object e : formatters) {
@@ -68,15 +81,18 @@ public class Assembler {
 			}
 			// No formatters
 			else {
-				outputStream.append(s);
+				print(s);
 			}
 		}
-		public void println(String s) {
+		public void println() throws Exception {
+			println("");
+		}
+		public void println(String s) throws Exception {
 			println(s, "");
 		}
-		public void println(String s, Object... formatters) {
+		public void println(String s, Object... formatters) throws Exception {
 			print(s, formatters);
-			outputStream.append("\r\n");
+			print("\r\n");
 		}
 		
 		public void indent() {
@@ -84,12 +100,12 @@ public class Assembler {
 		}
 		
 		public void outdent() {
-			this.currentIndent--;
+			this.currentIndent = Math.max(this.currentIndent - 1, 0);
 		}
 		
 		@Override
 		public String toString() {
-			return outputStream.toString();
+			return stringBuilder.toString();
 		}
 	}
 }

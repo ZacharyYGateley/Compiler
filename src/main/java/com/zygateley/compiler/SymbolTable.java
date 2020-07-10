@@ -8,7 +8,7 @@ class Symbol {
 		COMMENT,
 		VAR,
 		BOOLEAN,
-		INT,
+		INTEGER,
 		STRING,
 		FUNCTION
 	}

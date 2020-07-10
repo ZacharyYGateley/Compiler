@@ -57,6 +57,10 @@ public class Application {
 		FileWriter pythonFile = FileIO.getWriter(pythonFileName, true);
 		// Will return null if file exists and user chooses not to override
 		
+		String assemblyFileName = baseName + ".asm";
+		FileWriter assemblyFile = FileIO.getWriter(assemblyFileName, true);
+		// Will return null if file exists and user chooses not to override
+		
 		// Objects passed to Parser
 		SymbolTable symbolTable = new SymbolTable();
 		TokenStream tokenStream = new TokenStream();
@@ -81,11 +85,11 @@ public class Application {
 					PythonTranslator translator = new PythonTranslator(optimizedTree, pythonFile);
 					translator.toPython();
 				}
-			}
-		
-			if (pythonFile != null) {
-				pythonFile.close();
-				System.out.println("Python translation written to:\n\t" + pythonFileName);
+
+				// Assemble
+				Assembler a = new Assembler(optimizedTree, symbolTable, GoAsm.class, assemblyFile);
+				String output = a.assemble();
+				System.out.println("\n\nGenerated assembly code: \n\n\n" + output);
 			}
 		}
 		finally {
@@ -97,11 +101,15 @@ public class Application {
 				logFile.close();
 				System.out.println("Compilation log written to:\n\t" + logFileName);
 			}
+			if (pythonFile != null) {
+				pythonFile.close();
+				System.out.println("Python translation written to:\n\t" + pythonFileName);
+			}
+			if (assemblyFile != null) {
+				assemblyFile.close();
+				System.out.println("Assembly file written to:\n\t" + assemblyFileName);
+			}
 		}
-		
-		//Assembler a = new Assembler(syntaxTree, st);
-		//output = a.assemble();
-		//System.out.println("\n\nGenerated assembly code: \n\n\n" + output);
 	}
 
 }

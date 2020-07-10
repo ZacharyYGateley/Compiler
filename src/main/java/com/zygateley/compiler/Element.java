@@ -55,7 +55,8 @@ public enum Element {
 	NOT,
 	
 	// Values
-	VARIABLE, LITERAL;
+	VARIABLE, LITERAL,
+	BOOLEAN, INTEGER, STRING;
 	
 	public final boolean isTemporary;
 	
@@ -229,6 +230,30 @@ public enum Element {
 				// Function parameters and arguments
 				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, PARAMETERS, LITERAL),
 				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, ARGUMENTS, LITERAL)
+				));
+		reflowBindings.add(new ReflowRelationship(
+				BOOLEAN,
+				// If condition
+				new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, IF, BOOLEAN),
+				// Function parameters and arguments
+				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, PARAMETERS, BOOLEAN),
+				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, ARGUMENTS, BOOLEAN)
+				));
+		reflowBindings.add(new ReflowRelationship(
+				INTEGER,
+				// If condition
+				new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, IF, INTEGER),
+				// Function parameters and arguments
+				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, PARAMETERS, INTEGER),
+				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, ARGUMENTS, INTEGER)
+				));
+		reflowBindings.add(new ReflowRelationship(
+				STRING,
+				// If condition
+				new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, IF, STRING),
+				// Function parameters and arguments
+				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, PARAMETERS, STRING),
+				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, ARGUMENTS, STRING)
 				));
 		reflowBindings.add(new ReflowRelationship(
 				SCOPE,

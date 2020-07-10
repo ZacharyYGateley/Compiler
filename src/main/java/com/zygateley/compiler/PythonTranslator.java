@@ -182,6 +182,9 @@ public class PythonTranslator {
 				break;
 			case VARIABLE:
 			case LITERAL:
+			case BOOLEAN:
+			case INTEGER:
+			case STRING:
 				printValue(node);
 				break;
 			default:
