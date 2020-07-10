@@ -3,6 +3,16 @@ package com.zygateley.compiler;
 import java.io.*;
 
 public class Application {
+
+
+	private static void log(String message, FileWriter logFile) throws IOException {
+		message += "\n";
+		System.out.print(message);
+		if (logFile != null) {
+			logFile.append(message);
+		}
+	}
+	
 	/**
 	 * main
 	 * 
@@ -80,6 +90,12 @@ public class Application {
 				Optimizer optimizer = new Optimizer(logFile);
 				Node optimizedTree = optimizer.optimize(syntaxTree, true);
 				
+				// Type check and set types where applicable
+				TypeSystem.typeAssignAndCheck(optimizedTree);
+				log("\n<!-- Type checker initialized -->\n\n", logFile);
+				log(optimizedTree.asXMLTree(0, false), logFile);
+				log("\n<!-- Type checker finished -->\n\n", logFile);
+				
 				// Translate into Python
 				if (pythonFile != null) {
 					PythonTranslator translator = new PythonTranslator(optimizedTree, pythonFile);
@@ -111,5 +127,4 @@ public class Application {
 			}
 		}
 	}
-
 }

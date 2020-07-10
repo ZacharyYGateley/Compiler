@@ -263,13 +263,13 @@ enum Terminal implements Token {
 	CURLY_CLOSE (Token.CURLY_CLOSE, Element.NULL, "}"),
 	SQUARE_OPEN (Token.SQUARE_OPEN, Element.NULL, "["),
 	SQUARE_CLOSE(Token.SQUARE_CLOSE, Element.NULL, "]"),
-	COMMENT		(Token.COMMENT, Symbol.Type.COMMENT, Element.NULL, "", ("^/(?:/.*)?$"), ("//[^\0]*(?:\r|\n|\f)?")),
+	COMMENT		(Token.COMMENT, Element.NULL, "", ("^/(?:/.*)?$"), ("//[^\0]*(?:\r|\n|\f)?")),
 	
 	// PRIMITIVES
-	TRUE		(Token.TRUE, Element.BOOLEAN, "true"),
-	FALSE		(Token.FALSE, Element.BOOLEAN, "false"),
-	INT 		(Token.INT, Symbol.Type.INTEGER, Element.INTEGER, "", ("^\\d*")),
-	STRING      (Token.STRING, Symbol.Type.STRING, Element.STRING, "", ("^\".*"), ("^\"(?:(?:.*(?:[^\\\\]))?(?:\\\\{2})*)?\"$")),
+	TRUE		(Token.TRUE, TypeSystem.BOOLEAN, Element.LITERAL, "true"),
+	FALSE		(Token.FALSE, TypeSystem.BOOLEAN, Element.LITERAL, "false"),
+	INT 		(Token.INT, TypeSystem.INTEGER, Element.LITERAL, "", ("^\\d*")),
+	STRING      (Token.STRING, TypeSystem.STRING, Element.LITERAL, "", ("^\".*"), ("^\"(?:(?:.*(?:[^\\\\]))?(?:\\\\{2})*)?\"$")),
 	
 	// Other reserved words
 	FUNCTION	(Token.FUNCTION, Element.NULL, "function"),
@@ -280,7 +280,7 @@ enum Terminal implements Token {
 	// Defined as <stmts> in CFG.xlsx
 	ECHO 		(Token.ECHO, Element.NULL, "echo"),
 	INPUT		(Token.INPUT, Element.NULL, "input"),
-	VARIABLE	(Token.VARIABLE, Symbol.Type.VAR, Element.VARIABLE, "", ("^[a-zA-Z_][a-zA-Z\\d_]*")),
+	VARIABLE	(Token.VARIABLE, Element.VARIABLE, "", ("^[a-zA-Z_][a-zA-Z\\d_]*")),
 	// Any reserved words must be declared before VAR
 
 	// Defined as <ops> in CFG.xlsx
@@ -305,15 +305,15 @@ enum Terminal implements Token {
 	public final Pattern regexStart;
 	public final Pattern regexFull;
 	public final Pattern regexNot;
-	public final Symbol.Type symbolType;
+	public final TypeSystem type;
 	public final Element basicElement;
 
 	private Terminal(int tokenValue, Element basicElement,  String... matching) {
 		this(tokenValue, null, basicElement, matching);
 	}
-	private Terminal(int tokenValue, Symbol.Type symbolType, Element basicElement, String... matching) {
+	private Terminal(int tokenValue, TypeSystem type, Element basicElement, String... matching) {
 		this.tokenValue = tokenValue;
-		this.symbolType = symbolType;
+		this.type = type;
 		// If there is a symbol type, exactString should be ""
 		this.exactString = (matching.length > 0) ? matching[0] : "";
 		this.regexStart = (matching.length > 1) ? Pattern.compile(matching[1]) : null;

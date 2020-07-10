@@ -125,7 +125,7 @@ public abstract class AssyLanguage {
 		for (Symbol symbol : this.symbolTable) {
 			int byteWidth = 0;
 			String prefix = "";
-			Symbol.Type type = symbol.getType();
+			TypeSystem type = symbol.getType();
 			switch (type) {
 			case BOOLEAN:
 				byteWidth = 1;

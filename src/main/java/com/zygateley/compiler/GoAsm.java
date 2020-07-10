@@ -99,33 +99,39 @@ public class GoAsm extends AssyLanguage {
 	public Register assembleOperand(Node operand) throws Exception { 
 		// Only child
 		Element operandElement = operand.getElementType();
+		TypeSystem operandType = operand.getType();
 		int byteWidth = 0;
 		String operandString = null;
 		Register register = registry.allocate();
 		String pointer;
-		switch (operandElement) {
-		case BOOLEAN:
-			byteWidth = 1;
-			String boolVal = operand.getValue();
-			if (boolVal == "false") {
-				operandString = "0";
+		if (Element.LITERAL.equals(operandElement)) {
+			switch (operandType) {
+			case BOOLEAN:
+				byteWidth = 1;
+				String boolVal = operand.getValue();
+				if (boolVal == "false") {
+					operandString = "0";
+				}
+				else {
+					operandString = "1";
+				}
+				break;
+			case INTEGER:
+				byteWidth = 4;
+				operandString = operand.getValue();
+				break;
+			case STRING:
+				Symbol symbol = operand.getSymbol();
+				byteWidth = symbol.getValue().length() - 2;
+				// Move value pointer to a register
+				pointer = "Addr " + this.globalSymbolMap.get(symbol);
+				operandString = pointer;
+				break;
+			default:
+				break;
 			}
-			else {
-				operandString = "1";
-			}
-			break;
-		case INTEGER:
-			byteWidth = 4;
-			operandString = operand.getValue();
-			break;
-		case STRING:
-			Symbol symbol = operand.getSymbol();
-			byteWidth = symbol.getValue().length() - 2;
-			// Move value pointer to a register
-			pointer = "Addr " + this.globalSymbolMap.get(symbol);
-			operandString = pointer;
-			break;
-		case VARIABLE:
+		}
+		else if (Element.VARIABLE.equals(operandElement)) {
 			// Move value pointer to register
 			// TODO: bytewidth and typing
 			byteWidth = 1;
@@ -134,10 +140,10 @@ public class GoAsm extends AssyLanguage {
 				throw new Exception("Variable used before it was declared.");
 			}
 			operandString = String.format("[Esp + %d]", variable.stackIndex);
-			break;
-		default:
-			break;
-		}                                                                                                                
+		}
+		else {
+			throw new SyntaxError("Should not be here...");
+		}
 		
 		// Move length to Eax
 		io.println("Mov Eax, %dD", byteWidth);

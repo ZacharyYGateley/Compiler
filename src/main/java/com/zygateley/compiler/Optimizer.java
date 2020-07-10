@@ -47,16 +47,20 @@ public class Optimizer {
 		buildOptimizedTreeFrom(syntaxTree, optimizedTree);
 		this.depth = 1;
 		this.log("<!-- Begin: Stage 1 optimized syntax tree -->\n");
+		this.depth = 0;
 		this.logTree(optimizedTree, true);
 		this.log("");
+		this.depth = 1;
 		this.log("<!-- End: Stage 1 optimized syntax tree -->\n");
 		
 		// Execute any reflow bindings
 		crawlAndApplyReflow(optimizedTree);
 		this.depth = 1;
 		this.log("<!-- Begin: Stage 2 optimized syntax tree -->\n");
+		this.depth = 0;
 		this.logTree(optimizedTree, true);
 		this.log("");
+		this.depth = 1;
 		this.log("<!-- End: Stage 2 optimized syntax tree -->\n");
 		
 		// Condense tree to optimized by removing all temporary element nodes
@@ -65,8 +69,10 @@ public class Optimizer {
 		this.depth = 1;
 		this.log("");
 		this.log("<!-- Begin: Final optimized syntax tree-->\n");
+		this.depth = 0;
 		this.logTree(optimizedTree, false);
 		this.log("");
+		this.depth = 1;
 		this.log("<!-- End: Final optimized syntax tree -->\n");
 
 		this.depth = 0;
@@ -157,17 +163,20 @@ public class Optimizer {
 		for (Node childNodeAsBasic : parseParentNode) {
 			Node parseChildNode = (Node) childNodeAsBasic;
 			// Get basic element type
-			Element basicElement;
-			nonTerminal = parseChildNode.getRule();
-			if (nonTerminal != null) {
-				basicElement = nonTerminal.basicElement;
-			}
-			else {
-				terminal = parseChildNode.getToken();
-				if (terminal == null) {
-					continue;
+			Element basicElement = parseChildNode.getElementType();
+			// Backup, element should not be null
+			if (basicElement == null) {
+				nonTerminal = parseChildNode.getRule();
+				if (nonTerminal != null) {
+					basicElement = nonTerminal.basicElement;
 				}
-				basicElement = terminal.basicElement;
+				else {
+					terminal = parseChildNode.getToken();
+					if (terminal == null) {
+						continue;
+					}
+					basicElement = terminal.basicElement;
+				}
 			}
 			
 			// Skip NULL (non-process leaf branch)
@@ -419,6 +428,7 @@ public class Optimizer {
 		return nextNode;
 	}
 	
+
 	/**
 	 * Output the XML structure of this tree in indented format. <br />
 	 * Depends on Optimizer.depth to be accurate.
@@ -427,6 +437,7 @@ public class Optimizer {
 	 * @param showToken true: show Terminal or NonTerminal which correspond to node
 	 * @throws IOException
 	 */
+	/*
 	private void logTree(Node optimizedNode, boolean showToken) throws IOException {
 		if (!this.verbose || this.logFileWriter == null) return;
 		
@@ -497,7 +508,15 @@ public class Optimizer {
 		output.append(">");
 		this.log(output.toString());
 	}
+
+	*/
+	
+	private void logTree(Node optimizedNode, boolean showToken) throws IOException {
+		if (!this.verbose || this.logFileWriter == null) return;
 		
+		this.log(optimizedNode.asXMLTree(0, showToken));
+	}
+	
 	private void log(String message) throws IOException {
 		if (!this.verbose || this.logFileWriter == null) return;
 		

@@ -6,18 +6,6 @@ import java.util.*;
 
 
 /**
- * Parse exceptions thrown by fatalError()
- */
-class ParseException extends Exception {
-	static final long serialVersionUID = 666;
-	
-	public ParseException(String message) {
-		super(message);
-	}
-}
-
-
-/**
  * Instances of this class can
  * parse a TokenStream and return the 
  * root of the resulting syntax tree.
@@ -70,10 +58,10 @@ public class Parser {
 	 * 
 	 * @param verbose
 	 * @return Node root of resulting syntax tree
-	 * @throws ParseException
+	 * @throws SyntaxError
 	 * @throws IOException 
 	 */
-	public Node parse(boolean verbose) throws ParseException, IOException {
+	public Node parse(boolean verbose) throws SyntaxError, IOException {
 		return parse(verbose, false);
 	}
 	/**
@@ -84,10 +72,10 @@ public class Parser {
 	 * @param verbose
 	 * @param doublyVerbose
 	 * @return Node root of resulting syntax tree
-	 * @throws ParseException
+	 * @throws SyntaxError
 	 * @throws IOException 
 	 */
-	public Node parse(boolean verbose, boolean doublyVerbose) throws ParseException, IOException {
+	public Node parse(boolean verbose, boolean doublyVerbose) throws SyntaxError, IOException {
 		this.verbose = verbose;
 		this.doublyVerbose = doublyVerbose;
 		return parse();
@@ -96,10 +84,10 @@ public class Parser {
 	 * Parse the TokenStream.
 	 * 
 	 * @return Node root of resulting syntax tree
-	 * @throws ParseException
+	 * @throws SyntaxError
 	 * @throws IOException 
 	 */
-	public Node parse() throws ParseException, IOException {
+	public Node parse() throws SyntaxError, IOException {
 		// Reset parsing parameters
 		depth = 0;
 		
@@ -137,10 +125,10 @@ public class Parser {
 	 * @param ruleCFG
 	 * @param endPosition exclusive
 	 * @return
-	 * @throws ParseException
+	 * @throws SyntaxError
 	 * @throws IOException 
 	 */
-	private Node toCFGStream(NonTerminal ruleCFG, int startPosition, int endPosition) throws ParseException, IOException {
+	private Node toCFGStream(NonTerminal ruleCFG, int startPosition, int endPosition) throws SyntaxError, IOException {
 		if (doublyVerbose) {
 			this.log("// --> To CFG stream from Precedence stream");
 			this.log("//");
@@ -164,10 +152,10 @@ public class Parser {
 	 * @param rule NonTerminal representing this CFG rule
 	 * @param endPosition exclusive in TokenStream
 	 * @return Node root of resulting parse subtree 
-	 * @throws ParseException
+	 * @throws SyntaxError
 	 * @throws IOException 
 	 */
-	private Node parseCFGRule(NonTerminal rule, int endPosition) throws ParseException, IOException {
+	private Node parseCFGRule(NonTerminal rule, int endPosition) throws SyntaxError, IOException {
 		// Begin new subtree
 		Node syntaxSubtree = new Node(rule);
 		
@@ -309,10 +297,10 @@ public class Parser {
 	 * @param maxEndPosition exclusive
 	 * @param parentRule to determine when to stop stream for precedence rule
 	 * @return
-	 * @throws ParseException
+	 * @throws SyntaxError
 	 * @throws IOException 
 	 */
-	private Node toPrecedenceStream(NonTerminal precedenceRule, NonTerminal parentRule, int startPosition, int maxEndPosition) throws ParseException, IOException {
+	private Node toPrecedenceStream(NonTerminal precedenceRule, NonTerminal parentRule, int startPosition, int maxEndPosition) throws SyntaxError, IOException {
 		// Start parsing this precedence non-terminal
 		if (doublyVerbose) {
 			this.log("// --> To CFG stream from Precedence stream");
@@ -503,10 +491,10 @@ public class Parser {
 	 * @param startPosition in tokenStream inclusive
 	 * @param endPosition in tokenStream exclusive
 	 * @return parse subtree given for this span [startPosition, endPosition)
-	 * @throws ParseException
+	 * @throws SyntaxError
 	 * @throws IOException 
 	 */
-	private Node parsePrecedenceRule(NonTerminal rule, int startPosition, int endPosition) throws ParseException, IOException {
+	private Node parsePrecedenceRule(NonTerminal rule, int startPosition, int endPosition) throws SyntaxError, IOException {
 		// Patterns split at these tokens
 		int[] splitTokens = rule.precedencePattern.splitTokens;
 		// If a split token is found, this is its Terminal.tokenValue
@@ -685,10 +673,10 @@ public class Parser {
 	 * @param startPosition inclusive
 	 * @param endPosition exclusive
 	 * @return Node parse subtree
-	 * @throws ParseException
+	 * @throws SyntaxError
 	 * @throws IOException 
 	 */
-	private Node precedenceParseNextRule(NonTerminal nextRule, int startPosition, int endPosition) throws ParseException, IOException {
+	private Node precedenceParseNextRule(NonTerminal nextRule, int startPosition, int endPosition) throws SyntaxError, IOException {
 		Node parseSubtree;
 		if (nextRule.isPrecedenceRule()) {
 			// Stay in precedence stream
@@ -757,7 +745,7 @@ public class Parser {
 			return new Node(splitToken, null, null);
 		}
 		
-		Node wrapper = new Node(wrappingClass, splitToken);
+		Node wrapper = new Node(splitToken.basicElement, null, wrappingClass, null, null, null, false);
 		wrapper.addChild(leftOperand);
 		wrapper.addChild(rightOperand);
 		
@@ -821,7 +809,7 @@ public class Parser {
 		}
 	}
 	
-	private void fatalError(String err) throws ParseException, IOException {
+	private void fatalError(String err) throws SyntaxError, IOException {
 		String stream = "End of stream";
 		if (!this.tokenStream.isEmpty()) {
 			int leftPos = this.tokenStream.getLeftIndex();
@@ -836,6 +824,6 @@ public class Parser {
 		}
 		String error = "\n" + err + "\nAt...\n" + stream + "\n";
 		this.log(error);
-		throw new ParseException(error);
+		throw new SyntaxError(error);
 	}
 }

@@ -50,13 +50,12 @@ public enum Element {
 	// Arithmetic
 	ADD, SUB, MULT, INTDIV,
 	// Comparison
-	EQEQ, NEQ, LT, LTEQ, GT, GTEQ, 
+	EQEQ, NEQ, LT, LTEQ, GT, GTEQ,
 	// Unary 
 	NOT,
 	
 	// Values
-	VARIABLE, LITERAL,
-	BOOLEAN, INTEGER, STRING;
+	VARIABLE, LITERAL;
 	
 	public final boolean isTemporary;
 	
@@ -215,14 +214,17 @@ public enum Element {
 				// Else code
 				new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, IF, IF)
 				));
-		reflowBindings.add(new ReflowRelationship(
-				OPERATION,
-				// If condition
-				new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, IF, OPERATION),
-				// Function parameters and arguments
-				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, PARAMETERS, OPERATION),
-				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, ARGUMENTS, OPERATION)
-				));
+		Element[] operations = new Element[] { AND, OR, ADD, SUB, MULT, INTDIV, EQEQ, NEQ, LT, GT, LTEQ, GTEQ, NOT };
+		for (Element operation : operations) {
+			reflowBindings.add(new ReflowRelationship(
+					operation,
+					// If condition
+					new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, IF, operation),
+					// Function parameters and arguments
+					new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, PARAMETERS, operation),
+					new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, ARGUMENTS, operation)
+					));
+		}
 		reflowBindings.add(new ReflowRelationship(
 				LITERAL,
 				// If condition
@@ -231,6 +233,7 @@ public enum Element {
 				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, PARAMETERS, LITERAL),
 				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, ARGUMENTS, LITERAL)
 				));
+		/*
 		reflowBindings.add(new ReflowRelationship(
 				BOOLEAN,
 				// If condition
@@ -255,6 +258,7 @@ public enum Element {
 				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, PARAMETERS, STRING),
 				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, ARGUMENTS, STRING)
 				));
+		*/
 		reflowBindings.add(new ReflowRelationship(
 				SCOPE,
 				// As code corresponding to condition==true

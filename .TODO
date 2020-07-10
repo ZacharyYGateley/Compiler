@@ -1,5 +1,9 @@
 Output to assembly
 	Aliases and pulling/pushing from stack only when necessary
+	assembleGlobalString boolean...
+	Have to type check
+		Maybe after optimizer
+	Return and return types
 
 Elementary OPERATIONs to their respective operations (AND, OR, ADD, etc)
 Elementary LITERALs to their respective literals (BOOLEAN, INTEGER, STRING)
