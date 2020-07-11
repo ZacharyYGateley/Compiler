@@ -6,5 +6,6 @@ if (true) {
 	echo " = ";
 	echo -96;
 	echo "\n";
-	echo "Hello, World\n";
+	echo "Hello, World";
+	echo "\n";
 }

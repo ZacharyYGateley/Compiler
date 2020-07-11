@@ -22,11 +22,14 @@ public class Assembler {
 	}
 	
 	public String assemble() throws Exception {
+		// Any headers before the data section
+		language.assembleHeader();
+		
 		// Create a global string pool
 		language.assembleDataSection();
 		
 		// Indicate start of program main
-		language.assembleHeader();
+		language.assembleCodeSection();
 		
 		// Crawl tree
 		// Any function declarations found
@@ -41,6 +44,10 @@ public class Assembler {
 		language.assembleFooter();
 		
 		return this.io.toString();
+	}
+	
+	public AssyLanguage getLanguage() {
+		return this.language;
 	}
 
 	public static class Writer {

@@ -1,9 +1,10 @@
+;EasyCodeName=Assembly,1
 
 Data Section
 	str0	DB	" + "
 	str1	DB	" = "
 	str2	DB	"",10,""
-	str3	DB	"Hello, World",10,""
+	str3	DB	"Hello, World"
 	inputHandle	DD	0
 	outputHandle	DD	0
 	tempGlobal	DD	64 Dup 0
@@ -141,7 +142,7 @@ start:
 	Call WriteConsoleA			; output value
 	
 	Pop Ebx
-	Mov Eax, 13D
+	Mov Eax, 12D
 	Mov Ecx, Addr str3				; assemble operand STRING
 	
 	Push Ecx
@@ -153,9 +154,20 @@ start:
 	Call WriteConsoleA			; output value
 	
 	Pop Ecx
+	Mov Eax, 1D
+	Mov Edx, Addr str2				; assemble operand STRING
+	
+	Push Edx
+	Push 0
+	Push Addr tempGlobal
+	Push Eax
+	Push Edx
+	Push [outputHandle]
+	Call WriteConsoleA			; output value
+	
+	Pop Edx
 	Ret 				; Program finish
 	
-
 
 
 
@@ -253,7 +265,6 @@ int_to_string_final:
 	Mov Eax, Ecx			; actual length
 
 	Ret
-
 
 
 ;;;;;;; INCLUDED FILE clear_global_string.asm ;;;;;;;;

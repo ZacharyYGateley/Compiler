@@ -1,7 +1,6 @@
 package com.zygateley.compiler;
 
-import java.io.FileWriter;
-import java.io.PushbackReader;
+import java.io.*;
 import java.lang.Exception;
 import java.util.*;
 
@@ -43,6 +42,15 @@ public class GoAsm extends AssyLanguage {
 		this.assembleCall("clear_global_string");
 		
 		this.assemblePostCall(preRegisters);
+	}
+	
+	@Override
+	public void assembleCodeSection() throws Exception {
+		io.outdent();
+		io.println();
+		io.println("Code Section");
+		io.println("start:");
+		io.indent();
 	}
 
 	@Override
@@ -96,9 +104,9 @@ public class GoAsm extends AssyLanguage {
 				file.append((char) reader.read());
 			}
 			reader.close();
-			io.println("\n\n\n");
+			io.println("\r\n\r\n");
 			io.println(";;;;;;; INCLUDED FILE %s ;;;;;;;;", resource);
-			io.println("\n\n");
+			io.println("\r\n\r\n");
 			io.print(file.toString());
 		}
 		
@@ -159,13 +167,8 @@ public class GoAsm extends AssyLanguage {
 	}
 	
 	@Override
-	public Register assembleHeader() throws Exception {
-		io.outdent();
-		io.println();
-		io.println("Code Section");
-		io.println("start:");
-		io.indent();
-		return null;
+	public void assembleHeader() throws Exception {
+		io.println(";EasyCodeName=Assembly,1");
 	}
 	
 	@Override 
@@ -336,6 +339,59 @@ public class GoAsm extends AssyLanguage {
 	public void assembleTerminal(Node leafNode) throws Exception {
 		// TODO Auto-generated method stub
 
+	}
+	
+	@Override
+	public String compile(String assemblyFile, boolean verbose) throws IOException {
+		try {
+			String classPathName = FileIO.getAbsolutePath("");
+			File goAsmPath = new File(classPathName + "src/main/resources/GoAsm/");
+			
+			// Remove disk name prefix from assemblyFile if it exists
+			String assemblyPathName = assemblyFile.substring(0, assemblyFile.lastIndexOf('/') + 1);
+			String assemblyFileName = assemblyFile.substring(assemblyFile.lastIndexOf('/') + 1);
+			assemblyPathName = FileIO.truncateDiskName(assemblyPathName);
+			
+			Runtime runtime = Runtime.getRuntime();
+			// Create object file
+			String goAsm = "GoAsm.exe";
+			String objectFileName = assemblyFileName.replace(".asm", ".obj");
+			assemblyFile = assemblyPathName + assemblyFileName;
+			String[] objectFileCommands = new String[] { "cmd", "/c", String.format("%s /fo %s \"%s\"", goAsm, objectFileName, assemblyFile) };
+			Process p1 = runtime.exec(objectFileCommands, null, goAsmPath);
+			// Must complete build of object file before it can link
+			p1.waitFor();
+			if (verbose) {
+				System.out.print("\nGoAsm.exe output:");
+				FileIO.processOutput(p1);
+				System.out.println();
+			}
+			
+			// Link kernel libraries
+			String goLink = "GoLink.exe";
+			String executableFile = assemblyPathName + assemblyFileName.replace(".asm", ".exe");
+			String[] linkedFileCommands = new String[] { "cmd", "/c", String.format("%s /console /fo \"%s\" %s kernel32.dll", goLink, executableFile, objectFileName) };
+			Process p2 = runtime.exec(linkedFileCommands, null, goAsmPath);
+			// Allow completion of executable before deleting temporary .obj file
+			p2.waitFor();
+			if (verbose) {
+				System.out.print("\nGoLink.exe output:");
+				FileIO.processOutput(p2);
+				System.out.println();
+			}
+			
+			// Delete temporary .obj file
+			File objectFile = new File(goAsmPath + "/" + objectFileName);
+			if (objectFile.delete()) {
+				System.out.println("Temporary file "+ objectFileName + " has been deleted");
+			}
+			
+			return executableFile;
+		}
+		catch (Exception err) {
+			System.out.println("Failed to compile");
+			return null;
+		}
 	}
 	
 	@Override

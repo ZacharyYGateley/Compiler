@@ -52,6 +52,7 @@ public class Application {
 		TokenStream tokenStream = new TokenStream();
 		
 		// Make sure to close appropriate streams
+		String compiledFileName = null;
 		try {
 			// Break down into tokens 
 			// and populate symbol tree
@@ -79,9 +80,19 @@ public class Application {
 				}
 
 				// Assemble
-				Assembler a = new Assembler(optimizedTree, symbolTable, GoAsm.class, assemblyFile);
-				String output = a.assemble();
-				System.out.println("\n\nGenerated assembly code: \n\n\n" + output);
+				Assembler assembler = new Assembler(optimizedTree, symbolTable, GoAsm.class, assemblyFile);
+				log("\n<!-- Assembler initialized -->\n\n", logFile);
+				assembler.assemble();
+				log("\n<!-- Assembler finished -->\n\n", logFile);
+				if (assemblyFile != null) {
+					assemblyFile.close();
+				}
+				
+				// Compile
+				AssyLanguage language = assembler.getLanguage();
+				log("\n<!-- Compiler initialized -->\n\n", logFile);
+				compiledFileName = language.compile(assemblyFileName, true);
+				log("\n<!-- Compiler finished -->\n\n", logFile);
 			}
 		}
 		finally {
@@ -98,8 +109,10 @@ public class Application {
 				System.out.println("Python translation written to:\n\t" + pythonFileName);
 			}
 			if (assemblyFile != null) {
-				assemblyFile.close();
 				System.out.println("Assembly file written to:\n\t" + assemblyFileName);
+			}
+			if (compiledFileName != null) {
+				System.out.println("Compiled file written to:\n\t" + compiledFileName);
 			}
 		}
 	}

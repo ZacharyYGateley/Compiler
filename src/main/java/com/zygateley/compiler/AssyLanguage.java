@@ -42,13 +42,12 @@ public abstract class AssyLanguage {
 	
 	protected abstract Register assembleCalculation(Node operation) throws Exception;
 	protected abstract void assembleCall(String method) throws Exception;
-	//protected abstract void assembleDeclaration(Variable variable, String value) throws Exception;
-	//protected abstract void assembleDeclaration(Variable variable, Symbol symbol) throws Exception;
+	protected abstract void assembleCodeSection() throws Exception;
 	protected abstract void assembleDeclaration(Variable variable, Register register) throws Exception;
 	protected abstract Register assembleExpression(Node parseTree) throws Exception;
 	protected abstract void assembleFinish() throws Exception;
 	protected abstract Register assembleFooter() throws Exception;
-	protected abstract Register assembleHeader() throws Exception;
+	protected abstract void assembleHeader() throws Exception;
 	protected abstract void assembleHandles() throws Exception;
 	protected abstract String assembleIntegerToString(Register register, Node operand) throws Exception;
 	protected abstract Register assembleOperand(Node operand) throws Exception;
@@ -61,6 +60,7 @@ public abstract class AssyLanguage {
 	protected abstract void assembleTerminal(Node leafNode) throws Exception;
 	protected abstract void assembleFunctions() throws Exception;
 	protected abstract String assembleGlobalString(String name, int byteWidth, String value) throws Exception;
+	protected abstract String compile(String fileName, boolean verbose) throws Exception;
 	protected abstract String getPointer(String globalVariable);
 	
 	

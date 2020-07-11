@@ -1,11 +1,8 @@
 Output to assembly
 	Aliases and pulling/pushing from stack only when necessary
-	assembleGlobalString boolean...
 	On the fly type checker
-
-Elementary OPERATIONs to their respective operations (AND, OR, ADD, etc)
-Elementary LITERALs to their respective literals (BOOLEAN, INTEGER, STRING)
-
+		assembleGlobalString boolean...
+	Scope in lexer and SymbolTable and optimizer
 
 Token
 	Token should be an interface
@@ -23,19 +20,17 @@ Token
 Nodes traversal and node values should be split
 	A la inherit Node
 
-unary ! double parses on expression operand
+unary "!" double parses on expression operand
 
 Language additions
 	Loops
 	Return statements
 	Return type
+	Wait command?
 
 Long term
-	Scope? Ought to come naturally in assembly. In Python... not so much.
 	Type checking for addition - Adding strings - Subtracting strings...? i.e. type checking
 	Token extends BasicToken for grammar selection
 		Can auto-build Token.java based on some grammar input?
 		Combine backend functions into NonTerminal rule declarations? if possible and is clean
 	TokenStream rightIndex should be inclusive?
-	SymbolTable types are a little strange.
-	wait command? on any key press

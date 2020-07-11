@@ -6,7 +6,6 @@ class Symbol {
 	private String name;
 	private final String value;
 	private TypeSystem type;
-	private Node parseTree;
 	
 	private boolean isFunction = false;
 	private ArrayList<TypeSystem> parameters = new ArrayList<>();
@@ -15,13 +14,11 @@ class Symbol {
 		this.name = name;
 		this.value = null;
 		this.type = null;
-		this.parseTree = null;
 	}
 	public Symbol(String value, TypeSystem type) {
 		this.name = null;
 		this.value = value;
 		this.type = type;
-		this.parseTree = null;
 	}
 	
 	public String getName() {
@@ -70,10 +67,6 @@ class Symbol {
 		this.type = type;
 	}
 	
-	public void setParseTree(Node parseTree) {
-		this.parseTree = parseTree;
-	}
-	
 	public void addParameter(TypeSystem type) {
 		this.parameters.add(type);
 	}
@@ -93,12 +86,14 @@ class Symbol {
 		if (this.type == null) {
 			// Variable
 			// Check name only
-			equivalent &= (this.name == name || this.name != null && this.name.equals(name));
+			name = (name == null ? "" : name);
+			equivalent &= (name.equals(this.name));
 		}
 		else {
 			// Literal
 			// Check type and value
-			equivalent &= (this.value == value || this.value != null && this.value.equals(name));
+			value = (value == null ? "" : value);
+			equivalent &= (value.equals(this.value));
 			equivalent &= (this.type == type);
 		}
 		return equivalent;
@@ -112,8 +107,13 @@ class Symbol {
 	 * @param s comparator symbol
 	 * @return boolean equivalent
 	 */
-	public boolean equals(Symbol s) {
-		return this.equals(s.name, s.value, s.type);
+	@Override
+	public boolean equals(Object o) {
+		if (o instanceof Symbol) {
+			Symbol s = (Symbol) o;
+			return this.equals(s.name, s.value, s.type);
+		}
+		return false;
 	}
 	
 	@Override
