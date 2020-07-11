@@ -55,7 +55,7 @@ public enum Element {
 	NOT,
 	
 	// Values
-	VARIABLE, LITERAL;
+	VARIABLE, LITERAL, FALSE, TRUE;
 	
 	public final boolean isTemporary;
 	
@@ -225,14 +225,17 @@ public enum Element {
 					new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, ARGUMENTS, operation)
 					));
 		}
-		reflowBindings.add(new ReflowRelationship(
-				LITERAL,
-				// If condition
-				new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, IF, LITERAL),
-				// Function parameters and arguments
-				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, PARAMETERS, LITERAL),
-				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, ARGUMENTS, LITERAL)
-				));
+		Element[] values = new Element[] { LITERAL, FALSE, TRUE };
+		for (Element valueType : values) {
+			reflowBindings.add(new ReflowRelationship(
+					valueType,
+					// If condition
+					new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, IF, valueType),
+					// Function parameters and arguments
+					new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, PARAMETERS, valueType),
+					new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, ARGUMENTS, valueType)
+					));
+		}
 		/*
 		reflowBindings.add(new ReflowRelationship(
 				BOOLEAN,

@@ -51,7 +51,7 @@ int_to_string_loop:
 	Je > int_to_string_skipsign
 	Cdq						; sign extend into edx
 int_to_string_skipsign:
-	IDiv Ebx				; remaining number to eax
+	IDiv Ebx				; result number to eax
 							; remainder digit in edx
 	Add Edx, 0X30			; convert to ascii digit
 
@@ -63,7 +63,7 @@ int_to_string_skipsign:
 
 	Sub D[Esp], 1			; decrement last character position by 1 byte
 
-	Jmp int_to_string_loop	; iterate
+	Jmp < int_to_string_loop	; iterate
 
 int_to_string_addsign:
 							; make room for sign
@@ -75,6 +75,7 @@ int_to_string_addsign:
 	Je > int_to_string_final
 
 	Mov B[Ebx], 0X2D		; add sign at beg of string
+	Add Ecx, 1				; indicate length of string has increased by 1
 
 int_to_string_final:
 	Add Esp, 8				; last character position, sign character
@@ -84,6 +85,6 @@ int_to_string_final:
 	Add Esp, 12				; Consume parameters
 	Push Ebx				; Put return address back into the stack
 
-	Mov Eax, 1 				; success
+	Mov Eax, Ecx			; actual length
 
 	Ret

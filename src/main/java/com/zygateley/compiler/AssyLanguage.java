@@ -31,12 +31,15 @@ public abstract class AssyLanguage {
 	protected Scope currentScope;
 	protected HashMap<Symbol, String> globalSymbolMap = new HashMap<>();
 	protected int globalVariableCount = 0;
-	
-	// Language-specific
-	protected boolean handlesDeclared = false;
 	protected final String inputHandle = "inputHandle";
 	protected final String outputHandle = "outputHandle";
 	protected final String temporaryGlobal = "tempGlobal";
+	protected final int temporaryGlobalLength = 256;
+	
+	// Language-specific
+	protected boolean handlesDeclared = false;
+	protected int maxIntegerDigits = 11;
+	
 	protected abstract Register assembleCalculation(Node operation) throws Exception;
 	protected abstract void assembleCall(String method) throws Exception;
 	//protected abstract void assembleDeclaration(Variable variable, String value) throws Exception;
@@ -47,8 +50,9 @@ public abstract class AssyLanguage {
 	protected abstract Register assembleFooter() throws Exception;
 	protected abstract Register assembleHeader() throws Exception;
 	protected abstract void assembleHandles() throws Exception;
+	protected abstract String assembleIntegerToString(Register register, Node operand) throws Exception;
 	protected abstract Register assembleOperand(Node operand) throws Exception;
-	protected abstract void assembleOutput(Register register) throws Exception;
+	protected abstract void assembleOutput(String dataLocation) throws Exception;
 	protected abstract Register[] assemblePreCall() throws Exception;
 	protected abstract void assemblePostCall(Register[] registers) throws Exception;
 	protected abstract void assemblePush(Register fromRegister) throws Exception;
@@ -91,16 +95,25 @@ public abstract class AssyLanguage {
 			operand = pn.getLastChild();
 			operandRegister = this.assembleOperand(operand);
 			this.assembleDeclaration(v0, operandRegister);
+			operandRegister.free();
 			
 			break;
 		case OUTPUT:
 			if (!handlesDeclared) {
 				this.assembleHandles();
+				handlesDeclared = true;
 			}
 			
 			operand = pn.getLastChild();
 			operandRegister = this.assembleOperand(operand);
-			this.assembleOutput(operandRegister);
+			if (TypeSystem.INTEGER.equals(operand.getType())) {
+				String address = this.assembleIntegerToString(operandRegister, operand);
+				this.assembleOutput(address);
+			}
+			else {
+				this.assembleOutput(operandRegister.toString());
+			}
+			operandRegister.free();
 			
 			break;
 		default:
@@ -126,6 +139,7 @@ public abstract class AssyLanguage {
 			int byteWidth = 0;
 			String prefix = "";
 			TypeSystem type = symbol.getType();
+			String value = symbol.getValue();
 			switch (type) {
 			case BOOLEAN:
 				byteWidth = 1;
@@ -134,6 +148,7 @@ public abstract class AssyLanguage {
 			case STRING:
 				byteWidth = 1;
 				prefix = "str";
+				value = "\"" + StringUtils.unescapeAssemblyString(value.substring(1, value.length() - 1)) + "\"";
 				break;
 			case INTEGER:
 				byteWidth = 4;
@@ -142,8 +157,6 @@ public abstract class AssyLanguage {
 			default:
 				break;
 			}
-			
-			String value = symbol.getValue();
 			
 			// Then add it to the string pool
 			if (byteWidth > 0 && !prefix.isBlank()) {
@@ -163,7 +176,7 @@ public abstract class AssyLanguage {
 		assembleGlobalString(this.outputHandle, 4, "0");
 		
 		// Locate for output from API
-		assembleGlobalString(this.temporaryGlobal, 4, "0");
+		assembleGlobalString(this.temporaryGlobal, this.temporaryGlobalLength, "0");
 	}
 	
 	/**
@@ -221,7 +234,9 @@ public abstract class AssyLanguage {
 			if (leastUsed.variable != null) {
 				this.language.currentScope.pushVariable(leastUsed, leastUsed.variable);
 			}
-			// Register is now available
+			
+			leastUsed.allocate();
+			// Register is now reserved
 			
 			return leastUsed;
 		}
@@ -233,7 +248,7 @@ public abstract class AssyLanguage {
 		 * @throws Exception
 		 */
 		public void free(Register register) {
-			register.setAvailability(true);
+			register.free();
 		}
 
 		
@@ -279,15 +294,19 @@ public abstract class AssyLanguage {
 			this.LRU = LRU;
 		}
 		
+		public void allocate() {
+			this.isAvailable = false;
+		}
+		
+		public void free() {
+			this.isAvailable = true;
+		}
+		
 		/**
 		 * Move register to most-recently-used
 		 */
 		public void promote() {
 			LRU.promote(this);
-		}
-		
-		public void setAvailability(boolean isAvailable) {
-			this.isAvailable = isAvailable;
 		}
 		
 		@Override
@@ -360,5 +379,99 @@ public abstract class AssyLanguage {
 			}
 			register = null;
 		}
+	}
+}
+
+class StringUtils {
+	public static String unescapeAssemblyString(String input) {
+		if (!(input instanceof String)) {
+			return "";
+		}
+		return input
+				.replaceAll("\\\"",  "\",'\"',\"")
+				.replaceAll("\\\\n", "\",10,\"")
+				.replaceAll("\\\\f",  "\",12,\"")
+				.replaceAll("\\\\r",  "\",13,\"")
+				.replaceAll("\"\",", "")
+				.replaceAll(",\"\"", "");
+	}
+	
+/**
+ * Performs single unescape on all escape characters
+ * 
+ * Courtesy 
+ * https://gist.github.com/uklimaschewski
+ * Found at 
+ * https://gist.github.com/uklimaschewski/6741769
+ * 
+ */
+	public static String unescapeJavaString(String st) {
+	    StringBuilder sb = new StringBuilder(st.length());
+
+	    for (int i = 0; i < st.length(); i++) {
+	        char ch = st.charAt(i);
+	        if (ch == '\\') {
+	            char nextChar = (i == st.length() - 1) ? '\\' : st
+	                    .charAt(i + 1);
+	            // Octal escape?
+	            if (nextChar >= '0' && nextChar <= '7') {
+	                String code = "" + nextChar;
+	                i++;
+	                if ((i < st.length() - 1) && st.charAt(i + 1) >= '0'
+	                        && st.charAt(i + 1) <= '7') {
+	                    code += st.charAt(i + 1);
+	                    i++;
+	                    if ((i < st.length() - 1) && st.charAt(i + 1) >= '0'
+	                            && st.charAt(i + 1) <= '7') {
+	                        code += st.charAt(i + 1);
+	                        i++;
+	                    }
+	                }
+	                sb.append((char) Integer.parseInt(code, 8));
+	                continue;
+	            }
+	            switch (nextChar) {
+	            case '\\':
+	                ch = '\\';
+	                break;
+	            case 'b':
+	                ch = '\b';
+	                break;
+	            case 'f':
+	                ch = '\f';
+	                break;
+	            case 'n':
+	                ch = '\n';
+	                break;
+	            case 'r':
+	                ch = '\r';
+	                break;
+	            case 't':
+	                ch = '\t';
+	                break;
+	            case '\"':
+	                ch = '\"';
+	                break;
+	            case '\'':
+	                ch = '\'';
+	                break;
+	            // Hex Unicode: u????
+	            case 'u':
+	                if (i >= st.length() - 5) {
+	                    ch = 'u';
+	                    break;
+	                }
+	                int code = Integer.parseInt(
+	                        "" + st.charAt(i + 2) + st.charAt(i + 3)
+	                                + st.charAt(i + 4) + st.charAt(i + 5), 16);
+	                sb.append(Character.toChars(code));
+	                i += 5;
+	                continue;
+	            }
+	            i++;
+	        }
+	        sb.append(ch);
+	    }
+	    return sb.toString();
 	}
 }

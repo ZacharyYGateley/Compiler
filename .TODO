@@ -1,9 +1,7 @@
 Output to assembly
 	Aliases and pulling/pushing from stack only when necessary
 	assembleGlobalString boolean...
-	Have to type check
-		Maybe after optimizer
-	Return and return types
+	On the fly type checker
 
 Elementary OPERATIONs to their respective operations (AND, OR, ADD, etc)
 Elementary LITERALs to their respective literals (BOOLEAN, INTEGER, STRING)
@@ -29,6 +27,8 @@ unary ! double parses on expression operand
 
 Language additions
 	Loops
+	Return statements
+	Return type
 
 Long term
 	Scope? Ought to come naturally in assembly. In Python... not so much.

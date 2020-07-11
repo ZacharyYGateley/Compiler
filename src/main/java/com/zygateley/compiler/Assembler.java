@@ -47,6 +47,7 @@ public class Assembler {
 		private final StringBuilder stringBuilder;
 		private final FileWriter fileWriter;
 		private int currentIndent;
+		private boolean newLine = true;
 		
 		public Writer() {
 			this(null);
@@ -58,15 +59,24 @@ public class Assembler {
 		}
 		
 		public void print(String s) throws Exception {
+			// Indent as necessary
+			if (newLine) {
+				final String indent = "\t";
+				for (int i = 0; i < currentIndent; i++) {
+					stringBuilder.append(indent);
+					if (fileWriter instanceof FileWriter) {
+						fileWriter.append(indent);
+					}
+				}
+				newLine = false;
+			}
+			
 			stringBuilder.append(s);
 			if (fileWriter instanceof FileWriter) {
 				fileWriter.append(s);
 			}
 		}
 		public void print(String s, Object... formatters) throws Exception {
-			// Indent as necessary
-			for (int i = 0; i < currentIndent; i++) stringBuilder.append("    ");
-			
 			// Format strings as necessary
 			if (formatters.length > 0) {
 				String outputString = String.format(s, (Object[]) formatters);
@@ -93,6 +103,7 @@ public class Assembler {
 		public void println(String s, Object... formatters) throws Exception {
 			print(s, formatters);
 			print("\r\n");
+			newLine = true;
 		}
 		
 		public void indent() {

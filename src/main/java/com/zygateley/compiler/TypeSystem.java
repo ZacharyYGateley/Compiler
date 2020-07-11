@@ -137,6 +137,8 @@ public enum TypeSystem {
 			
 			syntaxTree.setType(BOOLEAN);
 			break;
+		case FALSE:
+		case TRUE:
 		case LITERAL:
 			syntaxTree.setType(syntaxTree.getToken().type);
 			break;

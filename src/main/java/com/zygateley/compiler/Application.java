@@ -30,30 +30,6 @@ public class Application {
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws Exception {
-		// TESTING
-		/*
-		String myString =
-				"function crazyMath (a, b, c, d, e) {" 
-				+ "echo a * (b * c) - d * e;\n" 
-				+ "}"
-				+ "input abc;\n"
-				+ "rob = \"rob\";\n"
-				+ "if (abc == rob) {"
-				+ "  echo \"abc is bigger than rob\";"
-				+ "  echo \"My goodness\\\\\";"
-				+ "  echo \"The man with the plan is yo mamma\";"
-				+ "}"
-				+ "else {"
-				+ "  echo \"abc is less than rob\";"
-				+ "  echo \"Here's some crazy math for you: \";"
-				+ "  crazyMath(1, 2, 3, 4, 5);"
-				+ "  echo \"Here's some normal math for you: \";"
-				+ "  echo -((33 + -(-22 + (11 * 25) - 11 / 3)) * 2 - -1);"
-				+ "}"
-				;
-				*/
-		//PushbackReader sr = new PushbackReader(new StringReader("aj();"));
-		
 		String sourceFile = FileIO.getAbsolutePath("Examples/Example0.fnc");
 		PushbackReader pushbackReader = FileIO.getReader(sourceFile);
 		

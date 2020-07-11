@@ -266,8 +266,8 @@ enum Terminal implements Token {
 	COMMENT		(Token.COMMENT, Element.NULL, "", ("^/(?:/.*)?$"), ("//[^\0]*(?:\r|\n|\f)?")),
 	
 	// PRIMITIVES
-	TRUE		(Token.TRUE, TypeSystem.BOOLEAN, Element.LITERAL, "true"),
-	FALSE		(Token.FALSE, TypeSystem.BOOLEAN, Element.LITERAL, "false"),
+	TRUE		(Token.TRUE, TypeSystem.BOOLEAN, Element.TRUE, "", ("^[tT](?:[rR](?:[uU](?:[eE])?)?)?$")),
+	FALSE		(Token.FALSE, TypeSystem.BOOLEAN, Element.FALSE, "", ("^[fF](?:[aA](?:[lL](?:[sS](?:[eE])?)?)?)?$")),
 	INT 		(Token.INT, TypeSystem.INTEGER, Element.LITERAL, "", ("^\\d*")),
 	STRING      (Token.STRING, TypeSystem.STRING, Element.LITERAL, "", ("^\".*"), ("^\"(?:(?:.*(?:[^\\\\]))?(?:\\\\{2})*)?\"$")),
 	
