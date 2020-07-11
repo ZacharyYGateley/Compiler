@@ -1,5 +1,6 @@
 package com.zygateley.compiler;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -34,6 +35,9 @@ public class Node implements Iterable<Node> {
 	
 	// Assembly element type
 	private final Element basicElement;
+	
+	// Type System type
+	private TypeSystem type;
 	
 	// CFG and Symbol
 	// NonTerminals
@@ -140,6 +144,9 @@ public class Node implements Iterable<Node> {
 	public Element getElementType() {
 		return this.basicElement;
 	}
+	public TypeSystem getType() {
+		return this.type;
+	}
 	public NonTerminal getRule() {
 		return this.nonTerminal;
 	}
@@ -154,6 +161,10 @@ public class Node implements Iterable<Node> {
 	}
 	public boolean isNegated() {
 		return this.isNegated;
+	}
+	
+	public void setType(TypeSystem newType) {
+		this.type = newType;
 	}
 	public void setNegated(boolean negated) {
 		this.isNegated = negated;
@@ -332,6 +343,95 @@ public class Node implements Iterable<Node> {
 		return this;
 	}
 	
+	/**
+	 * Output the XML structure of this tree in indented format. <br />
+	 * Depends on Optimizer.depth to be accurate.
+	 * 
+	 * @param optimizedNode node corresponding to root of subtree in optimized tree 
+	 * @param showCFG true: show Terminal or NonTerminal which correspond to node
+	 * @throws IOException
+	 */
+	public String asXMLTree(int depth, boolean showCFG) throws IOException {
+		StringBuilder output = new StringBuilder();
+		for (Node child : this) {
+			if (child.getChildCount() == 0) {
+				// Leave node
+				output.append(child.asXMLNode(depth, showCFG));
+			}
+			else {
+				// Open branch
+				output.append(child.asXMLNode(depth, true, showCFG));
+				depth++;
+				output.append(child.asXMLTree(depth, showCFG));
+				depth--;
+				// Close branch
+				output.append(child.asXMLNode(depth, false, showCFG));
+			}
+		}
+		return output.toString();
+	}
+	
+	public String asXMLNode(int depth, boolean showCFG) throws IOException {
+		// Terminal node
+		return this.asXMLNode(depth, true, true, showCFG);
+	}
+	public String asXMLNode(int depth, boolean openNode, boolean showCFG) throws IOException {
+		// NonTerminal node
+		return this.asXMLNode(depth, openNode, false, showCFG);
+	}
+	public String asXMLNode(int depth, boolean openNode, boolean noChildren, boolean showCFG) throws IOException {
+		Element element = this.basicElement;
+		if (!openNode) {
+			return this.asXMLNode("</" + element + ">", depth);
+		}
+		
+		
+		/*
+		 * 
+		if (Element.OPERATION.equals(element)) {
+			// Show specific operation
+			Terminal terminal = this.terminal;
+			if (terminal != null && terminal.basicElement != null) {
+				output.append(Node.getParameterString("operation", terminal.basicElement + ""));
+			}
+		}
+		 */
+		
+		StringBuilder output = new StringBuilder();
+		output.append("<" + basicElement);
+		if (showCFG) {
+			String tokenName = "";
+			String tokenValue = "";
+			NonTerminal nonTerminal = this.nonTerminal;
+			if (nonTerminal != null) {
+				tokenName = "NonTerminal";
+				tokenValue = nonTerminal + "";
+			}
+			Terminal terminal = this.terminal;
+			if (terminal != null) {
+				tokenName = "Terminal";
+				tokenValue = terminal + "";
+			}
+			if (!tokenName.isBlank()) {
+				output.append(Node.getParameterString(tokenName, tokenValue));
+			}
+		}
+		output.append(this.getStringAllParameters());
+		if (noChildren) {
+			output.append(" /");
+		}
+		output.append(">");
+		return this.asXMLNode(output.toString(), depth);
+	}
+		
+	public String asXMLNode(String message, int depth) throws IOException {
+		StringBuilder output = new StringBuilder();
+		for (int i = 0; i < depth; i++) output.append("  ");
+		output.append(message);
+		output.append("\n");
+		return output.toString();
+	}
+	
 
 	
 	@Override
@@ -380,6 +480,8 @@ public class Node implements Iterable<Node> {
 	}
 	public String getStringAllParameters() {
 		StringBuilder output = new StringBuilder();
+		TypeSystem type = this.type;
+		if (type != null) output.append(getParameterString("type", type.toString()));
 		if (this.isNegated) {
 			output.append(getParameterString("negated", "true"));
 		}
@@ -389,8 +491,6 @@ public class Node implements Iterable<Node> {
 				if (name != null) output.append(getParameterString("name", name));
 				String value = symbol.getValue();
 				if (value != null) output.append(getParameterString("value", value));
-				Symbol.Type type = symbol.getType();
-				if (type != null) output.append(getParameterString("type", type.toString()));
 			}
 			else if (this.value != null && !this.value.isBlank()) {
 				output.append(getParameterString("value", this.value));

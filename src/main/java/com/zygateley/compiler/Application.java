@@ -3,6 +3,16 @@ package com.zygateley.compiler;
 import java.io.*;
 
 public class Application {
+
+
+	private static void log(String message, FileWriter logFile) throws IOException {
+		message += "\n";
+		System.out.print(message);
+		if (logFile != null) {
+			logFile.append(message);
+		}
+	}
+	
 	/**
 	 * main
 	 * 
@@ -20,30 +30,6 @@ public class Application {
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws Exception {
-		// TESTING
-		/*
-		String myString =
-				"function crazyMath (a, b, c, d, e) {" 
-				+ "echo a * (b * c) - d * e;\n" 
-				+ "}"
-				+ "input abc;\n"
-				+ "rob = \"rob\";\n"
-				+ "if (abc == rob) {"
-				+ "  echo \"abc is bigger than rob\";"
-				+ "  echo \"My goodness\\\\\";"
-				+ "  echo \"The man with the plan is yo mamma\";"
-				+ "}"
-				+ "else {"
-				+ "  echo \"abc is less than rob\";"
-				+ "  echo \"Here's some crazy math for you: \";"
-				+ "  crazyMath(1, 2, 3, 4, 5);"
-				+ "  echo \"Here's some normal math for you: \";"
-				+ "  echo -((33 + -(-22 + (11 * 25) - 11 / 3)) * 2 - -1);"
-				+ "}"
-				;
-				*/
-		//PushbackReader sr = new PushbackReader(new StringReader("aj();"));
-		
 		String sourceFile = FileIO.getAbsolutePath("Examples/Example0.fnc");
 		PushbackReader pushbackReader = FileIO.getReader(sourceFile);
 		
@@ -57,11 +43,16 @@ public class Application {
 		FileWriter pythonFile = FileIO.getWriter(pythonFileName, true);
 		// Will return null if file exists and user chooses not to override
 		
+		String assemblyFileName = baseName + ".asm";
+		FileWriter assemblyFile = FileIO.getWriter(assemblyFileName, true);
+		// Will return null if file exists and user chooses not to override
+		
 		// Objects passed to Parser
 		SymbolTable symbolTable = new SymbolTable();
 		TokenStream tokenStream = new TokenStream();
 		
 		// Make sure to close appropriate streams
+		String compiledFileName = null;
 		try {
 			// Break down into tokens 
 			// and populate symbol tree
@@ -76,16 +67,32 @@ public class Application {
 				Optimizer optimizer = new Optimizer(logFile);
 				Node optimizedTree = optimizer.optimize(syntaxTree, true);
 				
+				// Type check and set types where applicable
+				TypeSystem.typeAssignAndCheck(optimizedTree);
+				log("\n<!-- Type checker initialized -->\n\n", logFile);
+				log(optimizedTree.asXMLTree(0, false), logFile);
+				log("\n<!-- Type checker finished -->\n\n", logFile);
+				
 				// Translate into Python
 				if (pythonFile != null) {
 					PythonTranslator translator = new PythonTranslator(optimizedTree, pythonFile);
 					translator.toPython();
 				}
-			}
-		
-			if (pythonFile != null) {
-				pythonFile.close();
-				System.out.println("Python translation written to:\n\t" + pythonFileName);
+
+				// Assemble
+				Assembler assembler = new Assembler(optimizedTree, symbolTable, GoAsm.class, assemblyFile);
+				log("\n<!-- Assembler initialized -->\n\n", logFile);
+				assembler.assemble();
+				log("\n<!-- Assembler finished -->\n\n", logFile);
+				if (assemblyFile != null) {
+					assemblyFile.close();
+				}
+				
+				// Compile
+				AssyLanguage language = assembler.getLanguage();
+				log("\n<!-- Compiler initialized -->\n\n", logFile);
+				compiledFileName = language.compile(assemblyFileName, true);
+				log("\n<!-- Compiler finished -->\n\n", logFile);
 			}
 		}
 		finally {
@@ -97,11 +104,16 @@ public class Application {
 				logFile.close();
 				System.out.println("Compilation log written to:\n\t" + logFileName);
 			}
+			if (pythonFile != null) {
+				pythonFile.close();
+				System.out.println("Python translation written to:\n\t" + pythonFileName);
+			}
+			if (assemblyFile != null) {
+				System.out.println("Assembly file written to:\n\t" + assemblyFileName);
+			}
+			if (compiledFileName != null) {
+				System.out.println("Compiled file written to:\n\t" + compiledFileName);
+			}
 		}
-		
-		//Assembler a = new Assembler(syntaxTree, st);
-		//output = a.assemble();
-		//System.out.println("\n\nGenerated assembly code: \n\n\n" + output);
 	}
-
 }

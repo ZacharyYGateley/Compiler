@@ -277,10 +277,10 @@ public class Lexer {
 			// Variable name
 			symbol = symbolTable.insert(newToken);
 		}
-		else if (thisRule.symbolType == Symbol.Type.STRING) { 
-			symbol = symbolTable.insert(newToken, thisRule.symbolType);
+		else if (thisRule.type == TypeSystem.STRING) { 
+			symbol = symbolTable.insert(newToken, thisRule.type);
 		}
-		else if (thisRule.symbolType != null) {
+		else if (thisRule.type != null) {
 			// All other literals
 			value = newToken;
 		}

@@ -50,12 +50,12 @@ public enum Element {
 	// Arithmetic
 	ADD, SUB, MULT, INTDIV,
 	// Comparison
-	EQEQ, NEQ, LT, LTEQ, GT, GTEQ, 
+	EQEQ, NEQ, LT, LTEQ, GT, GTEQ,
 	// Unary 
 	NOT,
 	
 	// Values
-	VARIABLE, LITERAL;
+	VARIABLE, LITERAL, FALSE, TRUE;
 	
 	public final boolean isTemporary;
 	
@@ -214,22 +214,54 @@ public enum Element {
 				// Else code
 				new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, IF, IF)
 				));
+		Element[] operations = new Element[] { AND, OR, ADD, SUB, MULT, INTDIV, EQEQ, NEQ, LT, GT, LTEQ, GTEQ, NOT };
+		for (Element operation : operations) {
+			reflowBindings.add(new ReflowRelationship(
+					operation,
+					// If condition
+					new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, IF, operation),
+					// Function parameters and arguments
+					new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, PARAMETERS, operation),
+					new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, ARGUMENTS, operation)
+					));
+		}
+		Element[] values = new Element[] { LITERAL, FALSE, TRUE };
+		for (Element valueType : values) {
+			reflowBindings.add(new ReflowRelationship(
+					valueType,
+					// If condition
+					new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, IF, valueType),
+					// Function parameters and arguments
+					new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, PARAMETERS, valueType),
+					new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, ARGUMENTS, valueType)
+					));
+		}
+		/*
 		reflowBindings.add(new ReflowRelationship(
-				OPERATION,
+				BOOLEAN,
 				// If condition
-				new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, IF, OPERATION),
+				new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, IF, BOOLEAN),
 				// Function parameters and arguments
-				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, PARAMETERS, OPERATION),
-				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, ARGUMENTS, OPERATION)
+				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, PARAMETERS, BOOLEAN),
+				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, ARGUMENTS, BOOLEAN)
 				));
 		reflowBindings.add(new ReflowRelationship(
-				LITERAL,
+				INTEGER,
 				// If condition
-				new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, IF, LITERAL),
+				new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, IF, INTEGER),
 				// Function parameters and arguments
-				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, PARAMETERS, LITERAL),
-				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, ARGUMENTS, LITERAL)
+				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, PARAMETERS, INTEGER),
+				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, ARGUMENTS, INTEGER)
 				));
+		reflowBindings.add(new ReflowRelationship(
+				STRING,
+				// If condition
+				new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, IF, STRING),
+				// Function parameters and arguments
+				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, PARAMETERS, STRING),
+				new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, ARGUMENTS, STRING)
+				));
+		*/
 		reflowBindings.add(new ReflowRelationship(
 				SCOPE,
 				// As code corresponding to condition==true
