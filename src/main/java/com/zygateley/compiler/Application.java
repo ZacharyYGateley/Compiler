@@ -95,6 +95,9 @@ public class Application {
 				log("\n<!-- Compiler finished -->\n\n", logFile);
 			}
 		}
+		catch (Exception err) {
+			throw new Exception(err);
+		}
 		finally {
 			// Always close pushbackReader
 			// and logFile

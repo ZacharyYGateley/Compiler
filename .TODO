@@ -1,26 +1,17 @@
+Bugs
+	unary "!" double parses on expression operand
+
 Output to assembly
 	Aliases and pulling/pushing from stack only when necessary
 	On the fly type checker
 		assembleGlobalString boolean...
+		Type checking for addition - Adding strings - Subtracting strings...? i.e. type checking
 	Scope in lexer and SymbolTable and optimizer
-
-Token
-	Token should be an interface
-	All terminals and non-terminals should be added once as enums
-	All rules should be added after static initialization
-
-	NonTerminal constructors should take CFGPattern and PrecedencePattern as parameters  
-		Can make firstTerminalsAndPatterns and follow do the work of the 	NonTerminal constructor?
-		Make Token prettier :'-(
-	Should be Token, not Terminal or NonTerminal:
-		element type
-		Terminal only:
-			exactString, element type, etc
 
 Nodes traversal and node values should be split
 	A la inherit Node
+	Or at least non-traversal Node properties should be abstracted more
 
-unary "!" double parses on expression operand
 
 Language additions
 	Loops
@@ -28,9 +19,48 @@ Language additions
 	Return type
 	Wait command?
 
+Arbitrary grammar selection
+	Arguably, this should interfere minimally with back-end development
+	since optimizedTree is based on Element/Constructs, which will 
+	remain essentially unchanged. Thus, this can wait until after basic back-end
+	development.
+
+	abstract SrcLanguage
+		Terminals <==> Token
+			exact String
+			start regex
+			full regex
+			TypeSystem type
+			Construct construct
+
+		# Declare first
+		NonTerminals
+
+		# Then apply CFG rules
+		CFG Rules
+
+		Reflow Rules
+
+	"Elements" -> "Constructs"
+		Reflow rules -> SrcLanguage
+		Class Constructs should have very little
+			except maybe a swatch of documentation on construct expectations
+
+	# I don't think this applies any more
+	# Keeping for now for reference
+	Token
+		Token should be an interface
+		All terminals and non-terminals should be added once as enums
+		All rules should be added after static initialization
+
+		NonTerminal constructors should take CFGPattern and PrecedencePattern as parameters  
+			Can make firstTerminalsAndPatterns and follow do the work of the NonTerminal constructor?
+			Make Token prettier :'-(
+		Should be Token, not Terminal or NonTerminal:
+			element type
+			Terminal only:
+				exactString, element type, etc
+
+
 Long term
-	Type checking for addition - Adding strings - Subtracting strings...? i.e. type checking
-	Token extends BasicToken for grammar selection
-		Can auto-build Token.java based on some grammar input?
-		Combine backend functions into NonTerminal rule declarations? if possible and is clean
-	TokenStream rightIndex should be inclusive?
+	TokenStream rightIndex should be inclusive? I didn't forsee right-to-left rules at the time of development.
