@@ -42,6 +42,7 @@ public abstract class AssyLanguage {
 	
 	protected abstract Register assembleCalculation(Node operation) throws Exception;
 	protected abstract void assembleCall(String method) throws Exception;
+	protected abstract void assembleClearRegister(Register register) throws Exception;
 	protected abstract void assembleCodeSection() throws Exception;
 	protected abstract void assembleDeclaration(Variable variable, Register register) throws Exception;
 	protected abstract Register assembleExpression(Node parseTree) throws Exception;
@@ -69,6 +70,7 @@ public abstract class AssyLanguage {
 		this.symbolTable = symbolTable;
 		this.registry = new Registry(this, tempRegisters);
 		this.globalScope = new Scope(this, null);
+		this.currentScope = this.globalScope;
 	}
 	
 	public void assembleNode(Node pn) throws Exception {
@@ -88,14 +90,18 @@ public abstract class AssyLanguage {
 			return;
 		case VARDEF:
 			symbol = pn.getFirstChild().getSymbol();
+			// Allocate a zero register
 			Register r0 = this.registry.allocate();
-			// Variable linked to register and to symbol
+			// Create variable
+			// Allocates stack space
 			Variable v0 = this.currentScope.declareVariable(r0, symbol);
 			
 			operand = pn.getLastChild();
 			operandRegister = this.assembleOperand(operand);
 			this.assembleDeclaration(v0, operandRegister);
 			operandRegister.free();
+			
+			r0.free();
 			
 			break;
 		case OUTPUT:
@@ -104,9 +110,18 @@ public abstract class AssyLanguage {
 				handlesDeclared = true;
 			}
 			
-			operand = pn.getLastChild();
+			operand = pn.getLastChild();			
 			operandRegister = this.assembleOperand(operand);
-			if (TypeSystem.INTEGER.equals(operand.getType())) {
+			TypeSystem type = operand.getType();
+			symbol = operand.getSymbol();
+			if (symbol != null) {
+				TypeSystem symbolType = symbol.getType();
+				if (symbolType != null) {
+					// Symbol trumps Node
+					type = symbolType;
+				}
+			}
+			if (TypeSystem.INTEGER.equals(type)) {
 				String address = this.assembleIntegerToString(operandRegister, operand);
 				this.assembleOutput(address);
 			}
@@ -117,8 +132,10 @@ public abstract class AssyLanguage {
 			
 			break;
 		default:
+			io.println("; Instruction skipped (" + construct + ")");
 			break;
 		}
+		io.println();
 		
 		// Iterate
 		for (Node child : pn) {
@@ -140,6 +157,10 @@ public abstract class AssyLanguage {
 			String prefix = "";
 			TypeSystem type = symbol.getType();
 			String value = symbol.getValue();
+			if (type == null || value == null) {
+				continue;
+			}
+			
 			switch (type) {
 			case BOOLEAN:
 				byteWidth = 1;
@@ -235,8 +256,11 @@ public abstract class AssyLanguage {
 				this.language.currentScope.pushVariable(leastUsed, leastUsed.variable);
 			}
 			
+			// Reserve register
 			leastUsed.allocate();
-			// Register is now reserved
+			
+			// Clear register
+			this.language.assembleClearRegister(leastUsed);
 			
 			return leastUsed;
 		}
@@ -300,6 +324,9 @@ public abstract class AssyLanguage {
 		
 		public void free() {
 			this.isAvailable = true;
+			if (this.variable != null) {
+				this.variable.unlinkRegister();
+			}
 		}
 		
 		/**
@@ -334,6 +361,7 @@ public abstract class AssyLanguage {
 		
 		public Variable declareVariable(Register register, Symbol symbol) throws Exception {
 			Variable variable = new Variable(symbol);
+			variable.linkRegister(register);
 			this.pushVariable(register, variable);
 			return variable;
 		}
@@ -348,25 +376,20 @@ public abstract class AssyLanguage {
 		}
 		
 		public void pushVariable(Register register, Variable variable) throws Exception {
+			this.language.io.println("; Declare new variable " + variable.symbol);
 			this.language.assemblePush(register);
+			variable.stackIndex = stack.size();
 			stack.push(variable);
 		}
 	}
 	
 	protected static class Variable {
-		public Register register;
+		public Register register = null;
 		public final Symbol symbol;
-		public int stackIndex;
+		public int stackIndex = -1;
 		
-		public Variable() {
-			register = null;
-			symbol = null;
-			stackIndex = -1;
-		}
 		public Variable(Symbol s) {
-			register = null;
 			symbol = s;
-			stackIndex = -1;
 		}
 		
 		public void linkRegister(Register r) {

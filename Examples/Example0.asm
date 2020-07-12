@@ -11,161 +11,262 @@ Data Section
 
 Code Section
 start:
+	; Instruction skipped (SCOPE)
+	
+	; Instruction skipped (SCOPE)
+	
+	; Instruction skipped (IF)
+	
+	; Instruction skipped (TRUE)
+	
+	; Instruction skipped (SCOPE)
+	
+	Mov Ebx, 0				; Clear register for new usage
+	; Declare new variable b
+	Push Ebx
+	Mov Ecx, 0				; Clear register for new usage
+	Mov Eax, 4D
+	Mov Ecx, -100D				; assemble operand LITERAL
+	Mov [Esp + 0], Ecx			; Store value to variable
+	
+	; Instruction skipped (VARIABLE)
+	
+	; Instruction skipped (LITERAL)
+	
+	
+	; Get input handle
 	Push -10D
 	Call GetStdHandle
-	Mov [inputHandle], Eax		; Get input handle
+	Mov [inputHandle], Eax		; Save input handle
 	
+	; Get output handle
 	Push -11D
 	Call GetStdHandle
-	Mov [outputHandle], Eax		; Get output handle
+	Mov [outputHandle], Eax		; Save output handle
 	
-	Mov Eax, 4D
-	Mov Ebx, -100D				; assemble operand INTEGER
 	
-	Push Ebx
-	Push Ebx
+	Mov Edx, 0				; Clear register for new usage
+	Mov Eax, 1D
+	Mov Edx, [Esp + 0]				; assemble operand VARIABLE
+	; Caller save registers
+	Push Edx
+	
+	; Caller save registers
+	Push Edx
+	
 	Push 256
 	Push Addr tempGlobal
 	Call clear_global_string
-	Pop Ebx
-	Push 11D
-	Push Addr tempGlobal
-	Push Ebx
-	Call int_to_string
-	Mov Eax, Addr tempGlobal
-	Add Eax, 11D
-	Sub Eax, 4D   				; starting address of integer string
-	Pop Ebx
-	Mov Ebx, Eax 			; stored in allocated register
-	Mov Eax, 4D				; length of string
-	
-	Push Ebx
-	Push 0
-	Push Addr tempGlobal
-	Push Eax
-	Push Ebx
-	Push [outputHandle]
-	Call WriteConsoleA			; output value
-	
-	Pop Ebx
-	Mov Eax, 3D
-	Mov Ecx, Addr str0				; assemble operand STRING
-	
-	Push Ecx
-	Push 0
-	Push Addr tempGlobal
-	Push Eax
-	Push Ecx
-	Push [outputHandle]
-	Call WriteConsoleA			; output value
-	
-	Pop Ecx
-	Mov Eax, 4D
-	Mov Edx, 4D				; assemble operand INTEGER
-	
-	Push Edx
-	Push Edx
-	Push 256
-	Push Addr tempGlobal
-	Call clear_global_string
+	; Caller restore registers
 	Pop Edx
+	
 	Push 11D
 	Push Addr tempGlobal
 	Push Edx
 	Call int_to_string
-	Mov Eax, Addr tempGlobal
-	Add Eax, 11D
-	Sub Eax, 1D   				; starting address of integer string
+	; Caller restore registers
 	Pop Edx
-	Mov Edx, Eax 			; stored in allocated register
-	Mov Eax, 1D				; length of string
 	
+	Mov Edx, Eax
+	; invert actual length
+	Not Edx
+	Add Edx, 1D
+	; add total available number of digits
+	Add Edx, 11D  			; positive offset from string pointer at which non-zero values start
+	Add Edx, Addr tempGlobal
+	; Caller save registers
 	Push Edx
+	
 	Push 0
 	Push Addr tempGlobal
 	Push Eax
 	Push Edx
 	Push [outputHandle]
 	Call WriteConsoleA			; output value
-	
+	; Caller restore registers
 	Pop Edx
-	Mov Eax, 3D
-	Mov Esi, Addr str1				; assemble operand STRING
 	
+	
+	; Instruction skipped (VARIABLE)
+	
+	Mov Esi, 0				; Clear register for new usage
+	Mov Eax, 3D
+	Mov Esi, Addr str0				; assemble operand LITERAL
+	; Caller save registers
 	Push Esi
+	
 	Push 0
 	Push Addr tempGlobal
 	Push Eax
 	Push Esi
 	Push [outputHandle]
 	Call WriteConsoleA			; output value
-	
+	; Caller restore registers
 	Pop Esi
-	Mov Eax, 4D
-	Mov Edi, -96D				; assemble operand INTEGER
 	
+	
+	; Instruction skipped (LITERAL)
+	
+	Mov Edi, 0				; Clear register for new usage
+	Mov Eax, 4D
+	Mov Edi, 4D				; assemble operand LITERAL
+	; Caller save registers
 	Push Edi
+	
+	; Caller save registers
 	Push Edi
+	
 	Push 256
 	Push Addr tempGlobal
 	Call clear_global_string
+	; Caller restore registers
 	Pop Edi
+	
 	Push 11D
 	Push Addr tempGlobal
 	Push Edi
 	Call int_to_string
-	Mov Eax, Addr tempGlobal
-	Add Eax, 11D
-	Sub Eax, 3D   				; starting address of integer string
+	; Caller restore registers
 	Pop Edi
-	Mov Edi, Eax 			; stored in allocated register
-	Mov Eax, 3D				; length of string
 	
+	Mov Edi, Eax
+	; invert actual length
+	Not Edi
+	Add Edi, 1D
+	; add total available number of digits
+	Add Edi, 11D  			; positive offset from string pointer at which non-zero values start
+	Add Edi, Addr tempGlobal
+	; Caller save registers
 	Push Edi
+	
 	Push 0
 	Push Addr tempGlobal
 	Push Eax
 	Push Edi
 	Push [outputHandle]
 	Call WriteConsoleA			; output value
-	
+	; Caller restore registers
 	Pop Edi
-	Mov Eax, 1D
-	Mov Ebx, Addr str2				; assemble operand STRING
 	
+	
+	; Instruction skipped (LITERAL)
+	
+	Mov Ebx, 0				; Clear register for new usage
+	Mov Eax, 3D
+	Mov Ebx, Addr str1				; assemble operand LITERAL
+	; Caller save registers
 	Push Ebx
+	
 	Push 0
 	Push Addr tempGlobal
 	Push Eax
 	Push Ebx
 	Push [outputHandle]
 	Call WriteConsoleA			; output value
-	
+	; Caller restore registers
 	Pop Ebx
-	Mov Eax, 12D
-	Mov Ecx, Addr str3				; assemble operand STRING
 	
+	
+	; Instruction skipped (LITERAL)
+	
+	Mov Ecx, 0				; Clear register for new usage
+	Mov Eax, 4D
+	Mov Ecx, -96D				; assemble operand LITERAL
+	; Caller save registers
 	Push Ecx
-	Push 0
+	
+	; Caller save registers
+	Push Ecx
+	
+	Push 256
 	Push Addr tempGlobal
-	Push Eax
-	Push Ecx
-	Push [outputHandle]
-	Call WriteConsoleA			; output value
-	
+	Call clear_global_string
+	; Caller restore registers
 	Pop Ecx
-	Mov Eax, 1D
-	Mov Edx, Addr str2				; assemble operand STRING
 	
+	Push 11D
+	Push Addr tempGlobal
+	Push Ecx
+	Call int_to_string
+	; Caller restore registers
+	Pop Ecx
+	
+	Mov Ecx, Eax
+	; invert actual length
+	Not Ecx
+	Add Ecx, 1D
+	; add total available number of digits
+	Add Ecx, 11D  			; positive offset from string pointer at which non-zero values start
+	Add Ecx, Addr tempGlobal
+	; Caller save registers
+	Push Ecx
+	
+	Push 0
+	Push Addr tempGlobal
+	Push Eax
+	Push Ecx
+	Push [outputHandle]
+	Call WriteConsoleA			; output value
+	; Caller restore registers
+	Pop Ecx
+	
+	
+	; Instruction skipped (LITERAL)
+	
+	Mov Edx, 0				; Clear register for new usage
+	Mov Eax, 1D
+	Mov Edx, Addr str2				; assemble operand LITERAL
+	; Caller save registers
 	Push Edx
+	
 	Push 0
 	Push Addr tempGlobal
 	Push Eax
 	Push Edx
 	Push [outputHandle]
 	Call WriteConsoleA			; output value
-	
+	; Caller restore registers
 	Pop Edx
+	
+	
+	; Instruction skipped (LITERAL)
+	
+	Mov Esi, 0				; Clear register for new usage
+	Mov Eax, 12D
+	Mov Esi, Addr str3				; assemble operand LITERAL
+	; Caller save registers
+	Push Esi
+	
+	Push 0
+	Push Addr tempGlobal
+	Push Eax
+	Push Esi
+	Push [outputHandle]
+	Call WriteConsoleA			; output value
+	; Caller restore registers
+	Pop Esi
+	
+	
+	; Instruction skipped (LITERAL)
+	
+	Mov Edi, 0				; Clear register for new usage
+	Mov Eax, 1D
+	Mov Edi, Addr str2				; assemble operand LITERAL
+	; Caller save registers
+	Push Edi
+	
+	Push 0
+	Push Addr tempGlobal
+	Push Eax
+	Push Edi
+	Push [outputHandle]
+	Call WriteConsoleA			; output value
+	; Caller restore registers
+	Pop Edi
+	
+	
+	; Instruction skipped (LITERAL)
+	
 	Ret 				; Program finish
 	
 
@@ -263,6 +364,7 @@ int_to_string_final:
 	Push Ebx				; Put return address back into the stack
 
 	Mov Eax, Ecx			; actual length
+	Add Eax, 1
 
 	Ret
 

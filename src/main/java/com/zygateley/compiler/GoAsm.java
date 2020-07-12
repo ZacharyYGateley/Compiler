@@ -45,6 +45,11 @@ public class GoAsm extends AssyLanguage {
 	}
 	
 	@Override
+	public void assembleClearRegister(Register register) throws Exception {
+		io.println("Mov %s, 0				; Clear register for new usage", register);
+	}
+	
+	@Override
 	public void assembleCodeSection() throws Exception {
 		io.outdent();
 		io.println();
@@ -66,7 +71,7 @@ public class GoAsm extends AssyLanguage {
 	public void assembleDeclaration(Variable variable, Register register) throws Exception {
 		// Move whatever value is at register into variable in stack
 		int offset = variable.stackIndex;
-		io.println("Mov [Esp + %d], %s", offset, register);
+		io.println("Mov [Esp + %d], %s			; Store value to variable", offset, register);
 	}
 
 	@Override
@@ -150,16 +155,18 @@ public class GoAsm extends AssyLanguage {
 		Register[] preRegisters = this.assemblePreCall();
 		
 		// Input handle
+		io.println("; Get input handle");
 		this.assemblePush("-10D");
 		this.assembleCall("GetStdHandle");
-		io.println("Mov [%s], Eax		; Get input handle", this.inputHandle);
+		io.println("Mov [%s], Eax		; Save input handle", this.inputHandle);
 		io.println();
 		// Argument consumed
 		
 		// Output handle
+		io.println("; Get output handle");
 		this.assemblePush("-11D");
 		this.assembleCall("GetStdHandle");
-		io.println("Mov [%s], Eax		; Get output handle", this.outputHandle);
+		io.println("Mov [%s], Eax		; Save output handle", this.outputHandle);
 		io.println();
 		// Argument consumed
 
@@ -187,26 +194,27 @@ public class GoAsm extends AssyLanguage {
 		this.assemblePush(register);
 		this.assembleCall("int_to_string");
 		
-		// Registers temporarily available
-		// Calculate new starting position
-		int integer = Integer.parseInt(operand.getValue());
-		int length = 1 + (int) Math.floor(Math.log10(Math.abs(integer)));
-		if (operand.isNegated()) {
-			length += 1;
-		}
+		/*
 		io.println("Mov Eax, " + address);
 		io.println("Add Eax, " + maxDig);
 		// New address starting position
 		io.println("Sub Eax, " + length + "D   				; starting address of integer string");
+		*/
 		
-		// New address starting position stored in register
-		// that originally held the value
 		this.assemblePostCall(preRegisters);
-		io.println("Mov %s, Eax 			; stored in allocated register", register);
-		// Length in Eax
-		io.println("Mov Eax, " + length + "D				; length of string");
 		
-		io.println();
+		// Registers temporarily available
+		// Calculate new starting position
+		// Actual length as return value (Eax) from int_to_string
+		// Register register now finished with its purpose. It will store the actual start address.
+		io.println("Mov %s, Eax", register);
+		io.println("; invert actual length");
+		io.println("Not %s", register);
+		io.println("Add %s, 1D", register);
+		io.println("; add total available number of digits");
+		io.println("Add %s, " + maxDig + "  			; positive offset from string pointer at which non-zero values start", register);
+		io.println("Add %s, " + address, register);
+		// Length in Eax
 		
 		// Address stored in register
 		return register.toString();
@@ -255,12 +263,13 @@ public class GoAsm extends AssyLanguage {
 		}
 		else if (Element.VARIABLE.equals(operandElement)) {
 			// Move value pointer to register
-			// TODO: bytewidth and typing
-			byteWidth = 1;
-			Variable variable = this.getVariable(operand.getSymbol());
+			Symbol symbol = operand.getSymbol();
+			Variable variable = this.getVariable(symbol);
 			if (variable == null) {
 				throw new Exception("Variable used before it was declared.");
 			}
+			// TODO: bytewidth and typing
+			byteWidth = 1;
 			operandString = String.format("[Esp + %d]", variable.stackIndex);
 		}
 		else {
@@ -270,8 +279,7 @@ public class GoAsm extends AssyLanguage {
 		// Move length to Eax
 		io.println("Mov Eax, %dD", byteWidth);
 		// Move value to register
-		io.println("Mov %s, %s				; assemble operand %s", register, operandString, operandType);
-		io.println();
+		io.println("Mov %s, %s				; assemble operand %s", register, operandString, operandElement);
 		
 		return register;
 	}
@@ -286,7 +294,6 @@ public class GoAsm extends AssyLanguage {
 		this.assemblePush(dataLocation);
 		this.assemblePush("[" + this.outputHandle + "]");
 		this.assembleCall("WriteConsoleA			; output value");
-		io.println();
 		
 		this.assemblePostCall(preRegisters);
 	}
@@ -304,10 +311,14 @@ public class GoAsm extends AssyLanguage {
 	 */
 	@Override 
 	public void assemblePostCall(Register[] registers) throws Exception {
+		if (registers.length > 0) {
+			io.println("; Caller restore registers");
+		}
 		for (int i = registers.length - 1; i > -1; i--) {
 			Register register = registers[i];
 			this.assemblePop(register);
 		}
+		io.println();
 	}
 
 	/** 
@@ -318,9 +329,13 @@ public class GoAsm extends AssyLanguage {
 	@Override
 	public Register[] assemblePreCall() throws Exception {
 		Register[] registers = this.registry.getAll();
+		if (registers.length > 0) {
+			io.println("; Caller save registers");
+		}
 		for (Register register : registers) {
 			this.assemblePush(register);
 		}
+		io.println();
 		return registers;
 	}
 	

@@ -1,6 +1,7 @@
 // Run a condition then output Hello, World
 if (true) {
-	echo -100;
+	b = -100;
+	echo b;
 	echo " + ";
 	echo 4;
 	echo " = ";

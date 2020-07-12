@@ -85,6 +85,7 @@ int_to_string_final:
 	Add Esp, 12				; Consume parameters
 	Push Ebx				; Put return address back into the stack
 
-	Mov Eax, Ecx			; actual length
+	Mov Eax, Ecx			; actual length - 1
+	Add Eax, 1
 
 	Ret

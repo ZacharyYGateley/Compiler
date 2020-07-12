@@ -60,8 +60,15 @@ public enum TypeSystem {
 			if (nextChild == null) {
 				fatalError("No variable contents in variable definition at " + syntaxTree);
 			}
+			symbol = leftChild.getSymbol();
+			TypeSystem variableType = symbol.getType();
+			TypeSystem assignType = nextChild.getType();
+			if (variableType != null && assignType != null && !assignType.equals(variableType)) {
+				fatalError("Variable %s was initially declared as %s but is trying to be assigned type %s", symbol, variableType, assignType);
+			}
 			
-			leftChild.setType(nextChild.getType());
+			leftChild.setType(assignType);
+			leftChild.getSymbol().setType(assignType);
 			break;
 		case FUNCCALL:
 			symbol = (leftChild == null ? null : leftChild.getSymbol());
