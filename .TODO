@@ -8,6 +8,7 @@ Output to assembly
 		assembleGlobalString boolean...
 		Type checking for addition - Adding strings - Subtracting strings...? i.e. type checking
 	Scope in lexer and SymbolTable and optimizer
+		Can delete parser, symboltable, node scopes?
 
 Nodes traversal and node values should be split
 	A la inherit Node

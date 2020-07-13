@@ -54,7 +54,10 @@ public class Assembler {
 		private final StringBuilder stringBuilder;
 		private final FileWriter fileWriter;
 		private int currentIndent;
+		private final String indentString = "    ";
 		private boolean newLine = true;
+		private String comment = "";
+		private int commentsAt = 40;
 		
 		public Writer() {
 			this(null);
@@ -68,12 +71,10 @@ public class Assembler {
 		public void print(String s) throws Exception {
 			// Indent as necessary
 			if (newLine) {
-				final String indent = "\t";
-				for (int i = 0; i < currentIndent; i++) {
-					stringBuilder.append(indent);
-					if (fileWriter instanceof FileWriter) {
-						fileWriter.append(indent);
-					}
+				String indent = new String(new char[currentIndent + 1]).replace("\0",  this.indentString);
+				stringBuilder.append(indent);
+				if (fileWriter instanceof FileWriter) {
+					fileWriter.append(indent);
 				}
 				newLine = false;
 			}
@@ -108,7 +109,27 @@ public class Assembler {
 			println(s, "");
 		}
 		public void println(String s, Object... formatters) throws Exception {
-			print(s, formatters);
+			// Add formatters
+			if (formatters != null) {
+				s = String.format(s,  formatters);
+			}
+
+			// Pad to certain width so that comments align
+			if (!this.comment.isBlank()) {
+				int width = this.commentsAt - (currentIndent * this.indentString.length());
+				s = String.format("%-" + width + "s", s);
+			}
+			
+			// Print (possibly padded) value
+			print(s);
+			
+			// Add comment
+			if (!this.comment.isBlank()) { 
+				print("; " + comment);
+				this.comment = "";
+			}
+			
+			// End line
 			print("\r\n");
 			newLine = true;
 		}
@@ -119,6 +140,13 @@ public class Assembler {
 		
 		public void outdent() {
 			this.currentIndent = Math.max(this.currentIndent - 1, 0);
+		}
+		
+		public void setComment(String comment) {
+			this.comment = comment;
+		}
+		public void setComment(String comment, Object... formatters) {
+			this.comment = String.format(comment, formatters);
 		}
 		
 		@Override

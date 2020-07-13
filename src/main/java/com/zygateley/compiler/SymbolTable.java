@@ -6,6 +6,7 @@ class Symbol {
 	private String name;
 	private final String value;
 	private TypeSystem type;
+	private Node scope;
 	
 	private boolean isFunction = false;
 	private ArrayList<TypeSystem> parameters = new ArrayList<>();
@@ -31,6 +32,10 @@ class Symbol {
 	
 	public TypeSystem getType() {
 		return this.type;
+	}
+	
+	public Node getScope() {
+		return this.scope;
 	}
 	
 	public TypeSystem getParameter(int i) {
@@ -62,6 +67,10 @@ class Symbol {
 		return false;
 	}
 	
+	public void setScope(Node scope) {
+		this.scope = scope;
+	}
+	
 	// Need to be able to update VAR to FUNCTION
 	public void setType(TypeSystem type) {
 		this.type = type;
@@ -81,13 +90,14 @@ class Symbol {
 	 * @param name
 	 * @return boolean equivalent
 	 */
-	public boolean equals(String name, String value, TypeSystem type) {
+	public boolean equals(String name, String value, TypeSystem type, Node scope) {
 		boolean equivalent = true;
 		if (this.type == null) {
 			// Variable
 			// Check name only
 			name = (name == null ? "" : name);
 			equivalent &= (name.equals(this.name));
+			equivalent &= (scope == this.scope);
 		}
 		else {
 			// Literal
@@ -111,7 +121,7 @@ class Symbol {
 	public boolean equals(Object o) {
 		if (o instanceof Symbol) {
 			Symbol s = (Symbol) o;
-			return this.equals(s.name, s.value, s.type);
+			return this.equals(s.name, s.value, s.type, s.scope);
 		}
 		return false;
 	}

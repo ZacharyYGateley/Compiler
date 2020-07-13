@@ -1,282 +1,247 @@
-;EasyCodeName=Assembly,1
-
-Data Section
-	str0	DB	" + "
-	str1	DB	" = "
-	str2	DB	"",10,""
-	str3	DB	"Hello, World"
-	inputHandle	DD	0
-	outputHandle	DD	0
-	tempGlobal	DD	64 Dup 0
-
-Code Section
-start:
-	; Instruction skipped (SCOPE)
-	
-	; Instruction skipped (SCOPE)
-	
-	; Instruction skipped (IF)
-	
-	; Instruction skipped (TRUE)
-	
-	; Instruction skipped (SCOPE)
-	
-	Mov Ebx, 0				; Clear register for new usage
-	; Declare new variable b
-	Push Ebx
-	Mov Ecx, 0				; Clear register for new usage
-	Mov Eax, 4D
-	Mov Ecx, -100D				; assemble operand LITERAL
-	Mov [Esp + 0], Ecx			; Store value to variable
-	
-	; Instruction skipped (VARIABLE)
-	
-	; Instruction skipped (LITERAL)
-	
-	
-	; Get input handle
-	Push -10D
-	Call GetStdHandle
-	Mov [inputHandle], Eax		; Save input handle
-	
-	; Get output handle
-	Push -11D
-	Call GetStdHandle
-	Mov [outputHandle], Eax		; Save output handle
-	
-	
-	Mov Edx, 0				; Clear register for new usage
-	Mov Eax, 1D
-	Mov Edx, [Esp + 0]				; assemble operand VARIABLE
-	; Caller save registers
-	Push Edx
-	
-	; Caller save registers
-	Push Edx
-	
-	Push 256
-	Push Addr tempGlobal
-	Call clear_global_string
-	; Caller restore registers
-	Pop Edx
-	
-	Push 11D
-	Push Addr tempGlobal
-	Push Edx
-	Call int_to_string
-	; Caller restore registers
-	Pop Edx
-	
-	Mov Edx, Eax
-	; invert actual length
-	Not Edx
-	Add Edx, 1D
-	; add total available number of digits
-	Add Edx, 11D  			; positive offset from string pointer at which non-zero values start
-	Add Edx, Addr tempGlobal
-	; Caller save registers
-	Push Edx
-	
-	Push 0
-	Push Addr tempGlobal
-	Push Eax
-	Push Edx
-	Push [outputHandle]
-	Call WriteConsoleA			; output value
-	; Caller restore registers
-	Pop Edx
-	
-	
-	; Instruction skipped (VARIABLE)
-	
-	Mov Esi, 0				; Clear register for new usage
-	Mov Eax, 3D
-	Mov Esi, Addr str0				; assemble operand LITERAL
-	; Caller save registers
-	Push Esi
-	
-	Push 0
-	Push Addr tempGlobal
-	Push Eax
-	Push Esi
-	Push [outputHandle]
-	Call WriteConsoleA			; output value
-	; Caller restore registers
-	Pop Esi
-	
-	
-	; Instruction skipped (LITERAL)
-	
-	Mov Edi, 0				; Clear register for new usage
-	Mov Eax, 4D
-	Mov Edi, 4D				; assemble operand LITERAL
-	; Caller save registers
-	Push Edi
-	
-	; Caller save registers
-	Push Edi
-	
-	Push 256
-	Push Addr tempGlobal
-	Call clear_global_string
-	; Caller restore registers
-	Pop Edi
-	
-	Push 11D
-	Push Addr tempGlobal
-	Push Edi
-	Call int_to_string
-	; Caller restore registers
-	Pop Edi
-	
-	Mov Edi, Eax
-	; invert actual length
-	Not Edi
-	Add Edi, 1D
-	; add total available number of digits
-	Add Edi, 11D  			; positive offset from string pointer at which non-zero values start
-	Add Edi, Addr tempGlobal
-	; Caller save registers
-	Push Edi
-	
-	Push 0
-	Push Addr tempGlobal
-	Push Eax
-	Push Edi
-	Push [outputHandle]
-	Call WriteConsoleA			; output value
-	; Caller restore registers
-	Pop Edi
-	
-	
-	; Instruction skipped (LITERAL)
-	
-	Mov Ebx, 0				; Clear register for new usage
-	Mov Eax, 3D
-	Mov Ebx, Addr str1				; assemble operand LITERAL
-	; Caller save registers
-	Push Ebx
-	
-	Push 0
-	Push Addr tempGlobal
-	Push Eax
-	Push Ebx
-	Push [outputHandle]
-	Call WriteConsoleA			; output value
-	; Caller restore registers
-	Pop Ebx
-	
-	
-	; Instruction skipped (LITERAL)
-	
-	Mov Ecx, 0				; Clear register for new usage
-	Mov Eax, 4D
-	Mov Ecx, -96D				; assemble operand LITERAL
-	; Caller save registers
-	Push Ecx
-	
-	; Caller save registers
-	Push Ecx
-	
-	Push 256
-	Push Addr tempGlobal
-	Call clear_global_string
-	; Caller restore registers
-	Pop Ecx
-	
-	Push 11D
-	Push Addr tempGlobal
-	Push Ecx
-	Call int_to_string
-	; Caller restore registers
-	Pop Ecx
-	
-	Mov Ecx, Eax
-	; invert actual length
-	Not Ecx
-	Add Ecx, 1D
-	; add total available number of digits
-	Add Ecx, 11D  			; positive offset from string pointer at which non-zero values start
-	Add Ecx, Addr tempGlobal
-	; Caller save registers
-	Push Ecx
-	
-	Push 0
-	Push Addr tempGlobal
-	Push Eax
-	Push Ecx
-	Push [outputHandle]
-	Call WriteConsoleA			; output value
-	; Caller restore registers
-	Pop Ecx
-	
-	
-	; Instruction skipped (LITERAL)
-	
-	Mov Edx, 0				; Clear register for new usage
-	Mov Eax, 1D
-	Mov Edx, Addr str2				; assemble operand LITERAL
-	; Caller save registers
-	Push Edx
-	
-	Push 0
-	Push Addr tempGlobal
-	Push Eax
-	Push Edx
-	Push [outputHandle]
-	Call WriteConsoleA			; output value
-	; Caller restore registers
-	Pop Edx
-	
-	
-	; Instruction skipped (LITERAL)
-	
-	Mov Esi, 0				; Clear register for new usage
-	Mov Eax, 12D
-	Mov Esi, Addr str3				; assemble operand LITERAL
-	; Caller save registers
-	Push Esi
-	
-	Push 0
-	Push Addr tempGlobal
-	Push Eax
-	Push Esi
-	Push [outputHandle]
-	Call WriteConsoleA			; output value
-	; Caller restore registers
-	Pop Esi
-	
-	
-	; Instruction skipped (LITERAL)
-	
-	Mov Edi, 0				; Clear register for new usage
-	Mov Eax, 1D
-	Mov Edi, Addr str2				; assemble operand LITERAL
-	; Caller save registers
-	Push Edi
-	
-	Push 0
-	Push Addr tempGlobal
-	Push Eax
-	Push Edi
-	Push [outputHandle]
-	Call WriteConsoleA			; output value
-	; Caller restore registers
-	Pop Edi
-	
-	
-	; Instruction skipped (LITERAL)
-	
-	Ret 				; Program finish
-	
+    ;EasyCodeName=Assembly,1
+    
+    Data Section
+        str0	DB	" + "
+        str1	DB	" = "
+        str2	DB	"",10,""
+        str3	DB	"Hello, World"
+        inputHandle	DD	0
+        outputHandle	DD	0
+        tempGlobal	DD	64 Dup 0
+    
+    Code Section
+    start:
+        ; Instruction skipped (IF)
+        ; Instruction skipped (TRUE)
+        
+        ; Store value to b
+        Mov Ebx, 0                          ; Clear register for new usage
+        ; Declare new variable b
+        Push Ebx
+        ; Prepare operand
+        Mov Ecx, 0                          ; Clear register for new usage
+        Mov Eax, 4D
+        Mov Ecx, -100D                      ; assemble operand LITERAL
+        Mov [Esp + 0], Ecx                  ; Store value to variable
+        
+        ; Prepare environment for output
+        ; Get input handle
+        Push -10D                           ; Parameter for GetStdHandle
+        Call GetStdHandle
+        Mov [inputHandle], Eax              ; Save input handle
+        ; Get output handle
+        Push -11D                           ; Parameter for GetStdHandle
+        Call GetStdHandle
+        Mov [outputHandle], Eax             ; Save output handle
+        
+        ; Output
+        ; Prepare operand
+        Mov Edx, 0                          ; Clear register for new usage
+        Mov Eax, 1D
+        Mov Edx, [Esp + 0]                  ; assemble operand VARIABLE
+            ; Convert integer to string in Addr tempGlobal
+            ; Caller save registers
+            Push Edx                        ; Anonymous value added to stack
+                ; Clear global string Addr tempGlobal
+                ; Caller save registers
+                Push Edx                    ; Anonymous value added to stack
+                Push 256                    ; Parameter for clear_global_string
+                Push Addr tempGlobal        ; Parameter for clear_global_string
+                Call clear_global_string
+                ; Caller restore registers
+                Pop Edx                     ; Anonymous value removed from stack
+            Push 11D                        ; Parameter for int_to_string
+            Push Addr tempGlobal            ; Parameter for int_to_string
+            Push Edx                        ; Parameter for int_to_string
+            Call int_to_string
+            ; Caller restore registers
+            Pop Edx                         ; Anonymous value removed from stack
+            Mov Edx, Eax
+            Not Edx                         ; Invert actual length
+            Add Edx, 1D
+            Add Edx, 11D                    ; Add total available number of digits
+            Add Edx, Addr tempGlobal        ; Positive offset from string pointer at which non-zero values start
+        ; Caller save registers
+        Push Edx                            ; Anonymous value added to stack
+        Push 0                              ; Parameter for WriteConsoleA
+        Push Addr tempGlobal                ; Parameter for WriteConsoleA
+        Push Eax                            ; Parameter for WriteConsoleA
+        Push Edx                            ; Parameter for WriteConsoleA
+        Push [outputHandle]                 ; Parameter for WriteConsoleA
+        Call WriteConsoleA
+        ; Caller restore registers
+        Pop Edx                             ; Anonymous value removed from stack
+        
+        ; Output
+        ; Prepare operand
+        Mov Esi, 0                          ; Clear register for new usage
+        Mov Eax, 3D
+        Mov Esi, Addr str0                  ; assemble operand LITERAL
+        ; Caller save registers
+        Push Esi                            ; Anonymous value added to stack
+        Push 0                              ; Parameter for WriteConsoleA
+        Push Addr tempGlobal                ; Parameter for WriteConsoleA
+        Push Eax                            ; Parameter for WriteConsoleA
+        Push Esi                            ; Parameter for WriteConsoleA
+        Push [outputHandle]                 ; Parameter for WriteConsoleA
+        Call WriteConsoleA
+        ; Caller restore registers
+        Pop Esi                             ; Anonymous value removed from stack
+        
+        ; Output
+        ; Prepare operand
+        Mov Edi, 0                          ; Clear register for new usage
+        Mov Eax, 4D
+        Mov Edi, 4D                         ; assemble operand LITERAL
+            ; Convert integer to string in Addr tempGlobal
+            ; Caller save registers
+            Push Edi                        ; Anonymous value added to stack
+                ; Clear global string Addr tempGlobal
+                ; Caller save registers
+                Push Edi                    ; Anonymous value added to stack
+                Push 256                    ; Parameter for clear_global_string
+                Push Addr tempGlobal        ; Parameter for clear_global_string
+                Call clear_global_string
+                ; Caller restore registers
+                Pop Edi                     ; Anonymous value removed from stack
+            Push 11D                        ; Parameter for int_to_string
+            Push Addr tempGlobal            ; Parameter for int_to_string
+            Push Edi                        ; Parameter for int_to_string
+            Call int_to_string
+            ; Caller restore registers
+            Pop Edi                         ; Anonymous value removed from stack
+            Mov Edi, Eax
+            Not Edi                         ; Invert actual length
+            Add Edi, 1D
+            Add Edi, 11D                    ; Add total available number of digits
+            Add Edi, Addr tempGlobal        ; Positive offset from string pointer at which non-zero values start
+        ; Caller save registers
+        Push Edi                            ; Anonymous value added to stack
+        Push 0                              ; Parameter for WriteConsoleA
+        Push Addr tempGlobal                ; Parameter for WriteConsoleA
+        Push Eax                            ; Parameter for WriteConsoleA
+        Push Edi                            ; Parameter for WriteConsoleA
+        Push [outputHandle]                 ; Parameter for WriteConsoleA
+        Call WriteConsoleA
+        ; Caller restore registers
+        Pop Edi                             ; Anonymous value removed from stack
+        
+        ; Output
+        ; Prepare operand
+        Mov Ebx, 0                          ; Clear register for new usage
+        Mov Eax, 3D
+        Mov Ebx, Addr str1                  ; assemble operand LITERAL
+        ; Caller save registers
+        Push Ebx                            ; Anonymous value added to stack
+        Push 0                              ; Parameter for WriteConsoleA
+        Push Addr tempGlobal                ; Parameter for WriteConsoleA
+        Push Eax                            ; Parameter for WriteConsoleA
+        Push Ebx                            ; Parameter for WriteConsoleA
+        Push [outputHandle]                 ; Parameter for WriteConsoleA
+        Call WriteConsoleA
+        ; Caller restore registers
+        Pop Ebx                             ; Anonymous value removed from stack
+        
+        ; Output
+        ; Prepare operand
+        Mov Ecx, 0                          ; Clear register for new usage
+        Mov Eax, 4D
+        Mov Ecx, -96D                       ; assemble operand LITERAL
+            ; Convert integer to string in Addr tempGlobal
+            ; Caller save registers
+            Push Ecx                        ; Anonymous value added to stack
+                ; Clear global string Addr tempGlobal
+                ; Caller save registers
+                Push Ecx                    ; Anonymous value added to stack
+                Push 256                    ; Parameter for clear_global_string
+                Push Addr tempGlobal        ; Parameter for clear_global_string
+                Call clear_global_string
+                ; Caller restore registers
+                Pop Ecx                     ; Anonymous value removed from stack
+            Push 11D                        ; Parameter for int_to_string
+            Push Addr tempGlobal            ; Parameter for int_to_string
+            Push Ecx                        ; Parameter for int_to_string
+            Call int_to_string
+            ; Caller restore registers
+            Pop Ecx                         ; Anonymous value removed from stack
+            Mov Ecx, Eax
+            Not Ecx                         ; Invert actual length
+            Add Ecx, 1D
+            Add Ecx, 11D                    ; Add total available number of digits
+            Add Ecx, Addr tempGlobal        ; Positive offset from string pointer at which non-zero values start
+        ; Caller save registers
+        Push Ecx                            ; Anonymous value added to stack
+        Push 0                              ; Parameter for WriteConsoleA
+        Push Addr tempGlobal                ; Parameter for WriteConsoleA
+        Push Eax                            ; Parameter for WriteConsoleA
+        Push Ecx                            ; Parameter for WriteConsoleA
+        Push [outputHandle]                 ; Parameter for WriteConsoleA
+        Call WriteConsoleA
+        ; Caller restore registers
+        Pop Ecx                             ; Anonymous value removed from stack
+        
+        ; Output
+        ; Prepare operand
+        Mov Edx, 0                          ; Clear register for new usage
+        Mov Eax, 1D
+        Mov Edx, Addr str2                  ; assemble operand LITERAL
+        ; Caller save registers
+        Push Edx                            ; Anonymous value added to stack
+        Push 0                              ; Parameter for WriteConsoleA
+        Push Addr tempGlobal                ; Parameter for WriteConsoleA
+        Push Eax                            ; Parameter for WriteConsoleA
+        Push Edx                            ; Parameter for WriteConsoleA
+        Push [outputHandle]                 ; Parameter for WriteConsoleA
+        Call WriteConsoleA
+        ; Caller restore registers
+        Pop Edx                             ; Anonymous value removed from stack
+        
+        ; Output
+        ; Prepare operand
+        Mov Esi, 0                          ; Clear register for new usage
+        Mov Eax, 12D
+        Mov Esi, Addr str3                  ; assemble operand LITERAL
+        ; Caller save registers
+        Push Esi                            ; Anonymous value added to stack
+        Push 0                              ; Parameter for WriteConsoleA
+        Push Addr tempGlobal                ; Parameter for WriteConsoleA
+        Push Eax                            ; Parameter for WriteConsoleA
+        Push Esi                            ; Parameter for WriteConsoleA
+        Push [outputHandle]                 ; Parameter for WriteConsoleA
+        Call WriteConsoleA
+        ; Caller restore registers
+        Pop Esi                             ; Anonymous value removed from stack
+        
+        ; Output
+        ; Prepare operand
+        Mov Edi, 0                          ; Clear register for new usage
+        Mov Eax, 1D
+        Mov Edi, Addr str2                  ; assemble operand LITERAL
+        ; Caller save registers
+        Push Edi                            ; Anonymous value added to stack
+        Push 0                              ; Parameter for WriteConsoleA
+        Push Addr tempGlobal                ; Parameter for WriteConsoleA
+        Push Eax                            ; Parameter for WriteConsoleA
+        Push Edi                            ; Parameter for WriteConsoleA
+        Push [outputHandle]                 ; Parameter for WriteConsoleA
+        Call WriteConsoleA
+        ; Caller restore registers
+        Pop Edi                             ; Anonymous value removed from stack
+        
+        
+        
+        
+        
+        Ret                                 ; Program finish
+        
+    
 
 
+    ;;;;;;; INCLUDED FILE int_to_string.asm ;;;;;;;;
+    
 
-;;;;;;; INCLUDED FILE int_to_string.asm ;;;;;;;;
 
-
-
-int_to_string:
+    int_to_string:
 	; loop through bits of number from least sig to most sig
 	; convert digit to character (+ 0x30)
 	; place at end of result location
@@ -363,17 +328,17 @@ int_to_string_final:
 	Add Esp, 12				; Consume parameters
 	Push Ebx				; Put return address back into the stack
 
-	Mov Eax, Ecx			; actual length
+	Mov Eax, Ecx			; actual length - 1
 	Add Eax, 1
 
 	Ret
 
 
-;;;;;;; INCLUDED FILE clear_global_string.asm ;;;;;;;;
+    ;;;;;;; INCLUDED FILE clear_global_string.asm ;;;;;;;;
+    
 
 
-
-clear_global_string:
+    clear_global_string:
 	Push Ebp
 	Mov Ebp, Esp
 	Add Ebp, 8			; Skip old Ebp and Return address

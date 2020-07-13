@@ -30,6 +30,7 @@ import java.util.*;
 public class Parser {
 	private TokenStream tokenStream;
 	private FileWriter logFileWriter;
+	private ArrayDeque<Node> scopeStack;
 	
 	// Verbose output shows an XML representation
 	// of the parse tree, indenting appropriately by depth 
@@ -49,6 +50,7 @@ public class Parser {
 	public Parser(TokenStream tokenStream, FileWriter logFileWriter) {
 		this.tokenStream = tokenStream;
 		this.logFileWriter = logFileWriter;
+		this.scopeStack = new ArrayDeque<Node>();
 	}
 
 	/**
@@ -158,6 +160,10 @@ public class Parser {
 	private Node parseCFGRule(NonTerminal rule, int endPosition) throws SyntaxError, IOException {
 		// Begin new subtree
 		Node syntaxSubtree = new Node(rule);
+		Element construct = rule.basicElement;
+		if (Element.SCOPE.equals(construct)) {
+			this.scopeStack.push(syntaxSubtree);
+		}
 		
 		// Skip all EMPTY tokens
 		// These are only used to hasEpsilon and inFollow
@@ -273,6 +279,10 @@ public class Parser {
 				if (next != null) {
 					syntaxSubtree.addChild(next);
 				}
+			}
+			
+			if (Element.SCOPE.equals(construct)) {
+				this.scopeStack.pop();
 			}
 		}
 		
@@ -765,6 +775,12 @@ public class Parser {
 	 * @throws IOException 
 	 */
 	private Node addTerminal(Node parentNode, Terminal terminal, Symbol symbol, String value) throws IOException {
+		// Dynamic scoping
+		if (symbol != null && symbol.getScope() == null) {
+			symbol.setScope(this.scopeStack.peekFirst());
+		}
+		
+		// Create node
 		Node node = new Node(terminal, symbol, value);
 		parentNode.addChild(node);
 		
