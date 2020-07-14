@@ -29,12 +29,7 @@ public class Assembler {
 		language.assembleDataSection();
 		
 		// Indicate start of program main
-		language.assembleCodeSection();
-		
-		// Crawl tree
-		// Any function declarations found
-		// will be stored into SymbolTable as type FUNCTION
-		language.assembleNode(this.parseTree);
+		language.assembleCodeSection(this.parseTree);
 		
 		// Indicate end of program main
 		language.assembleFinish();

@@ -56,13 +56,54 @@ public class GoAsm extends AssyLanguage {
 		io.println("Mov %s, 0", register);
 	}
 	
-	@Override
-	public void assembleCodeSection() throws Exception {
+	public void assembleCodeHeader() throws Exception {
 		io.outdent();
 		io.println();
 		io.println("Code Section");
 		io.println("start:");
 		io.indent();
+	}
+	
+	@Override
+	public void assembleConditionalJump(Node condition, Node subtreeIfTrue, Node subtreeIfFalse) throws Exception {
+		boolean haveElse = subtreeIfFalse != null;
+		io.println("; Prepare if-then%s conditional", (haveElse ? "-else" : ""));
+		String labelIf = this.getNewLabel();
+		io.println("; If true, go to %s", labelIf);
+		String labelElse = null;
+		if (subtreeIfFalse != null) {
+			labelElse = this.getNewLabel();
+			io.println("; If false, go to %s", labelElse);
+		}
+		String labelNext = this.getNewLabel();
+		io.println("; Finally, go to %s", labelNext);
+		
+		// Condition
+		Register r0 = this.assembleOperand(condition);
+		io.setComment("Determine if condition is false");
+		io.println("Cmp %s, 0", r0);
+		io.setComment("If condition is false, jump");
+		io.println("Jz > %s", (haveElse ? labelElse : labelNext));
+		
+		// Code if true
+		io.println(labelIf + ":");
+		io.indent();
+		this.assembleNode(subtreeIfTrue);
+		if (haveElse) {
+			io.println("Jmp %s", labelNext);
+			io.println();
+			io.outdent();
+			
+			// Code if False
+			io.println(labelElse + ":");
+			io.indent();
+			this.assembleNode(subtreeIfFalse);
+		}
+		io.outdent();
+		
+		// Next
+		io.println();
+		io.println(labelNext + ":");
 	}
 
 	@Override
@@ -77,7 +118,7 @@ public class GoAsm extends AssyLanguage {
 	@Override 
 	public void assembleDeclaration(Variable variable, Register register) throws Exception {
 		// Move whatever value is at register into variable in stack
-		int offset = variable.stackIndex;
+		int offset = variable.stackIndex * 4;
 		io.setComment("Store value to variable");
 		io.println("Mov [Esp + %d], %s", offset, register);
 	}
@@ -273,14 +314,13 @@ public class GoAsm extends AssyLanguage {
 		}
 		else if (Element.VARIABLE.equals(operandElement)) {
 			// Move value pointer to register
-			Symbol symbol = operand.getSymbol();
-			Variable variable = this.getVariable(symbol);
+			Variable variable = operand.getVariable();
 			if (variable == null) {
 				throw new Exception("Variable used before it was declared.");
 			}
 			// TODO: bytewidth and typing
 			byteWidth = 1;
-			operandString = String.format("[Esp + %d]", variable.stackIndex);
+			operandString = String.format("[Esp + %d]", variable.stackIndex * 4);
 		}
 		else {
 			throw new SyntaxError("Should not be here...");

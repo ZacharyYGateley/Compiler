@@ -30,9 +30,6 @@ import java.util.Iterator;
  *
  */
 public class Node implements Iterable<Node> {
-	// Name is used for more readable toString
-	public String _name_;
-	
 	// Assembly element type
 	private final Element basicElement;
 	
@@ -42,10 +39,12 @@ public class Node implements Iterable<Node> {
 	// CFG and Symbol
 	// NonTerminals
 	private NonTerminal nonTerminal = null;
+	private Scope scope = null;
 	// Terminals
 	private Terminal terminal = null;
 	private Symbol symbol = null;
 	private String value = null;
+	private Variable variable = null;
 	private boolean isNegated = false;
 	
 	// Tree traversal
@@ -65,11 +64,7 @@ public class Node implements Iterable<Node> {
 	 * @param nonTerminal rule for this node
 	 */
 	public Node(NonTerminal nonTerminal) {
-		this.basicElement = nonTerminal.basicElement;
-		this.nonTerminal = nonTerminal;
-
-		// toString override value
-		this._name_ = nonTerminal + "";
+		this(nonTerminal, null);
 	}	
 	/**
 	 * Non-leaf node
@@ -78,12 +73,17 @@ public class Node implements Iterable<Node> {
 	 * @param operatorTerminal Terminal operator string
 	 */
 	public Node(NonTerminal nonTerminal, Terminal operatorTerminal) {
+		this(nonTerminal, operatorTerminal, null);
+	}
+	public Node(NonTerminal nonTerminal, Terminal operatorTerminal, Scope parentScope) {
 		this.basicElement = nonTerminal.basicElement;
 		this.nonTerminal = nonTerminal;
 		this.terminal = operatorTerminal;
-
-		// toString override value
-		this._name_ = nonTerminal + " (" + operatorTerminal + ")";
+		this.scope = new Scope(null, parentScope);
+	}
+	public Node(Element element, NonTerminal nonTerminal) {
+		this.basicElement = element;
+		this.nonTerminal = nonTerminal;
 	}
 	/**
 	 * Leaf node
@@ -92,31 +92,33 @@ public class Node implements Iterable<Node> {
 	 * @param symbol Symbol item from the SymbolTable, may be null
 	 * @param value may be a LITERAL value or the exactString from terminal
 	 */
+	public Node(Terminal terminal) {
+		this(terminal, null, "");
+	}
 	public Node(Terminal terminal, Symbol symbol, String value) {
 		this.basicElement = terminal.basicElement;
 		this.terminal = terminal;
 		this.symbol = symbol;
 		this.value = value;
-
-		// toString override value
-		String type = "";
-		if (symbol != null) {
-			type = (symbol.getType() != null ? symbol.getType()+"" : symbol.getName());
-		}
-		this._name_ = (symbol != null ? "(" + type + ") " : "") + terminal;
+	}
+	public Node(Terminal terminal, Variable variable) {
+		this.basicElement = terminal.basicElement;
+		this.terminal = terminal;
+		this.variable = variable;
 	}
 	////////////////////////////////
 	// Constructors for Optimizer //
 	public Node(Element basicElement) {
 		this.basicElement = basicElement;
-		
-		this._name_ = basicElement + "";
 	}
 	/**
 	 * @param nonTerminal rule for this node
 	 */
-	public Node(Element basicElement, Node parent, NonTerminal nonTerminal, 
-			Terminal terminal, Symbol symbol, String value, boolean negated) {
+	public Node(Element basicElement, Node parent, 
+			NonTerminal nonTerminal, Terminal terminal, 
+			Symbol symbol, String value, 
+			Scope scope, Variable variable, 
+			boolean negated) {
 		this.basicElement = basicElement;
 		this.parent = parent;
 		
@@ -125,17 +127,9 @@ public class Node implements Iterable<Node> {
 		this.terminal = terminal;
 		this.symbol = symbol;
 		this.value = value;
+		this.scope = scope;
+		this.variable = variable;
 		this.isNegated = negated;
-
-		// toString override value
-		this._name_ = basicElement + (negated ? " -" : " ");
-		if (symbol != null) {
-			this._name_ += symbol;
-		}
-		if (terminal != null && terminal.exactString != null && !terminal.exactString.isBlank()) {
-			this._name_ += "(" + terminal.exactString + ")";
-		}
-		
 	}
 
 
@@ -150,6 +144,9 @@ public class Node implements Iterable<Node> {
 	public NonTerminal getRule() {
 		return this.nonTerminal;
 	}
+	public Scope getScope() {
+		return this.scope;
+	}
 	public Terminal getToken() {
 		return this.terminal;
 	}
@@ -159,12 +156,18 @@ public class Node implements Iterable<Node> {
 	public String getValue() {
 		return this.value;
 	}
+	public Variable getVariable() {
+		return this.variable;
+	}
 	public boolean isNegated() {
 		return this.isNegated;
 	}
 	
 	public void setType(TypeSystem newType) {
 		this.type = newType;
+	}
+	public void setVariabe(Variable variable) {
+		this.variable = variable;
 	}
 	public void setNegated(boolean negated) {
 		this.isNegated = negated;

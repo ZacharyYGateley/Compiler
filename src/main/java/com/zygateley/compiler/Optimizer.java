@@ -2,6 +2,7 @@ package com.zygateley.compiler;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.instrument.IllegalClassFormatException;
 
 import com.zygateley.compiler.Element.Reflow;
 
@@ -41,6 +42,7 @@ public class Optimizer {
 		this.depth = 0;
 		this.log("<!-- Middle stage optimization initiated -->\n");
 		
+		// Create placeholder for optimized tree
 		Node optimizedTree = new Node(Element.SCOPE);
 		
 		// Build stage 1 optimized tree with REFLOW_LIMITs
@@ -77,6 +79,12 @@ public class Optimizer {
 
 		this.depth = 0;
 		this.log("<!-- Middle stage optimization finished -->\n\n");
+		
+		// Remove placeholder SCOPE
+		if (optimizedTree.getChildCount() != 1 || !Element.SCOPE.equals(optimizedTree.getFirstChild().getElementType())) {
+			throw new IllegalClassFormatException("The top level of the grammar must be a SCOPE construct.");
+		}
+		optimizedTree = optimizedTree.getFirstChild();
 		
 		return optimizedTree;
 	}
@@ -188,6 +196,7 @@ public class Optimizer {
 					Node optimizedChildNode = new Node(basicElement, optimizedParentNode, 
 							parseChildNode.getRule(), parseChildNode.getToken(),
 							parseChildNode.getSymbol(), parseChildNode.getValue(),
+							parseChildNode.getScope(), parseChildNode.getVariable(), 
 							isNextNegated);
 					optimizedParentNode.addChild(optimizedChildNode);
 					

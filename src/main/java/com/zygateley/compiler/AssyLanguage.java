@@ -27,7 +27,7 @@ public abstract class AssyLanguage {
 	protected final Assembler.Writer io;
 	protected final SymbolTable symbolTable;
 	protected final Registry registry;
-	protected final Scope globalScope;
+	protected Scope globalScope;
 	protected Scope currentScope;
 	protected HashMap<Symbol, String> globalSymbolMap = new HashMap<>();
 	protected int globalVariableCount = 0;
@@ -35,15 +35,16 @@ public abstract class AssyLanguage {
 	protected final String outputHandle = "outputHandle";
 	protected final String temporaryGlobal = "tempGlobal";
 	protected final int temporaryGlobalLength = 256;
+	protected int labelCount = 0;
 	
 	// Language-specific
-	protected boolean handlesDeclared = false;
 	protected int maxIntegerDigits = 11;
 	
 	protected abstract Register assembleCalculation(Node operation) throws Exception;
 	protected abstract void assembleCall(String method) throws Exception;
 	protected abstract void assembleClearRegister(Register register) throws Exception;
-	protected abstract void assembleCodeSection() throws Exception;
+	protected abstract void assembleCodeHeader() throws Exception;
+	protected abstract void assembleConditionalJump(Node condition, Node subtreeIfTrue, Node subtreeIfFalse) throws Exception;
 	protected abstract void assembleDeclaration(Variable variable, Register register) throws Exception;
 	protected abstract Register assembleExpression(Node parseTree) throws Exception;
 	protected abstract void assembleFinish() throws Exception;
@@ -68,8 +69,6 @@ public abstract class AssyLanguage {
 		this.io = io;
 		this.symbolTable = symbolTable;
 		this.registry = new Registry(this, tempRegisters);
-		this.globalScope = new Scope(this, null);
-		this.currentScope = this.globalScope;
 	}
 	
 	public void assembleChildren(Node pn) throws Exception {
@@ -80,16 +79,62 @@ public abstract class AssyLanguage {
 		}
 	}
 	
+	public void assembleCodeSection(Node parseTree) throws Exception {
+		this.assembleCodeHeader();
+		
+		// Assemble handles
+		// Reason why it is here and not at the beginning of OUTPUT:
+		//		if first output appears in a conditional, 
+		//		the handles are not properly prepared
+		// Reasonable to add only if input/output exists,
+		// 		but at the moment, that would take crawling the tree,
+		//		which is unnecessary overhead
+		io.println("; Prepare environment for input and output");
+		this.assembleHandles();
+		io.println();
+		
+		// Crawl tree
+		// Any function declarations found
+		// will be stored into SymbolTable as type FUNCTION
+		this.assembleNode(parseTree);
+	}
+	
 	public void assembleNode(Node pn) throws Exception {
 		Element construct = pn.getElementType();
+		Variable variable;
 		Symbol symbol;
 		Node operand;
 		Register operandRegister;
 		switch (construct) {
 		case SCOPE:
-			this.currentScope = new Scope(this, this.currentScope);
+			this.currentScope = pn.getScope();
+			this.currentScope.setLanguage(this);
+			
+			// When entering a new scope,
+			// Create an empty stack location for each scope variable,
+			// 		which have all already been declared
+			int size = this.currentScope.size();
+			if (size > 0) {
+				String pushString = "";
+				for (int i = 0; i < size; i++) {
+					if (i > 0) pushString += ", ";
+					pushString += "0";
+				}
+				io.println("; New scope, prepare stack space for variables");
+				this.assemblePush(pushString);
+			}
+			
+			if (this.globalScope == null) {
+				this.globalScope = this.currentScope;
+			}
 			this.assembleChildren(pn);
 			this.currentScope = this.currentScope.parent;
+			break;
+		case IF:
+			Node condition = pn.getFirstChild();
+			Node subtreeIfTrue = condition.getNextSibling();
+			Node subtreeIfFalse = subtreeIfTrue.getNextSibling();
+			this.assembleConditionalJump(condition, subtreeIfTrue, subtreeIfFalse);
 			break;
 		case FUNCDEF:
 			// Save all functions into SymbolTable
@@ -100,49 +145,45 @@ public abstract class AssyLanguage {
 			io.println("; function " + symbol);
 			return;
 		case VARDEF:
-			symbol = pn.getFirstChild().getSymbol();
+			Node firstChild = pn.getFirstChild();
+			variable = firstChild.getVariable();
+			symbol = variable.getSymbol();
 			io.println("; Store value to " + symbol);
 			
-			// Allocate a zero register
-			Variable v0 = this.getVariable(symbol);
+			// Allocate a new temporary register
 			Register r0 = this.registry.allocate();
-			if (v0 == null) {
+			if (variable == null) {
+				throw new Exception("Variable not properly linked during parsing.");
 				// Variable not found, declare new
 				// Allocates stack space
-				v0 = this.currentScope.declareVariable(r0, symbol);
+				//v0 = this.currentScope.declareVariable(r0, symbol);
 			}
 			else {
 				// Variable found, link to this register
-				v0.linkRegister(r0);
+				variable.linkRegister(r0);
 			}
 			
 			operand = pn.getLastChild();
 			operandRegister = this.assembleOperand(operand);
-			this.assembleDeclaration(v0, operandRegister);
+			this.assembleDeclaration(variable, operandRegister);
 			operandRegister.free();
 			
 			r0.free();
 			
 			break;
 		case OUTPUT:
-			if (!handlesDeclared) {
-				io.println("; Prepare environment for output");
-				this.assembleHandles();
-				handlesDeclared = true;
-				io.println();
-			}
-			
 			io.println("; Output");
-			operand = pn.getLastChild();			
+			operand = pn.getLastChild();
 			operandRegister = this.assembleOperand(operand);
-			TypeSystem type = operand.getType();
-			symbol = operand.getSymbol();
-			if (symbol != null) {
-				TypeSystem symbolType = symbol.getType();
-				if (symbolType != null) {
-					// Symbol trumps Node
-					type = symbolType;
-				}
+			variable = operand.getVariable();
+			TypeSystem type;
+			if (variable != null) {
+				type = variable.getType();
+				symbol = variable.getSymbol();
+			}
+			else {
+				type = pn.getType();
+				symbol = operand.getSymbol();
 			}
 			if (TypeSystem.INTEGER.equals(type)) {
 				String address = this.assembleIntegerToString(operandRegister, operand);
@@ -219,6 +260,13 @@ public abstract class AssyLanguage {
 	}
 	
 	/**
+	 * Return unique label string
+	 */
+	protected String getNewLabel() {
+		return "label" + this.labelCount++;
+	}
+	
+	/**
 	 * Find symbol in scope, then global scope
 	 * @param symbol
 	 * @return
@@ -270,9 +318,13 @@ public abstract class AssyLanguage {
 			
 			// If LRU has a variable, 
 			// move that variable to the stack
+			/* 
+			 * Variable is already in the stack
+			 * 
 			if (leastUsed.variable != null) {
 				this.language.currentScope.pushVariable(leastUsed, leastUsed.variable);
 			}
+			*/
 			
 			// Reserve register
 			leastUsed.allocate();
@@ -357,83 +409,6 @@ public abstract class AssyLanguage {
 		@Override
 		public String toString() {
 			return this.registerName;
-		}
-	}
-
-	protected static class Scope {
-		private final Scope parent;
-		// Contains all scope variables
-		private final ArrayDeque<Variable> stack;
-		private final AssyLanguage language;
-		
-		/**
-		 * LinkedHashMaps initialized to LRU by ACCESS order
-		 * @param stackFrame
-		 */
-		public Scope(AssyLanguage language, Scope parent) {
-			this.parent = parent;
-			// Stack starting at stack pointer = stack
-			this.stack = new ArrayDeque<>();
-			this.language = language;
-		}
-		
-		public Variable declareVariable(Register register, Symbol symbol) throws Exception {
-			this.language.io.println("; Declare new variable " + symbol);
-			Variable variable = new Variable(symbol);
-			variable.linkRegister(register);
-			this.pushVariable(register, variable);
-			return variable;
-		}
-		
-		public Variable getVariable(Symbol symbol) {
-			for (Variable variable : this.stack) {
-				if (variable.symbol == symbol) {
-					return variable;
-				}
-			}
-			return null;
-		}
-		
-		public void pushVariable(Register register, Variable variable) throws Exception {
-			this.language.assemblePush(register);
-			variable.stackIndex = stack.size();
-			stack.push(variable);
-		}
-		
-		public void pushAnonymous(Register fromRegister) throws Exception {
-			this.pushAnonymous(fromRegister.toString());
-		}
-		
-		public void pushAnonymous(String value) throws Exception {
-			this.language.io.setComment("Anonymous value added to stack");
-			this.language.assemblePush(value);
-		}
-		
-		public void popAnonymous(Register toRegister) throws Exception {
-			this.language.io.setComment("Anonymous value removed from stack");
-			this.language.assemblePop(toRegister);
-		}
-	}
-	
-	protected static class Variable {
-		public Register register = null;
-		public final Symbol symbol;
-		public int stackIndex = -1;
-		public static Variable NONE = new Variable(null);
-		
-		public Variable(Symbol s) {
-			symbol = s;
-		}
-		
-		public void linkRegister(Register r) {
-			r.variable = this;
-			register = r;
-		}
-		public void unlinkRegister() {
-			if (register != null) {
-				register.variable = null;
-			}
-			register = null;
 		}
 	}
 }

@@ -254,6 +254,9 @@ public interface Token {
 enum Terminal implements Token {
 	// Terminals
 	EMPTY 		(Token.EMPTY, Element.NULL, "", "^\\s"),
+	// Allow premature termination of compilation
+	EOF 		(Token.EOF, Element.NULL, "noco"),
+	
 	SEMICOLON	(Token.SEMICOLON, Element.NULL, ";"),
 	COMMA		(Token.COMMA, Element.NULL, ","),
 	EQ 			(Token.EQ, Element.NULL, "="),
@@ -296,9 +299,7 @@ enum Terminal implements Token {
 	MINUS 		(Token.MINUS, Element.SUB, "-"),
 	ASTERISK 	(Token.ASTERISK, Element.MULT, "*"),
 	SLASH 		(Token.SLASH, Element.INTDIV, "/"),
-	NOT			(Token.NOT, Element.NOT, "!"),
-	
-	EOF 		(Token.EOF, Element.NULL, Character.toString((char) 0));
+	NOT			(Token.NOT, Element.NOT, "!");
 	
 	public final int tokenValue;
 	public final String exactString;

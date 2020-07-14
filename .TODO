@@ -7,8 +7,50 @@ Output to assembly
 	On the fly type checker
 		assembleGlobalString boolean...
 		Type checking for addition - Adding strings - Subtracting strings...? i.e. type checking
+	The scoping problem
+		Want to determine TypeSystem before assembler
+		But assembler is currently determining scoping rules
+		So before assembler, all variables with the same name
+			refer to the same Symbol, and the TypeSystem
+			has ALREADY LABELED them as bool, int, or string, 
+			if the information is available
+		What if you want to use a variable of the same name in two different functions?
+			In one function it's a string, in the other an int?
+		Time to create "var a = 0;" and "var a;" declarations
+		Otherwise, it becomes unclear what should be happening
+
+		Nodes
+			Construct SCOPE
+				Node.scope
+			Construct VARIABLE
+				Node.variable
+				Node.variable.symbol
+			Construct LITERAL
+				Node.symbol
+
+		parseNode
+			Construct SCOPE
+				Node.scope = new Scope()
+			Construct VARIABLE
+				Node.variable = new Variable()
+
+		typeCheck
+			Construct VARIABLE
+				Node.variable.type
+			Construct LITERAL
+				Node.type
+
+		assembler
+			Construct SCOPE
+				Auto allocate stack space for all variables
+			Construct VARIABLE
+				Reference variable from Node.variable
+			
+			
 	Scope in lexer and SymbolTable and optimizer
 		Can delete parser, symboltable, node scopes?
+	Need to figure out how to allocate heap memory. 
+		int_to_string should be stored in heap?
 
 Nodes traversal and node values should be split
 	A la inherit Node

@@ -132,20 +132,21 @@ public class Lexer {
 				// It will be the first full match from the last match set (ordered by com.zygateley.compiler.Token.id)
 				Terminal thisRule = getTerminalRuleFromLast(currentToken);
 				
-				// Ignore EMPTY terminals
-				if (thisRule == Terminal.EMPTY) {
-					// Empty terminals only take up extra space
-				}
-				// If no full match, invalid syntax
-				else if (thisRule == null) {
+				
+				if (thisRule == null) {
 					// This can happen when Terminal.regexStart matches 
 					// but Terminal.regexFull does not
 					String message = "Lexical error at " + currentToken;
 					log(message);
 					throw new LexicalException(message);
 				}
+				else if (Terminal.EOF.equals(thisRule)) {
+					// "No compile" token
+					break;
+				}
 				// Otherwise, we have a valid rule
-				else {
+				// Ignore EMPTY terminals
+				else if (!Terminal.EMPTY.equals(thisRule)) {
 					createAddToken(currentToken, thisRule);
 				}
 
