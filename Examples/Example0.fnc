@@ -5,7 +5,7 @@ echo a;
 // Run a condition then output Hello, World
 b = -100;
 if (false) {
-	echo "The initial condition was true :-)";
+	echo "The initial \"condition\":\t true :-)";
 	echo "\n";
 
 }
@@ -30,3 +30,5 @@ echo 4;
 echo " = ";
 echo -96;
 echo "\n";
+
+// Comment at end

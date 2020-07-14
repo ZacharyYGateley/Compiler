@@ -2,7 +2,7 @@
     
     Data Section
         str0	DB	"gef"
-        str1	DB	"The initial condition was true :-)"
+        str1	DB	"The initial \",'"',"condition\",'"',":\t true :-)"
         str2	DB	"",10,""
         str3	DB	"The initial condition was false :-(",10,""
         str4	DB	"Check out this equaion!",10,""

@@ -96,13 +96,13 @@ public class Node implements Iterable<Node> {
 		this(terminal, null, "");
 	}
 	public Node(Terminal terminal, Symbol symbol, String value) {
-		this.basicElement = terminal.basicElement;
+		this.basicElement = terminal.construct;
 		this.terminal = terminal;
 		this.symbol = symbol;
 		this.value = value;
 	}
 	public Node(Terminal terminal, Variable variable) {
-		this.basicElement = terminal.basicElement;
+		this.basicElement = terminal.construct;
 		this.terminal = terminal;
 		this.variable = variable;
 	}
@@ -458,8 +458,8 @@ public class Node implements Iterable<Node> {
 			// Terminal
 			if (isEmpty) {
 				output.append(terminal + "");
-				if (Element.NULL.equals(element) && terminal.basicElement != Element.PASS) {
-					element = terminal.basicElement;
+				if (Element.NULL.equals(element) && terminal.construct != Element.PASS) {
+					element = terminal.construct;
 				}
 			}
 			else output.append(getParameterString("terminal", terminal + ""));

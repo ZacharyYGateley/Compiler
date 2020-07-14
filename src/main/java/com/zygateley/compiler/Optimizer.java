@@ -183,7 +183,7 @@ public class Optimizer {
 					if (terminal == null) {
 						continue;
 					}
-					basicElement = terminal.basicElement;
+					basicElement = terminal.construct;
 				}
 			}
 			

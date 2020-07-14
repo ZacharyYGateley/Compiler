@@ -764,7 +764,7 @@ public class Parser {
 			return new Node(splitToken);
 		}
 		
-		Node wrapper = new Node(splitToken.basicElement, wrappingClass);
+		Node wrapper = new Node(splitToken.construct, wrappingClass);
 		wrapper.addChild(leftOperand);
 		wrapper.addChild(rightOperand);
 		
@@ -788,7 +788,7 @@ public class Parser {
 		
 		// Make sure the current symbol is scoped correctly
 		// Static scoping
-		if (symbol != null && Element.VARIABLE.equals(terminal.basicElement)) {
+		if (symbol != null && Element.VARIABLE.equals(terminal.construct)) {
 			Variable variable = null;
 			for (Scope scope : this.scopeStack) {
 				variable = scope.getVariable(symbol);
