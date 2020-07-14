@@ -1,6 +1,6 @@
 # Optimization and Reflow
 
-The backend of the compiler can only process [elementary language constructs](#constructs "Elementary Language Constructs"), so the goal of the optimizer is to translate the raw syntax tree into a tree consisting only of these elementary language constructs. Depending on how the grammar is configured, this may or may not immediately follow from a trimming of unused nodes. Where the elementary language constructs do *not* follow from this, there are programmable [reflow bindings](#reflow "Reflow Bindings"). 
+The backend of the compiler can only process [elementary language constructs](#Elementary Language Constructs), so the goal of the optimizer is to translate the raw syntax tree into a tree consisting only of these elementary language constructs. Depending on how the grammar is configured, this may or may not immediately follow from a trimming of unused nodes. Where the elementary language constructs do *not* follow from this, there are programmable [reflow bindings](#Reflow Bindings). 
 
 In practice, optimization results in an extensive decrease in size of the syntax tree and a much-more readable XML structure.
 
@@ -48,7 +48,7 @@ Each one of the original grammar rules is linked in some way to elementary const
 
 * ***NULL*** indicates a leaf node that will be ignored. 
 * ***PASS*** indicates that this is not a leaf node, but it is not to be added to to the final syntax tree. 
-* ***REFLOW_LIMIT***  indicates that this is not a leaf node; it is not to be added to the tree; and no [reflow bindings](#reflow "Reflow Bindings") may cross this node. It acts as a boundary for reflow bindings.
+* ***REFLOW_LIMIT***  indicates that this is not a leaf node; it is not to be added to the tree; and no [reflow bindings](#Reflow Bindings) may cross this node. It acts as a boundary for reflow bindings.
 
 
 
@@ -90,11 +90,11 @@ From here, reflow bindings must be applied.
 
 
 
-<a id="reflow" />
+<div id="reflow"></div>
 
 ## Reflow Bindings
 
-Reflow bindings are certain rules for reorganizing the syntax tree so that the resulting syntax tree corresponds to the [elementary language constructs](#constructs "Elementary Language Constructs") listed above. At the time of writing, the current full list of bindings are as follows. The [language information spreadsheet](GrammarAndReflow.xlsx "Grammar and Reflow Spreadsheet") may be more up-to-date.
+Reflow bindings are certain rules for reorganizing the syntax tree so that the resulting syntax tree corresponds to the [elementary language constructs](#Elementary Language Constructs) listed above. At the time of writing, the current full list of bindings are as follows. The [language information spreadsheet](GrammarAndReflow.xlsx "Grammar and Reflow Spreadsheet") may be more up-to-date.
 
 | Elementary  Language Constructs | Temporary? |
 | ------------------------------- | ---------- |
