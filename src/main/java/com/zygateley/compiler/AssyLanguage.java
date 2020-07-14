@@ -27,7 +27,7 @@ public abstract class AssyLanguage {
 	protected final Assembler.Writer io;
 	protected final SymbolTable symbolTable;
 	protected final Registry registry;
-	protected final Scope globalScope;
+	protected Scope globalScope;
 	protected Scope currentScope;
 	protected HashMap<Symbol, String> globalSymbolMap = new HashMap<>();
 	protected int globalVariableCount = 0;
@@ -35,18 +35,22 @@ public abstract class AssyLanguage {
 	protected final String outputHandle = "outputHandle";
 	protected final String temporaryGlobal = "tempGlobal";
 	protected final int temporaryGlobalLength = 256;
+	protected int labelCount = 0;
 	
 	// Language-specific
-	protected boolean handlesDeclared = false;
 	protected int maxIntegerDigits = 11;
 	
 	protected abstract Register assembleCalculation(Node operation) throws Exception;
 	protected abstract void assembleCall(String method) throws Exception;
-	protected abstract void assembleCodeSection() throws Exception;
+	protected abstract void assembleClearRegister(Register register) throws Exception;
+	protected abstract void assembleCodeHeader() throws Exception;
+	protected abstract void assembleConditionalJump(Node condition, Node subtreeIfTrue, Node subtreeIfFalse) throws Exception;
 	protected abstract void assembleDeclaration(Variable variable, Register register) throws Exception;
 	protected abstract Register assembleExpression(Node parseTree) throws Exception;
 	protected abstract void assembleFinish() throws Exception;
 	protected abstract Register assembleFooter() throws Exception;
+	protected abstract void assembleFunctions() throws Exception;
+	protected abstract String assembleGlobalString(String name, int byteWidth, String value) throws Exception;
 	protected abstract void assembleHeader() throws Exception;
 	protected abstract void assembleHandles() throws Exception;
 	protected abstract String assembleIntegerToString(Register register, Node operand) throws Exception;
@@ -57,9 +61,7 @@ public abstract class AssyLanguage {
 	protected abstract void assemblePush(Register fromRegister) throws Exception;
 	protected abstract void assemblePush(String value) throws Exception;
 	protected abstract void assemblePop(Register toRegister) throws Exception;
-	protected abstract void assembleTerminal(Node leafNode) throws Exception;
-	protected abstract void assembleFunctions() throws Exception;
-	protected abstract String assembleGlobalString(String name, int byteWidth, String value) throws Exception;
+	protected abstract void assembleScope(boolean open) throws Exception;
 	protected abstract String compile(String fileName, boolean verbose) throws Exception;
 	protected abstract String getPointer(String globalVariable);
 	
@@ -68,45 +70,117 @@ public abstract class AssyLanguage {
 		this.io = io;
 		this.symbolTable = symbolTable;
 		this.registry = new Registry(this, tempRegisters);
-		this.globalScope = new Scope(this, null);
+	}
+	
+	public void assembleChildren(Node pn) throws Exception {
+		for (Node child : pn) {
+			if (child != null) {
+				assembleNode(child);
+			}
+		}
+	}
+	
+	public void assembleCodeSection(Node parseTree) throws Exception {
+		this.assembleCodeHeader();
+		
+		// Assemble handles
+		// Reason why it is here and not at the beginning of OUTPUT:
+		//		if first output appears in a conditional, 
+		//		the handles are not properly prepared
+		// Reasonable to add only if input/output exists,
+		// 		but at the moment, that would take crawling the tree,
+		//		which is unnecessary overhead
+		io.println("; Prepare environment for input and output");
+		this.assembleHandles();
+		io.println();
+		
+		// Crawl tree
+		// Any function declarations found
+		// will be stored into SymbolTable as type FUNCTION
+		this.assembleNode(parseTree);
 	}
 	
 	public void assembleNode(Node pn) throws Exception {
 		Element construct = pn.getElementType();
+		Variable variable;
 		Symbol symbol;
 		Node operand;
-		Element operandElement;
 		Register operandRegister;
 		switch (construct) {
+		case SCOPE:
+			this.currentScope = pn.getScope();
+			this.currentScope.setLanguage(this);
+			if (this.globalScope == null) {
+				this.globalScope = this.currentScope;
+			}
+			
+			// Open new scope (set variables into stack)
+			this.assembleScope(true);
+			
+			// Assemble contents of scope
+			this.assembleChildren(pn);
+			
+			// Close scope
+			this.assembleScope(false);
+			
+			this.currentScope = this.currentScope.parent;
+			break;
+		case IF:
+			Node condition = pn.getFirstChild();
+			Node subtreeIfTrue = condition.getNextSibling();
+			Node subtreeIfFalse = subtreeIfTrue.getNextSibling();
+			this.assembleConditionalJump(condition, subtreeIfTrue, subtreeIfFalse);
+			break;
 		case FUNCDEF:
 			// Save all functions into SymbolTable
 			// To be processed and output at the end of file
 			symbol = pn.getFirstChild().getSymbol();
 			// Parameters are next
 			// Finally is function body
-			io.println(";function " + symbol);
+			io.println("; function " + symbol);
 			return;
 		case VARDEF:
-			symbol = pn.getFirstChild().getSymbol();
+			Node firstChild = pn.getFirstChild();
+			variable = firstChild.getVariable();
+			symbol = variable.getSymbol();
+			io.println("; Store value to " + symbol);
+			
+			// Allocate a new temporary register
 			Register r0 = this.registry.allocate();
-			// Variable linked to register and to symbol
-			Variable v0 = this.currentScope.declareVariable(r0, symbol);
-			
-			operand = pn.getLastChild();
-			operandRegister = this.assembleOperand(operand);
-			this.assembleDeclaration(v0, operandRegister);
-			operandRegister.free();
-			
-			break;
-		case OUTPUT:
-			if (!handlesDeclared) {
-				this.assembleHandles();
-				handlesDeclared = true;
+			if (variable == null) {
+				throw new Exception("Variable not properly linked during parsing.");
+				// Variable not found, declare new
+				// Allocates stack space
+				//v0 = this.currentScope.declareVariable(r0, symbol);
+			}
+			else {
+				// Variable found, link to this register
+				variable.linkRegister(r0);
 			}
 			
 			operand = pn.getLastChild();
 			operandRegister = this.assembleOperand(operand);
-			if (TypeSystem.INTEGER.equals(operand.getType())) {
+			this.assembleDeclaration(variable, operandRegister);
+			operandRegister.free();
+			
+			r0.free();
+			
+			break;
+		case OUTPUT:
+			io.println("; Output");
+			operand = pn.getLastChild();
+			operandRegister = this.assembleOperand(operand);
+			variable = operand.getVariable();
+			TypeSystem type;
+			if (variable != null) {
+				type = variable.getType();
+				symbol = variable.getSymbol();
+			}
+			else {
+				type = operand.getType();
+				symbol = operand.getSymbol();
+			}
+			if (TypeSystem.INTEGER.equals(type)) {
 				String address = this.assembleIntegerToString(operandRegister, operand);
 				this.assembleOutput(address);
 			}
@@ -117,15 +191,12 @@ public abstract class AssyLanguage {
 			
 			break;
 		default:
+			io.println("; Instruction skipped (" + construct + ")");
+			this.assembleChildren(pn);
 			break;
 		}
+		io.println();
 		
-		// Iterate
-		for (Node child : pn) {
-			if (child != null) {
-				assembleNode(child);
-			}
-		}
 	}
 	
 	/**
@@ -140,6 +211,10 @@ public abstract class AssyLanguage {
 			String prefix = "";
 			TypeSystem type = symbol.getType();
 			String value = symbol.getValue();
+			if (type == null || value == null) {
+				continue;
+			}
+			
 			switch (type) {
 			case BOOLEAN:
 				byteWidth = 1;
@@ -177,6 +252,13 @@ public abstract class AssyLanguage {
 		
 		// Locate for output from API
 		assembleGlobalString(this.temporaryGlobal, this.temporaryGlobalLength, "0");
+	}
+	
+	/**
+	 * Return unique label string
+	 */
+	protected String getNewLabel() {
+		return "label" + this.labelCount++;
 	}
 	
 	/**
@@ -231,12 +313,19 @@ public abstract class AssyLanguage {
 			
 			// If LRU has a variable, 
 			// move that variable to the stack
+			/* 
+			 * Variable is already in the stack
+			 * 
 			if (leastUsed.variable != null) {
 				this.language.currentScope.pushVariable(leastUsed, leastUsed.variable);
 			}
+			*/
 			
+			// Reserve register
 			leastUsed.allocate();
-			// Register is now reserved
+			
+			// Clear register
+			this.language.assembleClearRegister(leastUsed);
 			
 			return leastUsed;
 		}
@@ -300,6 +389,9 @@ public abstract class AssyLanguage {
 		
 		public void free() {
 			this.isAvailable = true;
+			if (this.variable != null) {
+				this.variable.unlinkRegister();
+			}
 		}
 		
 		/**
@@ -314,72 +406,6 @@ public abstract class AssyLanguage {
 			return this.registerName;
 		}
 	}
-
-	private static class Scope {
-		private final Scope parent;
-		// Contains all scope variables
-		private final ArrayDeque<Variable> stack;
-		private final AssyLanguage language;
-		
-		/**
-		 * LinkedHashMaps initialized to LRU by ACCESS order
-		 * @param stackFrame
-		 */
-		public Scope(AssyLanguage language, Scope parent) {
-			this.parent = parent;
-			// Stack starting at stack pointer = stack
-			this.stack = new ArrayDeque<>();
-			this.language = language;
-		}
-		
-		public Variable declareVariable(Register register, Symbol symbol) throws Exception {
-			Variable variable = new Variable(symbol);
-			this.pushVariable(register, variable);
-			return variable;
-		}
-		
-		public Variable getVariable(Symbol symbol) {
-			for (Variable variable : this.stack) {
-				if (variable.symbol == symbol) {
-					return variable;
-				}
-			}
-			return null;
-		}
-		
-		public void pushVariable(Register register, Variable variable) throws Exception {
-			this.language.assemblePush(register);
-			stack.push(variable);
-		}
-	}
-	
-	protected static class Variable {
-		public Register register;
-		public final Symbol symbol;
-		public int stackIndex;
-		
-		public Variable() {
-			register = null;
-			symbol = null;
-			stackIndex = -1;
-		}
-		public Variable(Symbol s) {
-			register = null;
-			symbol = s;
-			stackIndex = -1;
-		}
-		
-		public void linkRegister(Register r) {
-			r.variable = this;
-			register = r;
-		}
-		public void unlinkRegister() {
-			if (register != null) {
-				register.variable = null;
-			}
-			register = null;
-		}
-	}
 }
 
 class StringUtils {
@@ -388,7 +414,7 @@ class StringUtils {
 			return "";
 		}
 		return input
-				.replaceAll("\\\"",  "\",'\"',\"")
+				.replaceAll("\\\\\"",  "\",'\"',\"")
 				.replaceAll("\\\\n", "\",10,\"")
 				.replaceAll("\\\\f",  "\",12,\"")
 				.replaceAll("\\\\r",  "\",13,\"")

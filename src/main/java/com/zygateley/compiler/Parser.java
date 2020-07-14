@@ -30,6 +30,9 @@ import java.util.*;
 public class Parser {
 	private TokenStream tokenStream;
 	private FileWriter logFileWriter;
+	private ArrayList<Scope> scopeStack;
+	private Scope currentScope = null;
+	private Scope globalScope = null;
 	
 	// Verbose output shows an XML representation
 	// of the parse tree, indenting appropriately by depth 
@@ -49,6 +52,7 @@ public class Parser {
 	public Parser(TokenStream tokenStream, FileWriter logFileWriter) {
 		this.tokenStream = tokenStream;
 		this.logFileWriter = logFileWriter;
+		this.scopeStack = new ArrayList<Scope>();
 	}
 
 	/**
@@ -61,7 +65,7 @@ public class Parser {
 	 * @throws SyntaxError
 	 * @throws IOException 
 	 */
-	public Node parse(boolean verbose) throws SyntaxError, IOException {
+	public Node parse(boolean verbose) throws Exception {
 		return parse(verbose, false);
 	}
 	/**
@@ -75,7 +79,7 @@ public class Parser {
 	 * @throws SyntaxError
 	 * @throws IOException 
 	 */
-	public Node parse(boolean verbose, boolean doublyVerbose) throws SyntaxError, IOException {
+	public Node parse(boolean verbose, boolean doublyVerbose) throws Exception {
 		this.verbose = verbose;
 		this.doublyVerbose = doublyVerbose;
 		return parse();
@@ -84,10 +88,9 @@ public class Parser {
 	 * Parse the TokenStream.
 	 * 
 	 * @return Node root of resulting syntax tree
-	 * @throws SyntaxError
-	 * @throws IOException 
+	 * @throws Exception 
 	 */
-	public Node parse() throws SyntaxError, IOException {
+	public Node parse() throws Exception {
 		// Reset parsing parameters
 		depth = 0;
 		
@@ -125,10 +128,9 @@ public class Parser {
 	 * @param ruleCFG
 	 * @param endPosition exclusive
 	 * @return
-	 * @throws SyntaxError
-	 * @throws IOException 
+	 * @throws Exception 
 	 */
-	private Node toCFGStream(NonTerminal ruleCFG, int startPosition, int endPosition) throws SyntaxError, IOException {
+	private Node toCFGStream(NonTerminal ruleCFG, int startPosition, int endPosition) throws Exception {
 		if (doublyVerbose) {
 			this.log("// --> To CFG stream from Precedence stream");
 			this.log("//");
@@ -152,12 +154,26 @@ public class Parser {
 	 * @param rule NonTerminal representing this CFG rule
 	 * @param endPosition exclusive in TokenStream
 	 * @return Node root of resulting parse subtree 
-	 * @throws SyntaxError
-	 * @throws IOException 
+	 * @throws Exception 
 	 */
-	private Node parseCFGRule(NonTerminal rule, int endPosition) throws SyntaxError, IOException {
+	private Node parseCFGRule(NonTerminal rule, int endPosition) throws Exception {
 		// Begin new subtree
-		Node syntaxSubtree = new Node(rule);
+		Node syntaxSubtree;
+		Element construct = rule.basicElement;
+		if (Element.SCOPE.equals(construct)) {
+			syntaxSubtree = new Node(rule, null, this.currentScope);
+			this.currentScope = syntaxSubtree.getScope();
+			this.scopeStack.add(this.currentScope);
+			if (this.globalScope == null) {
+				this.globalScope = this.currentScope;
+			}
+			if (this.currentScope == null) {
+				System.out.println("");
+			}
+		}
+		else {
+			syntaxSubtree = new Node(rule);
+		}
 		
 		// Skip all EMPTY tokens
 		// These are only used to hasEpsilon and inFollow
@@ -276,6 +292,12 @@ public class Parser {
 			}
 		}
 		
+		if (Element.SCOPE.equals(construct)) {
+			int lastIndex = this.scopeStack.size() - 1;
+			this.scopeStack.remove(lastIndex);
+			this.currentScope = (lastIndex > 0 ? this.scopeStack.get(lastIndex - 1) : null);
+		}
+		
 		// Finished building this NonTerminal
 		this.log("</" + rule + ">");
 		
@@ -297,10 +319,9 @@ public class Parser {
 	 * @param maxEndPosition exclusive
 	 * @param parentRule to determine when to stop stream for precedence rule
 	 * @return
-	 * @throws SyntaxError
-	 * @throws IOException 
+	 * @throws Exception 
 	 */
-	private Node toPrecedenceStream(NonTerminal precedenceRule, NonTerminal parentRule, int startPosition, int maxEndPosition) throws SyntaxError, IOException {
+	private Node toPrecedenceStream(NonTerminal precedenceRule, NonTerminal parentRule, int startPosition, int maxEndPosition) throws Exception {
 		// Start parsing this precedence non-terminal
 		if (doublyVerbose) {
 			this.log("// --> To CFG stream from Precedence stream");
@@ -491,10 +512,9 @@ public class Parser {
 	 * @param startPosition in tokenStream inclusive
 	 * @param endPosition in tokenStream exclusive
 	 * @return parse subtree given for this span [startPosition, endPosition)
-	 * @throws SyntaxError
-	 * @throws IOException 
+	 * @throws Exception 
 	 */
-	private Node parsePrecedenceRule(NonTerminal rule, int startPosition, int endPosition) throws SyntaxError, IOException {
+	private Node parsePrecedenceRule(NonTerminal rule, int startPosition, int endPosition) throws Exception {
 		// Patterns split at these tokens
 		int[] splitTokens = rule.precedencePattern.splitTokens;
 		// If a split token is found, this is its Terminal.tokenValue
@@ -502,7 +522,7 @@ public class Parser {
 		
 		
 		if (startPosition == endPosition) {
-			return new Node(Terminal.EMPTY, null, null);
+			return new Node(Terminal.EMPTY);
 		}
 		
 		// Make sure the stream is up-to-date
@@ -673,10 +693,9 @@ public class Parser {
 	 * @param startPosition inclusive
 	 * @param endPosition exclusive
 	 * @return Node parse subtree
-	 * @throws SyntaxError
-	 * @throws IOException 
+	 * @throws Exception 
 	 */
-	private Node precedenceParseNextRule(NonTerminal nextRule, int startPosition, int endPosition) throws SyntaxError, IOException {
+	private Node precedenceParseNextRule(NonTerminal nextRule, int startPosition, int endPosition) throws Exception {
 		Node parseSubtree;
 		if (nextRule.isPrecedenceRule()) {
 			// Stay in precedence stream
@@ -742,10 +761,10 @@ public class Parser {
 		boolean leftIsNull = (leftOperand == null);
 		boolean rightIsNull = (rightOperand == null);
 		if (leftIsNull && rightIsNull) {
-			return new Node(splitToken, null, null);
+			return new Node(splitToken);
 		}
 		
-		Node wrapper = new Node(splitToken.basicElement, null, wrappingClass, null, null, null, false);
+		Node wrapper = new Node(splitToken.construct, wrappingClass);
 		wrapper.addChild(leftOperand);
 		wrapper.addChild(rightOperand);
 		
@@ -764,8 +783,30 @@ public class Parser {
 	 * @return
 	 * @throws IOException 
 	 */
-	private Node addTerminal(Node parentNode, Terminal terminal, Symbol symbol, String value) throws IOException {
-		Node node = new Node(terminal, symbol, value);
+	private Node addTerminal(Node parentNode, Terminal terminal, Symbol symbol, String value) throws Exception {
+		Node node;
+		
+		// Make sure the current symbol is scoped correctly
+		// Static scoping
+		if (symbol != null && Element.VARIABLE.equals(terminal.construct)) {
+			Variable variable = null;
+			for (Scope scope : this.scopeStack) {
+				variable = scope.getVariable(symbol);
+				if (variable != null) {
+					break;
+				}
+			}
+			if (variable == null) {
+				variable = this.currentScope.addVariable(symbol);
+			}
+			
+			node = new Node(terminal, variable);
+		}
+		else {
+			// Symbols need to be stored for literals
+			node = new Node(terminal, symbol, value);
+		}
+		
 		parentNode.addChild(node);
 		
 		log(node);

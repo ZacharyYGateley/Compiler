@@ -54,14 +54,21 @@ public enum TypeSystem {
 			}
 			break;
 		case VARDEF:
-			if (leftChild == null || leftChild.getSymbol() == null) {
+			if (leftChild == null || leftChild.getVariable() == null) {
 				fatalError("Bad variable definition at " + syntaxTree);
 			}
 			if (nextChild == null) {
 				fatalError("No variable contents in variable definition at " + syntaxTree);
 			}
+			Variable variable = leftChild.getVariable();
+			TypeSystem variableType = variable.getType();
+			TypeSystem assignType = nextChild.getType();
+			if (variableType != null && assignType != null && !assignType.equals(variableType)) {
+				fatalError("Variable %s was initially declared as %s but is trying to be assigned type %s", variable.getSymbol(), variableType, assignType);
+			}
 			
-			leftChild.setType(nextChild.getType());
+			leftChild.setType(assignType);
+			variable.setType(assignType);
 			break;
 		case FUNCCALL:
 			symbol = (leftChild == null ? null : leftChild.getSymbol());

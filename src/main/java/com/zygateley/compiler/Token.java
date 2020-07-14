@@ -254,6 +254,9 @@ public interface Token {
 enum Terminal implements Token {
 	// Terminals
 	EMPTY 		(Token.EMPTY, Element.NULL, "", "^\\s"),
+	// Allow premature termination of compilation
+	EOF 		(Token.EOF, Element.NULL, "noco"),
+	
 	SEMICOLON	(Token.SEMICOLON, Element.NULL, ";"),
 	COMMA		(Token.COMMA, Element.NULL, ","),
 	EQ 			(Token.EQ, Element.NULL, "="),
@@ -263,13 +266,13 @@ enum Terminal implements Token {
 	CURLY_CLOSE (Token.CURLY_CLOSE, Element.NULL, "}"),
 	SQUARE_OPEN (Token.SQUARE_OPEN, Element.NULL, "["),
 	SQUARE_CLOSE(Token.SQUARE_CLOSE, Element.NULL, "]"),
-	COMMENT		(Token.COMMENT, Element.NULL, "", ("^/(?:/.*)?$"), ("//[^\0]*(?:\r|\n|\f)?")),
+	COMMENT		(Token.COMMENT, Element.NULL, "", ("^/(?:/[^\0\r\n\f]*(?=[^\0\r\n\f])?)?$")),
 	
 	// PRIMITIVES
 	TRUE		(Token.TRUE, TypeSystem.BOOLEAN, Element.TRUE, "", ("^[tT](?:[rR](?:[uU](?:[eE])?)?)?$")),
 	FALSE		(Token.FALSE, TypeSystem.BOOLEAN, Element.FALSE, "", ("^[fF](?:[aA](?:[lL](?:[sS](?:[eE])?)?)?)?$")),
 	INT 		(Token.INT, TypeSystem.INTEGER, Element.LITERAL, "", ("^\\d*")),
-	STRING      (Token.STRING, TypeSystem.STRING, Element.LITERAL, "", ("^\".*"), ("^\"(?:(?:.*(?:[^\\\\]))?(?:\\\\{2})*)?\"$")),
+	STRING      (Token.STRING, TypeSystem.STRING, Element.LITERAL, "", ("^\".*"), ("^\"(?:[^\"\\\\]|\\\\.)*\"$")), // ("^\"(?:(?:.*(?:[^\\\\]))?(?:\\\\{2})*)?\"$")
 	
 	// Other reserved words
 	FUNCTION	(Token.FUNCTION, Element.NULL, "function"),
@@ -296,17 +299,14 @@ enum Terminal implements Token {
 	MINUS 		(Token.MINUS, Element.SUB, "-"),
 	ASTERISK 	(Token.ASTERISK, Element.MULT, "*"),
 	SLASH 		(Token.SLASH, Element.INTDIV, "/"),
-	NOT			(Token.NOT, Element.NOT, "!"),
-	
-	EOF 		(Token.EOF, Element.NULL, Character.toString((char) 0));
+	NOT			(Token.NOT, Element.NOT, "!");
 	
 	public final int tokenValue;
 	public final String exactString;
-	public final Pattern regexStart;
-	public final Pattern regexFull;
-	public final Pattern regexNot;
+	private final Pattern regexPotential;
+	private final Pattern regexFull;
 	public final TypeSystem type;
-	public final Element basicElement;
+	public final Element construct;
 
 	private Terminal(int tokenValue, Element basicElement,  String... matching) {
 		this(tokenValue, null, basicElement, matching);
@@ -316,10 +316,9 @@ enum Terminal implements Token {
 		this.type = type;
 		// If there is a symbol type, exactString should be ""
 		this.exactString = (matching.length > 0) ? matching[0] : "";
-		this.regexStart = (matching.length > 1) ? Pattern.compile(matching[1]) : null;
+		this.regexPotential = (matching.length > 1) ? Pattern.compile(matching[1]) : null;
 		this.regexFull = (matching.length > 2) ? Pattern.compile(matching[2]) : null;
-		this.regexNot = (matching.length > 3) ? Pattern.compile(matching[3]) : null;
-		this.basicElement = basicElement;
+		this.construct = basicElement;
 	}
 	
 	public boolean isTerminal() { return true; }
@@ -334,8 +333,8 @@ enum Terminal implements Token {
 	 */
 	public boolean isMatch(String token, boolean fullMatch) {
 		boolean isMatch = false;
-		if (this.regexStart != null) {
-			Matcher m = this.regexStart.matcher(token);
+		if (this.regexPotential != null) {
+			Matcher m = this.regexPotential.matcher(token);
 			isMatch = (m.matches());
 			
 			// If you want only a partial match, 

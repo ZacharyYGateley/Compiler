@@ -180,12 +180,13 @@ public class PythonTranslator {
 				translateNode(nextChild);
 				println();
 				break;
-			case VARIABLE:
-			case LITERAL:
-				printValue(node);
-				break;
 			default:
-				crawlChildrenAndTranslate(node);
+				if (node.getChildCount() > 0) {
+					crawlChildrenAndTranslate(node);
+				}
+				else {
+					printValue(node);
+				}
 				break;
 			}
 		}
@@ -244,7 +245,7 @@ public class PythonTranslator {
 			print(value);
 			break;
 		case VARIABLE:
-			print(node.getSymbol().getName());
+			print(node.getVariable().getSymbol().getName());
 			break;
 		default:
 			printTerminal(t);
