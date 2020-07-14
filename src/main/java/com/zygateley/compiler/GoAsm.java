@@ -29,6 +29,9 @@ public class GoAsm extends AssyLanguage {
 	public void assembleCall(String method) throws Exception {
 		io.println("Call %s", method);
 	}
+	public void assembleCall(String method, boolean down) throws Exception {
+		io.println("Call %s %s", (down ? ">" : "<"), method);
+	}
 	
 	public void assembleClearGlobal(String variable, int numBytes) throws Exception {
 		// Make sure the resource function is included
@@ -155,13 +158,23 @@ public class GoAsm extends AssyLanguage {
 		for (String resource : resources) {
 			PushbackReader reader = FileIO.getReader(basePath + resource);
 			StringBuilder file = new StringBuilder();
+			char last = '\0';
 			while (reader.ready()) {
-				file.append((char) reader.read());
+				char c = (char) reader.read();
+				if (c == '\n' && last != '\r') {
+					file.append("\r\n");
+				} 
+				else {
+					file.append(c);
+				}
+				last = c;
 			}
 			reader.close();
-			io.println("\r\n\r\n");
+			io.println();
+			io.println();
 			io.println(";;;;;;; INCLUDED FILE %s ;;;;;;;;", resource);
-			io.println("\r\n\r\n");
+			io.println();
+			io.println();
 			io.print(file.toString());
 		}
 		
@@ -402,6 +415,19 @@ public class GoAsm extends AssyLanguage {
 	@Override
 	public void assemblePush(String value) throws Exception {
 		io.println("Push %s", value);
+	}
+	
+	@Override
+	public void assembleScope(boolean open) throws Exception {
+		int totalBytes = this.currentScope.size() * 4;
+		if (open) {
+			io.setComment("Open scope");
+			io.println("Sub Esp, %d", totalBytes);
+		}
+		else {
+			io.setComment("Close scope");
+			io.println("Add Esp, %d", totalBytes);
+		}
 	}
 	
 	@Override

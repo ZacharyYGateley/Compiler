@@ -49,6 +49,8 @@ public abstract class AssyLanguage {
 	protected abstract Register assembleExpression(Node parseTree) throws Exception;
 	protected abstract void assembleFinish() throws Exception;
 	protected abstract Register assembleFooter() throws Exception;
+	protected abstract void assembleFunctions() throws Exception;
+	protected abstract String assembleGlobalString(String name, int byteWidth, String value) throws Exception;
 	protected abstract void assembleHeader() throws Exception;
 	protected abstract void assembleHandles() throws Exception;
 	protected abstract String assembleIntegerToString(Register register, Node operand) throws Exception;
@@ -59,8 +61,7 @@ public abstract class AssyLanguage {
 	protected abstract void assemblePush(Register fromRegister) throws Exception;
 	protected abstract void assemblePush(String value) throws Exception;
 	protected abstract void assemblePop(Register toRegister) throws Exception;
-	protected abstract void assembleFunctions() throws Exception;
-	protected abstract String assembleGlobalString(String name, int byteWidth, String value) throws Exception;
+	protected abstract void assembleScope(boolean open) throws Exception;
 	protected abstract String compile(String fileName, boolean verbose) throws Exception;
 	protected abstract String getPointer(String globalVariable);
 	
@@ -109,25 +110,19 @@ public abstract class AssyLanguage {
 		case SCOPE:
 			this.currentScope = pn.getScope();
 			this.currentScope.setLanguage(this);
-			
-			// When entering a new scope,
-			// Create an empty stack location for each scope variable,
-			// 		which have all already been declared
-			int size = this.currentScope.size();
-			if (size > 0) {
-				String pushString = "";
-				for (int i = 0; i < size; i++) {
-					if (i > 0) pushString += ", ";
-					pushString += "0";
-				}
-				io.println("; New scope, prepare stack space for variables");
-				this.assemblePush(pushString);
-			}
-			
 			if (this.globalScope == null) {
 				this.globalScope = this.currentScope;
 			}
+			
+			// Open new scope (set variables into stack)
+			this.assembleScope(true);
+			
+			// Assemble contents of scope
 			this.assembleChildren(pn);
+			
+			// Close scope
+			this.assembleScope(false);
+			
 			this.currentScope = this.currentScope.parent;
 			break;
 		case IF:
@@ -182,7 +177,7 @@ public abstract class AssyLanguage {
 				symbol = variable.getSymbol();
 			}
 			else {
-				type = pn.getType();
+				type = operand.getType();
 				symbol = operand.getSymbol();
 			}
 			if (TypeSystem.INTEGER.equals(type)) {
@@ -419,7 +414,7 @@ class StringUtils {
 			return "";
 		}
 		return input
-				.replaceAll("\\\"",  "\",'\"',\"")
+				.replaceAll("\\\\\"",  "\",'\"',\"")
 				.replaceAll("\\\\n", "\",10,\"")
 				.replaceAll("\\\\f",  "\",12,\"")
 				.replaceAll("\\\\r",  "\",13,\"")

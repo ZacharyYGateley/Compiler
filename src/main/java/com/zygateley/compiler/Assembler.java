@@ -66,7 +66,7 @@ public class Assembler {
 		public void print(String s) throws Exception {
 			// Indent as necessary
 			if (newLine) {
-				String indent = new String(new char[currentIndent + 1]).replace("\0",  this.indentString);
+				String indent = new String(new char[currentIndent]).replace("\0",  this.indentString);
 				stringBuilder.append(indent);
 				if (fileWriter instanceof FileWriter) {
 					fileWriter.append(indent);
