@@ -223,7 +223,7 @@ public abstract class AssyLanguage {
 			case STRING:
 				byteWidth = 1;
 				prefix = "str";
-				value = "\"" + StringUtils.unescapeAssemblyString(value.substring(1, value.length() - 1)) + "\"";
+				value = "\"" + StringUtils.unescapeAssemblyString(value.substring(1, value.length() - 1) + "\0") + "\"";
 				break;
 			case INTEGER:
 				byteWidth = 4;
@@ -414,10 +414,11 @@ class StringUtils {
 			return "";
 		}
 		return input
-				.replaceAll("\\\\\"",  "\",'\"',\"")
+				.replaceAll("\\\\\"", "\",'\"',\"")
+				.replaceAll("\0", "\",0,\"")
 				.replaceAll("\\\\n", "\",10,\"")
-				.replaceAll("\\\\f",  "\",12,\"")
-				.replaceAll("\\\\r",  "\",13,\"")
+				.replaceAll("\\\\f", "\",12,\"")
+				.replaceAll("\\\\r", "\",13,\"")
 				.replaceAll("\"\",", "")
 				.replaceAll(",\"\"", "");
 	}

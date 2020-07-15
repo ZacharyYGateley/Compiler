@@ -13,7 +13,8 @@ public class GoAsm extends AssyLanguage {
 		super(io, symbolTable, new String[] { "Ebx", "Ecx", "Edx", "Esi", "Edi" });
 	}
 	
-	public void addResource(String resource) {
+	public void addResource(String procedure) {
+		String resource = procedure + ".asm";
 		if (!resources.contains(resource)) {
 			resources.add(resource);
 		}
@@ -34,8 +35,6 @@ public class GoAsm extends AssyLanguage {
 	}
 	
 	public void assembleClearGlobal(String variable, int numBytes) throws Exception {
-		// Make sure the resource function is included
-		this.addResource("clear_global_string.asm");
 		io.indent();
 		
 		String address = "Addr " + variable;
@@ -44,6 +43,7 @@ public class GoAsm extends AssyLanguage {
 		Register[] preRegisters = this.assemblePreCall();
 		
 		String procedure = "clear_global_string";
+		this.addResource(procedure);
 		this.assembleParameter(Integer.toString(numBytes), procedure);
 		this.assembleParameter(address, procedure);
 		this.assembleCall(procedure);
@@ -121,7 +121,7 @@ public class GoAsm extends AssyLanguage {
 	@Override 
 	public void assembleDeclaration(Variable variable, Register register) throws Exception {
 		// Move whatever value is at register into variable in stack
-		int offset = variable.stackIndex * 4;
+		int offset = this.getStackPointerOffset(variable);
 		io.setComment("Store value to variable");
 		io.println("Mov [Esp + %d], %s", offset, register);
 	}
@@ -244,7 +244,6 @@ public class GoAsm extends AssyLanguage {
 	
 	@Override 
 	public String assembleIntegerToString(Register register, Node operand) throws Exception {
-		this.addResource("int_to_string.asm");
 		io.indent();
 		
 		String address = "Addr " + this.temporaryGlobal;
@@ -257,6 +256,7 @@ public class GoAsm extends AssyLanguage {
 		
 		String maxDig = Integer.toString(this.maxIntegerDigits) + "D";
 		String procedure = "int_to_string";
+		this.addResource(procedure);
 		this.assembleParameter(maxDig, procedure);
 		this.assembleParameter(address, procedure);
 		this.assembleParameter(register.toString(), procedure);
@@ -285,7 +285,27 @@ public class GoAsm extends AssyLanguage {
 	
 	/**
 	 * Returns register with data or data pointer
-	 * Stores length in Eax
+	 * LITERAL:
+	 *	    BOOLEAN:
+	 *	   		Eax: 1
+	 *	   		new Register: 0 or 1
+	 *	   
+	 *	    INTEGER:
+	 *	   		Eax: num digits
+	 *	   		new Register: binary integer
+	 *
+	 *		STRING:
+	 *			Eax: num characters
+	 *			new Register: "Addr [...]", directly callable
+	 *
+	 * VARIABLE:
+	 * 		BOOLEAN:
+	 * 			Eax: 1
+	 * 			new Register: 0 or 1
+	 * 
+	 * 		INTEGER:
+	 * 			Eax: 4
+	 * 			
 	 */
 	@Override
 	public Register assembleOperand(Node operand) throws Exception { 
@@ -331,16 +351,43 @@ public class GoAsm extends AssyLanguage {
 			if (variable == null) {
 				throw new Exception("Variable used before it was declared.");
 			}
-			// TODO: bytewidth and typing
-			byteWidth = 1;
-			operandString = String.format("[Esp + %d]", variable.stackIndex * 4);
+			
+			TypeSystem type = variable.type;
+			switch (type) {
+			case INTEGER:
+				byteWidth = 4;
+				break;
+			case STRING:
+				byteWidth = 1;
+				
+				
+				// Get string width
+				Register[] preRegisters = this.assemblePreCall();
+				String procedure = "get_string_length";
+				this.addResource(procedure);
+				String variableLocation = String.format("[Esp + %d]", this.getStackPointerOffset(variable));
+				this.assembleParameter(variableLocation, procedure);
+				this.assembleCall(procedure);
+				this.assemblePostCall(preRegisters);;
+				
+				// String length in Eax
+				byteWidth = -1;
+				break;
+			default:
+				break;
+			}
+
+			// Get current stack index
+			operandString = String.format("[Esp + %d]", this.getStackPointerOffset(variable));
 		}
 		else {
 			throw new SyntaxError("Should not be here...");
 		}
 		
-		// Move length to Eax
-		io.println("Mov Eax, %dD", byteWidth);
+		// Move length to Eax (otherwise, assume already in Eax
+		if (byteWidth > 0) {
+			io.println("Mov Eax, %dD", byteWidth);
+		}
 		// Move value to register
 		io.setComment("assemble operand %s", operandElement);
 		io.println("Mov %s, %s", register, operandString);
@@ -491,6 +538,10 @@ public class GoAsm extends AssyLanguage {
 			System.out.println("Failed to compile");
 			return null;
 		}
+	}
+	
+	public int getStackPointerOffset(Variable variable) {
+		return this.currentScope.getStackOffset(variable) * 4;
 	}
 	
 	@Override

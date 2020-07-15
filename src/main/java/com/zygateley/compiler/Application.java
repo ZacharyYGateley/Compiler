@@ -30,7 +30,7 @@ public class Application {
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws Exception {
-		String sourceFile = FileIO.getAbsolutePath("Examples/Example0/Example0.fnc");
+		String sourceFile = FileIO.getAbsolutePath("Examples/Example1/Example1.fnc");
 		PushbackReader pushbackReader = FileIO.getReader(sourceFile);
 		
 		String baseName = sourceFile.substring(0, sourceFile.lastIndexOf('.'));

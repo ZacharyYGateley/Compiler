@@ -10,7 +10,7 @@ class Variable {
 	public final Symbol symbol;
 	public TypeSystem type;
 	public int stackIndex = -1;
-	public static Variable NONE = new Variable(null);
+	public final static Variable NONE = new Variable(null);
 	
 	public Variable(Symbol s) {
 		symbol = s;
@@ -74,6 +74,10 @@ public class Scope implements Iterable {
 		return this.stack.size();
 	}
 	
+	public int getStackOffset(Variable variable) {
+		return this.size() - variable.stackIndex;
+	}
+	
 	public Variable getVariable(Symbol symbol) {
 		for (Variable variable : this.stack) {
 			if (variable.symbol == symbol) {
@@ -110,11 +114,13 @@ public class Scope implements Iterable {
 	public void pushAnonymous(String value) throws Exception {
 		this.language.io.setComment("Anonymous value added to stack");
 		this.language.assemblePush(value);
+		this.stack.push(Variable.NONE);
 	}
 	
 	public void popAnonymous(Register toRegister) throws Exception {
 		this.language.io.setComment("Anonymous value removed from stack");
 		this.language.assemblePop(toRegister);
+		this.stack.pop();
 	}
 	@Override
 	public Iterator<Variable> iterator() {
