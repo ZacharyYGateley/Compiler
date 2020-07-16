@@ -35,7 +35,7 @@ public class Assembler {
 		language.assembleFinish();
 		
 		// Output all functions
-		// All functions are considered global
+		// All functions are considered global from the viewpoint of assembly
 		language.assembleFooter();
 		
 		return this.io.toString();
@@ -110,7 +110,8 @@ public class Assembler {
 			}
 
 			// Pad to certain width so that comments align
-			if (!this.comment.isBlank()) {
+			// But do not truncate
+			if (!this.comment.isBlank() && s.length() < 40) {
 				int width = this.commentsAt - (currentIndent * this.indentString.length());
 				s = String.format("%-" + width + "s", s);
 			}

@@ -102,10 +102,10 @@ public class Parser {
 		// Root node of syntax tree
 		// The starting rule MUST be a CFG rule
 		// Precedence rules depend on parent rules and their respective follow sets
-		NonTerminal startingRule = NonTerminal.getNonTerminal(Token.startingRule);
+		NonTerminal startingRule = NonTerminal.getNonTerminal(GrammarRule.startingRule);
 		Node syntaxTree = parseCFGRule(startingRule, tokenStream.length());
 		
-		StreamItem nextItem = tokenStream.peekLeft();
+		Token nextItem = tokenStream.peekLeft();
 		if (nextItem == null || nextItem.token != Terminal.EOF) {
 			this.fatalError("Syntax error: program closed before code finished parsing.");
 			return null;
@@ -210,7 +210,7 @@ public class Parser {
 		while (!tokenStream.isEmpty()) {
 			// Skip all EMPTY terminals in stream
 			while (!tokenStream.isEmpty()) {
-				StreamItem nextItem = tokenStream.peekLeft();
+				Token nextItem = tokenStream.peekLeft();
 				if (nextItem == null || nextItem.token != Terminal.EMPTY) break;
 				tokenStream.readLeft();
 			}
@@ -225,7 +225,7 @@ public class Parser {
 			// Is pattern finished?
 			boolean patternFinished = patternIndex == pattern.length - 1;
 			if (patternFinished) {
-				StreamItem nextItem = tokenStream.peekLeft();
+				Token nextItem = tokenStream.peekLeft();
 				boolean inFollow = rule.inFollow(nextItem.token);
 				if (!inFollow) {
 					// Syntax error
@@ -239,8 +239,8 @@ public class Parser {
 			// Otherwise, keep building from rule
 			patternIndex++;
 			int patternTokenValue = pattern[patternIndex];
-			Token patternToken;
-			if (Token.isTerminal(patternTokenValue)) {
+			GrammarRule patternToken;
+			if (GrammarRule.isTerminal(patternTokenValue)) {
 				patternToken = Terminal.getTerminal(patternTokenValue);
 			}
 			else {
@@ -258,7 +258,7 @@ public class Parser {
 			// Terminal
 			// These are immediately added to the syntax tree
 			if (patternToken.isTerminal()) {
-				StreamItem item = tokenStream.readLeft();
+				Token item = tokenStream.readLeft();
 				
 				// Verify pattern match
 				if (item.token != patternToken) {
@@ -337,7 +337,7 @@ public class Parser {
 		//  (and by balanced parentheses, curly, square brackets)
 		// Concurrently, link matching open/close parens, curlies, squares
 		// Concurrently, indicate all negations
-		ArrayDeque<StreamItem> 
+		ArrayDeque<Token> 
 			parenStack = new ArrayDeque<>(), 
 			curlyStack = new ArrayDeque<>(), 
 			squareStack = new ArrayDeque<>();
@@ -362,7 +362,7 @@ public class Parser {
 			lastIsOpenParen = thisIsOpenParen;
 			
 			// Consume stream
-			StreamItem item = tokenStream.readLeft();
+			Token item = tokenStream.readLeft();
 			inFollow = parentRule.inFollow(item.token);
 			isBalanced = (openGroupCount == 0);
 			if (inFollow && isBalanced) {
@@ -404,12 +404,12 @@ public class Parser {
 			// Find negations
 			//	1) any +/- operators preceded by an operator
 			//	2) any open paren preceded by +/-
-			thisIsSign = Token.isSign(thisToken.tokenValue);
-			thisIsOperator = Token.isOperator(thisToken.tokenValue);
+			thisIsSign = GrammarRule.isSign(thisToken.tokenValue);
+			thisIsOperator = GrammarRule.isOperator(thisToken.tokenValue);
 			thisIsOpenParen = (thisToken == Terminal.PAREN_OPEN);
 			if (thisIsSign && (lastIsOperator || lastIsOpenParen || lastIsBOF)) {
 				// Set operand to negated
-				StreamItem nextItem = tokenStream.peekLeft();
+				Token nextItem = tokenStream.peekLeft();
 				nextItem.negated = (thisToken == Terminal.MINUS);
 				// Clear this token from stream
 				item.token = Terminal.EMPTY;
@@ -462,7 +462,7 @@ public class Parser {
 	 * @param openItem stream item to push
 	 * @param position position in TokenStream
 	 */
-	private void markOpenGroup(ArrayDeque<StreamItem> stack, StreamItem openItem, int position) { 
+	private void markOpenGroup(ArrayDeque<Token> stack, Token openItem, int position) { 
 		stack.push(openItem);
 		openItem.openGroupIndex = position;
 	}
@@ -478,8 +478,8 @@ public class Parser {
 	 * @param closePosition position of this close item in the TokenStream
 	 * @return no return value, all processing complete
 	 */
-	private void markCloseGroup(ArrayDeque<StreamItem> stack, StreamItem closeItem, int closePosition) {
-		StreamItem openItem = stack.pop();
+	private void markCloseGroup(ArrayDeque<Token> stack, Token closeItem, int closePosition) {
+		Token openItem = stack.pop();
 		closeItem.openGroupIndex = openItem.openGroupIndex;
 		closeItem.closeGroupIndex = closePosition;
 		openItem.closeGroupIndex = closePosition;
@@ -535,12 +535,12 @@ public class Parser {
 
 		// Look for partition starting at start position
 		int partition = startPosition; 
-		StreamItem item = null;
+		Token item = null;
 		int itemCount = 0;
 		boolean leftmostIsEmpty = false;
 		while (tokenStream.getRightIndexExcl() > startPosition) {
 			// Get token at next location
-			StreamItem nextItem = tokenStream.readRight();
+			Token nextItem = tokenStream.readRight();
 			
 			// Skip empty
 			if (nextItem.token == Terminal.EMPTY) {
@@ -559,7 +559,7 @@ public class Parser {
 					// Recur to get parse tree
 					// And set as these stream items' parse trees 
 					Node embeddedTree = parsePrecedenceRule(rule, item.openGroupIndex + 1, item.closeGroupIndex);
-					StreamItem opener = tokenStream.peekAt(item.openGroupIndex);
+					Token opener = tokenStream.peekAt(item.openGroupIndex);
 					opener.syntaxSubtree = item.syntaxSubtree = embeddedTree;
 					// Since we are passing a parse tree
 					// from one StreamItem to another,
@@ -717,7 +717,7 @@ public class Parser {
 				// Extend by one
 				tokenStream.setRightIndexExcl(++endPosition);
 				// If this newly-included character is empty, extend again
-				StreamItem nextItem = tokenStream.peekRight();
+				Token nextItem = tokenStream.peekRight();
 				if (nextItem != null && nextItem.token != Terminal.EMPTY) break;
 			}
 			
