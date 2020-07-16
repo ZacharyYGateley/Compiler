@@ -304,6 +304,7 @@ public abstract class AssyLanguage {
 				byteWidth = 1;
 				prefix = "str";
 				value = "\"" + StringUtils.unescapeAssemblyString(value.substring(1, value.length() - 1) + "\0") + "\"";
+				value = value.replace("\"\",", "").replace(",\"\"", "");
 				break;
 			case INTEGER:
 				byteWidth = 4;
@@ -514,8 +515,7 @@ class StringUtils {
 				.replaceAll("\\\\n", "\",10,\"")
 				.replaceAll("\\\\f", "\",12,\"")
 				.replaceAll("\\\\r", "\",13,\"")
-				.replaceAll("\"\",", "")
-				.replaceAll(",\"\"", "");
+				.replaceAll("\"\",", "");
 	}
 	
 /**
