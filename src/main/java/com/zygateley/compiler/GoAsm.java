@@ -438,21 +438,21 @@ public class GoAsm extends AssyLanguage {
 	public Register assembleOperand(Node operand) throws Exception { 
 		// Only child
 		io.println("; Prepare operand");
-		Element operandElement = operand.getElementType();
+		Construct operandElement = operand.getElementType();
 		TypeSystem operandType = operand.getType();
 		int byteWidth = 0;
 		String operandString = null;
 		Register register = registry.allocate();
 		String pointer;
-		if (Element.FALSE.equals(operandElement)) {
+		if (Construct.FALSE.equals(operandElement)) {
 			byteWidth = 1;
 			operandString = "0";
 		}
-		else if (Element.TRUE.equals(operandElement)) {
+		else if (Construct.TRUE.equals(operandElement)) {
 			byteWidth = 1;
 			operandString = "1";
 		}
-		else if (Element.LITERAL.equals(operandElement)) {
+		else if (Construct.LITERAL.equals(operandElement)) {
 			switch (operandType) {
 			case INTEGER:
 				byteWidth = 4;
@@ -472,7 +472,7 @@ public class GoAsm extends AssyLanguage {
 				break;
 			}
 		}
-		else if (Element.VARIABLE.equals(operandElement)) {
+		else if (Construct.VARIABLE.equals(operandElement)) {
 			// Move value pointer to register
 			Variable variable = operand.getVariable();
 			if (variable == null) {

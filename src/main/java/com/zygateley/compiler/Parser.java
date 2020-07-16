@@ -159,8 +159,8 @@ public class Parser {
 	private Node parseCFGRule(NonTerminal rule, int endPosition) throws Exception {
 		// Begin new subtree
 		Node syntaxSubtree;
-		Element construct = rule.basicElement;
-		if (Element.SCOPE.equals(construct)) {
+		Construct construct = rule.basicElement;
+		if (Construct.SCOPE.equals(construct)) {
 			syntaxSubtree = new Node(rule, null, this.currentScope);
 			this.currentScope = syntaxSubtree.getScope();
 			this.scopeStack.add(this.currentScope);
@@ -292,7 +292,7 @@ public class Parser {
 			}
 		}
 		
-		if (Element.SCOPE.equals(construct)) {
+		if (Construct.SCOPE.equals(construct)) {
 			int lastIndex = this.scopeStack.size() - 1;
 			this.scopeStack.remove(lastIndex);
 			this.currentScope = (lastIndex > 0 ? this.scopeStack.get(lastIndex - 1) : null);
@@ -788,7 +788,7 @@ public class Parser {
 		
 		// Make sure the current symbol is scoped correctly
 		// Static scoping
-		if (symbol != null && Element.VARIABLE.equals(terminal.construct)) {
+		if (symbol != null && Construct.VARIABLE.equals(terminal.construct)) {
 			Variable variable = null;
 			for (Scope scope : this.scopeStack) {
 				variable = scope.getVariable(symbol);

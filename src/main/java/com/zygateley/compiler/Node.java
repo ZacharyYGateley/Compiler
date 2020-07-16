@@ -31,7 +31,7 @@ import java.util.Iterator;
  */
 public class Node implements Iterable<Node> {
 	// Assembly element type
-	private final Element basicElement;
+	private final Construct basicElement;
 	
 	// Type System type
 	private TypeSystem type;
@@ -81,7 +81,7 @@ public class Node implements Iterable<Node> {
 		this.terminal = operatorTerminal;
 		this.scope = new Scope(null, parentScope);
 	}
-	public Node(Element element, NonTerminal nonTerminal) {
+	public Node(Construct element, NonTerminal nonTerminal) {
 		this.basicElement = element;
 		this.nonTerminal = nonTerminal;
 	}
@@ -108,13 +108,13 @@ public class Node implements Iterable<Node> {
 	}
 	////////////////////////////////
 	// Constructors for Optimizer //
-	public Node(Element basicElement) {
+	public Node(Construct basicElement) {
 		this.basicElement = basicElement;
 	}
 	/**
 	 * @param nonTerminal rule for this node
 	 */
-	public Node(Element basicElement, Node parent, 
+	public Node(Construct basicElement, Node parent, 
 			NonTerminal nonTerminal, Terminal terminal, 
 			Symbol symbol, String value, 
 			Scope scope, Variable variable, 
@@ -135,7 +135,7 @@ public class Node implements Iterable<Node> {
 
 	
 	// Basic element, CFG, and Symbols
-	public Element getElementType() {
+	public Construct getElementType() {
 		return this.basicElement;
 	}
 	public TypeSystem getType() {
@@ -387,7 +387,7 @@ public class Node implements Iterable<Node> {
 		return this.asXMLNode(depth, openNode, false, showCFG);
 	}
 	public String asXMLNode(int depth, boolean openNode, boolean noChildren, boolean showCFG) throws IOException {
-		Element element = this.basicElement;
+		Construct element = this.basicElement;
 		if (!openNode) {
 			return this.asXMLNode("</" + element + ">", depth);
 		}
@@ -447,7 +447,7 @@ public class Node implements Iterable<Node> {
 	}
 	public String toString(boolean withChildren) {
 		StringBuilder output = new StringBuilder();
-		Element element = Element.NULL;
+		Construct element = Construct.NULL;
 		boolean isEmpty = true;
 		if (this.basicElement != null) {
 			element = this.basicElement;
@@ -462,13 +462,13 @@ public class Node implements Iterable<Node> {
 			// Terminal
 			if (isEmpty) {
 				output.append(terminal + "");
-				if (Element.NULL.equals(element) && terminal.construct != Element.PASS) {
+				if (Construct.NULL.equals(element) && terminal.construct != Construct.PASS) {
 					element = terminal.construct;
 				}
 			}
 			else output.append(getParameterString("terminal", terminal + ""));
 		}
-		if (element != Element.NULL) {
+		if (element != Construct.NULL) {
 			output.append(getParameterString("element", element+""));
 		}
 		output.append(this.getStringAllParameters());

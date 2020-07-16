@@ -64,7 +64,7 @@ public class PythonTranslator {
 		}
 		
 		// Try NonTerminal
-		Element element = node.getElementType();
+		Construct element = node.getElementType();
 		Node firstChild = (Node) node.getFirstChild();
 		Node nextChild = null;
 		if (firstChild != null) {
@@ -120,7 +120,7 @@ public class PythonTranslator {
 				nextChild = nextChild.getNextSibling();
 				if (nextChild != null) {
 					println();
-					if (Element.IF.equals(nextChild.getElementType())) {
+					if (Construct.IF.equals(nextChild.getElementType())) {
 						print("el");
 						translateNode(nextChild);
 					}

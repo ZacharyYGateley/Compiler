@@ -19,7 +19,7 @@ public enum TypeSystem {
 			typeAssignAndCheck(subtree);
 		}
 		
-		Element basicElement = syntaxTree.getElementType();
+		Construct basicElement = syntaxTree.getElementType();
 		Node leftChild = syntaxTree.getFirstChild();
 		Node nextChild = (leftChild == null ? null : leftChild.getNextSibling());
 		TypeSystem leftType = (leftChild == null ? null : leftChild.getType());

@@ -4,7 +4,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.instrument.IllegalClassFormatException;
 
-import com.zygateley.compiler.Element.Reflow;
+import com.zygateley.compiler.Grammar.Reflow;
 
 /**
  * Crawl syntaxTree<Node> looking for BasicToken.Elements
@@ -43,7 +43,7 @@ public class Optimizer {
 		this.log("<!-- Middle stage optimization initiated -->\n");
 		
 		// Create placeholder for optimized tree
-		Node optimizedTree = new Node(Element.SCOPE);
+		Node optimizedTree = new Node(Construct.SCOPE);
 		
 		// Build stage 1 optimized tree with REFLOW_LIMITs
 		buildOptimizedTreeFrom(syntaxTree, optimizedTree);
@@ -81,7 +81,7 @@ public class Optimizer {
 		this.log("<!-- Middle stage optimization finished -->\n\n");
 		
 		// Remove placeholder SCOPE
-		if (optimizedTree.getChildCount() != 1 || !Element.SCOPE.equals(optimizedTree.getFirstChild().getElementType())) {
+		if (optimizedTree.getChildCount() != 1 || !Construct.SCOPE.equals(optimizedTree.getFirstChild().getElementType())) {
 			throw new IllegalClassFormatException("The top level of the grammar must be a SCOPE construct.");
 		}
 		optimizedTree = optimizedTree.getFirstChild();
@@ -102,7 +102,7 @@ public class Optimizer {
 		// crawlChildren does not process parent node, 
 		// so the top-level node in a tree is not processed unless
 		// we explicitly make it a child to a dummy parent
-		Node treeHolder = new Node(Element.REFLOW_LIMIT);
+		Node treeHolder = new Node(Construct.REFLOW_LIMIT);
 		treeHolder.addChild(parseTree);
 		buildOptimizedSubtree(treeHolder, optimizedTree, false);
 	}
@@ -171,7 +171,7 @@ public class Optimizer {
 		for (Node childNodeAsBasic : parseParentNode) {
 			Node parseChildNode = (Node) childNodeAsBasic;
 			// Get basic element type
-			Element basicElement = parseChildNode.getElementType();
+			Construct basicElement = parseChildNode.getElementType();
 			// Backup, element should not be null
 			if (basicElement == null) {
 				nonTerminal = parseChildNode.getRule();
@@ -188,9 +188,9 @@ public class Optimizer {
 			}
 			
 			// Skip NULL (non-process leaf branch)
-			if (!basicElement.equals(Element.NULL)) {
+			if (!basicElement.equals(Construct.NULL)) {
 				Node optimizedRecursionNode = null;
-				if (!basicElement.equals(Element.PASS)) {
+				if (!basicElement.equals(Construct.PASS)) {
 					// This parse tree node is a basic element
 					// Create new optimized node, duplicating contents of parse tree node
 					Node optimizedChildNode = new Node(basicElement, optimizedParentNode, 
@@ -227,8 +227,8 @@ public class Optimizer {
 			// Execute reflow on this node, if it applies
 			// Does not apply to REFLOW_LIMIT
 			// (or PASS, which has already been ignored--not in tree)
-			Element basicElement = child.getElementType();
-			if (!Element.REFLOW_LIMIT.equals(basicElement)) {
+			Construct basicElement = child.getElementType();
+			if (!Construct.REFLOW_LIMIT.equals(basicElement)) {
 				applyReflow(child, true);
 			}
 			
@@ -264,16 +264,16 @@ public class Optimizer {
 	 */
 	private void applyReflow(final Node source, final boolean allowMerge) throws Exception {
 		try {
-			Element sourceType = source.getElementType();
+			Construct sourceType = source.getElementType();
 			
 			// Upwards bindings
 			Node parent = source.getParent();
 			{
 				Node target = parent;
-				Element targetType = (target != null ? target.getElementType() : null);
+				Construct targetType = (target != null ? target.getElementType() : null);
 				
 				// Move this element to the child of the next sibling?
-				Element resultType = Element.getReflowResult(
+				Construct resultType = Grammar.getReflowResult(
 						Reflow.MOVE_UPWARDS_AND_LEFT,
 						sourceType, targetType
 						);
@@ -290,10 +290,10 @@ public class Optimizer {
 			// Rightward bindings
 			Node rightTarget = source.getNextSibling();
 			if (rightTarget != null) {
-				Element targetType = (rightTarget != null ? rightTarget.getElementType() : null);
+				Construct targetType = (rightTarget != null ? rightTarget.getElementType() : null);
 				
 				// Move this element to the child of the next sibling?
-				Element resultType = Element.getReflowResult(
+				Construct resultType = Grammar.getReflowResult(
 						Reflow.MOVE_RIGHT_TO_CHILD,
 						sourceType, targetType
 						);
@@ -314,7 +314,7 @@ public class Optimizer {
 			// Leftward bindings
 			Node leftTarget = source.getPreviousSibling();
 			if (leftTarget != null) {
-				Element targetType = (leftTarget != null ? leftTarget.getElementType() : null);
+				Construct targetType = (leftTarget != null ? leftTarget.getElementType() : null);
 				
 				/*
 				// Merge this node into the next node
@@ -355,7 +355,7 @@ public class Optimizer {
 				*/
 				
 				// Move this element to the child of the previous sibling ?
-				Element resultType = Element.getReflowResult(
+				Construct resultType = Grammar.getReflowResult(
 						Reflow.MOVE_LEFT_TO_CHILD,
 						sourceType, targetType
 						);
@@ -409,7 +409,7 @@ public class Optimizer {
 	 */
 	private Node cleanOptimizedTree(Node optimizedNode) { 
 		Node nextNode;
-		Element nodeElement = optimizedNode.getElementType();
+		Construct nodeElement = optimizedNode.getElementType();
 		if (nodeElement.isTemporary) {
 			// Temporary element found
 			// Remove all children and place as right siblings to STOP
