@@ -31,6 +31,7 @@ public abstract class AssyLanguage {
 	protected Scope currentScope;
 	protected HashMap<Symbol, String> globalSymbolMap = new HashMap<>();
 	protected int globalVariableCount = 0;
+	protected final String heapHandle = "heapHandle";
 	protected final String inputHandle = "inputHandle";
 	protected final String outputHandle = "outputHandle";
 	protected final String temporaryGlobal = "tempGlobal";
@@ -44,6 +45,7 @@ public abstract class AssyLanguage {
 	protected abstract void assembleCall(String method) throws Exception;
 	protected abstract void assembleClearRegister(Register register) throws Exception;
 	protected abstract void assembleCodeHeader() throws Exception;
+	protected abstract Register assembleConcatenation(Node operand0, Node operand1) throws Exception;
 	protected abstract void assembleConditionalJump(Node condition, Node subtreeIfTrue, Node subtreeIfFalse) throws Exception;
 	protected abstract void assembleDeclaration(Variable variable, Register register) throws Exception;
 	protected abstract Register assembleExpression(Node parseTree) throws Exception;
@@ -51,8 +53,9 @@ public abstract class AssyLanguage {
 	protected abstract Register assembleFooter() throws Exception;
 	protected abstract void assembleFunctions() throws Exception;
 	protected abstract String assembleGlobalString(String name, int byteWidth, String value) throws Exception;
-	protected abstract void assembleHeader() throws Exception;
 	protected abstract void assembleHandles() throws Exception;
+	protected abstract void assembleHeader() throws Exception;
+	protected abstract void assembleMalloc(Register byteWidth) throws Exception;
 	protected abstract String assembleIntegerToString(Register register, Node operand) throws Exception;
 	protected abstract Register assembleOperand(Node operand) throws Exception;
 	protected abstract void assembleOutput(String dataLocation) throws Exception;
@@ -104,8 +107,8 @@ public abstract class AssyLanguage {
 		Element construct = pn.getElementType();
 		Variable variable;
 		Symbol symbol;
-		Node operand;
-		Register operandRegister;
+		Node operand, firstChild, nextChild;
+		Register operandRegister, r0, r1;
 		switch (construct) {
 		case SCOPE:
 			this.currentScope = pn.getScope();
@@ -140,13 +143,13 @@ public abstract class AssyLanguage {
 			io.println("; function " + symbol);
 			return;
 		case VARDEF:
-			Node firstChild = pn.getFirstChild();
+			firstChild = pn.getFirstChild();
 			variable = firstChild.getVariable();
 			symbol = variable.getSymbol();
 			io.println("; Store value to " + symbol);
 			
 			// Allocate a new temporary register
-			Register r0 = this.registry.allocate();
+			r0 = this.registry.allocate();
 			if (variable == null) {
 				throw new Exception("Variable not properly linked during parsing.");
 				// Variable not found, declare new
@@ -159,9 +162,12 @@ public abstract class AssyLanguage {
 			}
 			
 			operand = pn.getLastChild();
-			operandRegister = this.assembleOperand(operand);
+			operandRegister = this.getOperandRegister(operand);
 			this.assembleDeclaration(variable, operandRegister);
 			operandRegister.free();
+			
+			// Make sure type of variable is up-to-date
+			symbol.setType(operand.getType());
 			
 			r0.free();
 			
@@ -169,7 +175,7 @@ public abstract class AssyLanguage {
 		case OUTPUT:
 			io.println("; Output");
 			operand = pn.getLastChild();
-			operandRegister = this.assembleOperand(operand);
+			operandRegister = this.getOperandRegister(operand);
 			variable = operand.getVariable();
 			TypeSystem type;
 			if (variable != null) {
@@ -188,6 +194,80 @@ public abstract class AssyLanguage {
 				this.assembleOutput(operandRegister.toString());
 			}
 			operandRegister.free();
+			
+			break;
+		case OPERATION:
+		case ADD:
+			// Make sure value/result of first child is saved in stack 
+			firstChild = pn.getFirstChild();
+			r0 = this.getOperandRegister(firstChild);
+			Variable v0 = firstChild.getVariable();
+			if (v0 == null) {
+				v0 = new Variable();
+				v0.linkRegister(r0);
+				firstChild.setVariable(v0);
+			}
+			// Make sure operand variable is in stack
+			if (v0.getStackOffset() < 0) {
+				this.currentScope.pushVariable(v0);
+			}
+			r0.free();
+			
+			// Make sure value/result of second child is saved in stack 
+			nextChild = firstChild.getNextSibling();
+			r0 = this.getOperandRegister(nextChild);
+			Variable v1 = nextChild.getVariable();
+			if (v1 == null) {
+				v1 = new Variable();
+				v1.linkRegister(r0);
+				nextChild.setVariable(v1);
+			}
+			// Make sure operand variable is in stack
+			if (v1.getStackOffset() < 0) {
+				this.currentScope.pushVariable(v1);
+			}
+			r0.free();
+			
+			// Check for bad type operation
+			TypeSystem type0 = firstChild.getType();
+			if (type0 == null && firstChild.getSymbol() != null) {
+				type0 = firstChild.getSymbol().getType();
+			}
+			TypeSystem type1 = nextChild.getType();
+			if (type1 == null && nextChild.getSymbol() != null) {
+				type1 = nextChild.getType();
+			}
+			
+			if (type0 != type1) {
+				// Different types
+				throw new Exception(String.format("Bad addition: %s and %s", type0, type1));
+			}
+			
+			// Both types are the same
+			variable = new Variable();
+			switch (type0) {
+			case INTEGER:
+				break;
+			case STRING:
+				operandRegister = this.assembleConcatenation(firstChild, nextChild);
+				variable.linkRegister(operandRegister);
+				// Non-anonymous variable now stored in register
+				// If future procedures need its register, it will be pushed to stack and remembered
+
+				// New string length stored in Eax from assembleConcatenation
+				break;
+			default:
+				throw new Exception(String.format("Bad addition: %s", type0));
+			}
+			
+			// Link node and register
+			pn.setVariable(variable);
+			// Make sure node type is up to date 
+			pn.setType(type0);
+			variable.setType(type0);
+			if (variable.symbol != null) {
+				variable.symbol.setType(type0);
+			}
 			
 			break;
 		default:
@@ -247,11 +327,26 @@ public abstract class AssyLanguage {
 		}
 		
 		// Location for handles
+		assembleGlobalString(this.heapHandle, 4, "0");
 		assembleGlobalString(this.inputHandle, 4, "0");
 		assembleGlobalString(this.outputHandle, 4, "0");
 		
 		// Locate for output from API
 		assembleGlobalString(this.temporaryGlobal, this.temporaryGlobalLength, "0");
+	}
+	
+	protected Register getOperandRegister(Node operand) throws Exception {
+		Register operandRegister;
+		if (operand.getChildCount() == 0) {
+			// Literal or variable
+			operandRegister = this.assembleOperand(operand);
+		}
+		else {
+			// Expression / operation
+			this.assembleNode(operand);
+			operandRegister = operand.getVariable().register;
+		}
+		return operandRegister;
 	}
 	
 	/**

@@ -9,11 +9,21 @@ class Variable {
 	public Register register = null;
 	public final Symbol symbol;
 	public TypeSystem type;
-	public int stackIndex = -1;
+	private int stackOffset = -1;
 	public final static Variable NONE = new Variable(null);
 	
+	public Variable() {
+		this(null);
+	}
 	public Variable(Symbol s) {
 		symbol = s;
+	}
+	
+	public int getStackOffset() {
+		return this.stackOffset;
+	}
+	public void setStackOffset(int stackOffset) {
+		this.stackOffset = stackOffset;
 	}
 	
 	public Symbol getSymbol() {
@@ -40,7 +50,7 @@ class Variable {
 	}
 }
 
-public class Scope implements Iterable {
+public class Scope implements Iterable<Variable> {
 	public final Scope parent;
 	// Contains all scope variables
 	private final ArrayDeque<Variable> stack;
@@ -74,8 +84,16 @@ public class Scope implements Iterable {
 		return this.stack.size();
 	}
 	
-	public int getStackOffset(Variable variable) {
-		return this.size() - variable.stackIndex;
+	public int getStackOffset(Variable variable) throws Exception {
+		if (variable.getStackOffset() < 0) {
+			if (variable.register == null) {
+				throw new Exception(String.format("Variable %s is not accessible!", variable));
+			}
+			else {
+				this.pushVariable(variable);
+			}
+		}
+		return this.size() - variable.getStackOffset() - 1;
 	}
 	
 	public Variable getVariable(Symbol symbol) {
@@ -93,7 +111,7 @@ public class Scope implements Iterable {
 	
 	public Variable addVariable(Symbol symbol) throws Exception {
 		Variable variable = new Variable(symbol);
-		variable.stackIndex = this.stack.size();
+		variable.setStackOffset(this.stack.size());
 		this.stack.push(variable);
 		return variable;
 	}
@@ -106,6 +124,21 @@ public class Scope implements Iterable {
 		stack.push(variable);
 	}
 	*/
+
+	/**
+	 * Must adjust the stack pointer in your respective assy language
+	 * @param numberOfVars
+	 * @throws Exception
+	 */
+	public void popAnonymous(int numberOfVars) throws Exception {
+		for (int i = 0; i < numberOfVars; i++) this.stack.pop();
+	}
+	
+	public void popAnonymous(Register toRegister) throws Exception {
+		this.language.io.setComment("Anonymous value removed from stack");
+		this.language.assemblePop(toRegister);
+		this.stack.pop();
+	}
 	
 	public void pushAnonymous(Register fromRegister) throws Exception {
 		this.pushAnonymous(fromRegister.toString());
@@ -117,10 +150,14 @@ public class Scope implements Iterable {
 		this.stack.push(Variable.NONE);
 	}
 	
-	public void popAnonymous(Register toRegister) throws Exception {
-		this.language.io.setComment("Anonymous value removed from stack");
-		this.language.assemblePop(toRegister);
-		this.stack.pop();
+	public void pushVariable(Variable variable) throws Exception { 
+		this.language.io.setComment("Linked variable added to stack");
+		this.language.assemblePush(variable.register);
+		if (variable.register == null) {
+			throw new Exception(String.format("Variable %s is not currently in a register!", variable));
+		}
+		variable.setStackOffset(this.stack.size());
+		this.stack.push(variable);
 	}
 	@Override
 	public Iterator<Variable> iterator() {

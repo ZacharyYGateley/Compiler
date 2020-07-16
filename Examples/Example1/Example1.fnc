@@ -1,3 +1,9 @@
+b = "If" + " I";
+echo b + " had a millon dolla";
+
+
+noco
+
 // Run a condition then output Hello, World
 if (false) {
 	echo "The \"condition\":\t true";

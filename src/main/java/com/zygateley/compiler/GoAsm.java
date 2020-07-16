@@ -27,11 +27,11 @@ public class GoAsm extends AssyLanguage {
 	}
 	
 	@Override
-	public void assembleCall(String method) throws Exception {
-		io.println("Call %s", method);
+	public void assembleCall(String procedure) throws Exception {
+		io.println("Call %s", procedure);
 	}
-	public void assembleCall(String method, boolean down) throws Exception {
-		io.println("Call %s %s", (down ? ">" : "<"), method);
+	public void assembleCall(String procedure, boolean down) throws Exception {
+		io.println("Call %s %s", (down ? ">" : "<"), procedure);
 	}
 	
 	public void assembleClearGlobal(String variable, int numBytes) throws Exception {
@@ -108,6 +108,73 @@ public class GoAsm extends AssyLanguage {
 		io.println();
 		io.println(labelNext + ":");
 	}
+	
+	@Override
+	public Register assembleConcatenation(Node operand0, Node operand1) throws Exception {
+		// Will call once for each string
+		String procedure = "get_string_length";
+		this.addResource(procedure);
+
+		// Save state
+		Register[] preRegisters = this.assemblePreCall();
+		
+		// Get length of operand0
+		Variable v0 = operand0.getVariable();
+		this.assembleParameter(this.getStackAddress(v0), procedure);
+		this.assembleCall(procedure);
+		// Remember result in temporary global var
+		io.println("Mov [%s], Eax", this.temporaryGlobal);
+		
+		// Get length of operand 1
+		Variable v1 = operand1.getVariable();
+		this.assembleParameter(this.getStackAddress(v1), procedure);
+		this.assembleCall(procedure);
+		// Remember result
+		io.println("Mov [%s + 4], Eax", this.temporaryGlobal);
+		
+		// Registers available
+		// Sum lengths
+		// Length of operand 1 already in Eax
+		io.setComment("Sum string lengths");
+		io.println("Add Eax, [Esp + 4]");
+		
+		// Allocate space in heap
+		this.assembleMalloc("Eax");
+		io.setComment("Remember value in temp global");
+		io.println("Mov [%s + 8], Eax", this.temporaryGlobal);
+
+		// Recall state (never overwrites Eax)
+		this.assemblePostCall(preRegisters);
+		
+		// Move first string location to heap
+		// From address
+		Register r2 = this.registry.allocate();
+		io.println("Mov %s, %s", r2, this.getStackAddress(v0));
+		this.assembleMoveMemory(r2.toString(), "Eax", String.format("[%s]", this.temporaryGlobal));
+		// Eax now contains the location of the next byte to be placed
+		
+		// Move second string to heap
+		io.println("Mov %s, %s", r2, this.getStackAddress(v1));
+		this.assembleMoveMemory(r2.toString(), "Eax", String.format("[%s + 4]", this.temporaryGlobal));
+		// Eax now contains the location of the next byte to be placed
+		r2.free();
+
+		// Move \0 to last spot
+		io.setComment("Strings must end in 0");
+		io.println("Mov B[Eax], 0");
+		
+		// Resultant heap address in Eax
+		Register register = this.registry.allocate();
+		io.setComment("Move new string location to newly allocated register");
+		io.println("Mov %s, [%s + 8]", register, this.temporaryGlobal);
+		
+		// Store string length in Eax
+		io.println("Mov Eax, [%s]", this.temporaryGlobal);
+		io.setComment("Store string length in Eax");
+		io.println("Add Eax, [%s + 4]", this.temporaryGlobal);
+		
+		return register;
+	}
 
 	@Override
 	public void assembleDataSection() throws Exception {
@@ -121,9 +188,9 @@ public class GoAsm extends AssyLanguage {
 	@Override 
 	public void assembleDeclaration(Variable variable, Register register) throws Exception {
 		// Move whatever value is at register into variable in stack
-		int offset = this.getStackPointerOffset(variable);
+		String address = this.getStackAddress(variable);
 		io.setComment("Store value to variable");
-		io.println("Mov [Esp + %d], %s", offset, register);
+		io.println("Mov %s, %s", address, register);
 	}
 
 	@Override
@@ -217,9 +284,19 @@ public class GoAsm extends AssyLanguage {
 	public void assembleHandles() throws Exception {
 		Register[] preRegisters = this.assemblePreCall();
 		
+		String procedure;
+		
+		// Heap handle
+		io.println("; Get process heap handle");
+		procedure = "GetProcessHeap";
+		// No parameters
+		this.assembleCall(procedure);
+		io.setComment("Save heap handle");
+		io.println("Mov [%s], Eax", this.heapHandle);
+		
 		// Input handle
 		io.println("; Get input handle");
-		String procedure = "GetStdHandle";
+		procedure = "GetStdHandle";
 		this.assembleParameter("-10D", procedure);
 		this.assembleCall(procedure);
 		io.setComment("Save input handle");
@@ -281,6 +358,56 @@ public class GoAsm extends AssyLanguage {
 		// Address stored in register
 		io.outdent();
 		return register.toString();
+	}
+	
+	/**
+	 * Allocation address is stored in Eax
+	 */
+	@Override
+	public void assembleMalloc(Register byteWidth) throws Exception {
+		this.assembleMalloc(byteWidth.toString());
+	}
+	public void assembleMalloc(String byteWidthRegister) throws Exception {
+		Register[] preRegisters = this.assemblePreCall();
+		
+		String procedure = "HeapAlloc";
+		this.assembleParameter(byteWidthRegister, procedure);
+		this.assembleParameter("0", procedure);
+		this.assembleParameter(this.getPointer(this.heapHandle), procedure);
+		this.assembleCall(procedure);
+		// Leaves pointer to allocated memory in Eax
+		
+		this.assemblePostCall(preRegisters);
+	}
+	
+	/**
+	 * 
+	 * e.g.
+	 * <pre>
+	 * 			Mov Eax, 40200		; From address == 40200
+	 * 			Mov Ebx, 402F0		; To address == 402F0
+	 * 			Push 8D				; 8 bytes
+	 * 			Push Ebx			; location with to address
+	 * 			Push Eax			; location with from address
+	 * </pre>
+	 * 
+	 * @param fromAddress location that stores the "from" memory address, not a pointer to the memory address itself
+	 * @param toAddress location that stores the "to" memory address, not a pointer to the memory address itself
+	 * @param bytesRegister register that contains the number of bytes to transfer
+	 * @throws Exception
+	 */
+	public void assembleMoveMemory(String fromAddress, String toAddress, String bytesRegister) throws Exception {
+		Register[] preRegisters = this.assemblePreCall();
+		
+		String procedure = "move_memory";
+		this.addResource(procedure);
+		this.assembleParameter(bytesRegister, procedure);
+		this.assembleParameter(toAddress, procedure);
+		this.assembleParameter(fromAddress, procedure);
+		this.assembleCall(procedure);
+		// Must save next byte in Eax
+		
+		this.assemblePostCall(preRegisters);
 	}
 	
 	/**
@@ -365,8 +492,8 @@ public class GoAsm extends AssyLanguage {
 				Register[] preRegisters = this.assemblePreCall();
 				String procedure = "get_string_length";
 				this.addResource(procedure);
-				String variableLocation = String.format("[Esp + %d]", this.getStackPointerOffset(variable));
-				this.assembleParameter(variableLocation, procedure);
+				String address = this.getStackAddress(variable);
+				this.assembleParameter(address, procedure);
 				this.assembleCall(procedure);
 				this.assemblePostCall(preRegisters);;
 				
@@ -378,7 +505,7 @@ public class GoAsm extends AssyLanguage {
 			}
 
 			// Get current stack index
-			operandString = String.format("[Esp + %d]", this.getStackPointerOffset(variable));
+			operandString = this.getStackAddress(variable);
 		}
 		else {
 			throw new SyntaxError("Should not be here...");
@@ -395,6 +522,10 @@ public class GoAsm extends AssyLanguage {
 		return register;
 	}
 
+	/**
+	 * Expects Eax to contain number of bytes to output
+	 * @param dataLocation cannot be a stack pointer because this method may update the stack before access.
+	 */
 	@Override
 	public void assembleOutput(String dataLocation) throws Exception {
 		Register[] preRegisters = this.assemblePreCall();
@@ -410,8 +541,8 @@ public class GoAsm extends AssyLanguage {
 		this.assemblePostCall(preRegisters);
 	}
 	
-	public void assembleParameter(String value, String function) throws Exception {
-		this.io.setComment("Parameter for %s", function);
+	public void assembleParameter(String value, String procedure) throws Exception {
+		this.io.setComment("Parameter for %s", procedure);
 		this.assemblePush(value);
 	}
 	
@@ -540,8 +671,9 @@ public class GoAsm extends AssyLanguage {
 		}
 	}
 	
-	public int getStackPointerOffset(Variable variable) {
-		return this.currentScope.getStackOffset(variable) * 4;
+	public String getStackAddress(Variable variable) throws Exception {
+		int stackLocation = this.currentScope.getStackOffset(variable) * 4;
+		return String.format("[Esp + %dD]", stackLocation);
 	}
 	
 	@Override

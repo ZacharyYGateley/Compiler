@@ -151,7 +151,11 @@ public class Node implements Iterable<Node> {
 		return this.terminal;
 	}
 	public Symbol getSymbol() {
-		return this.symbol;
+		Symbol symbol = this.symbol;
+		if (symbol == null && this.variable != null) {
+			symbol = this.variable.getSymbol();
+		}
+		return symbol;
 	}
 	public String getValue() {
 		return this.value;
@@ -166,7 +170,7 @@ public class Node implements Iterable<Node> {
 	public void setType(TypeSystem newType) {
 		this.type = newType;
 	}
-	public void setVariabe(Variable variable) {
+	public void setVariable(Variable variable) {
 		this.variable = variable;
 	}
 	public void setNegated(boolean negated) {
