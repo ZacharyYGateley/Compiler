@@ -177,15 +177,8 @@ public abstract class AssyLanguage {
 			operand = pn.getLastChild();
 			operandRegister = this.getOperandRegister(operand);
 			variable = operand.getVariable();
-			TypeSystem type;
-			if (variable != null) {
-				type = variable.getType();
-				symbol = variable.getSymbol();
-			}
-			else {
-				type = operand.getType();
-				symbol = operand.getSymbol();
-			}
+			TypeSystem type = operand.getType();
+			symbol = operand.getSymbol();
 			if (TypeSystem.INTEGER.equals(type)) {
 				String address = this.assembleIntegerToString(operandRegister, operand);
 				this.assembleOutput(address);
@@ -200,43 +193,17 @@ public abstract class AssyLanguage {
 		case ADD:
 			// Make sure value/result of first child is saved in stack 
 			firstChild = pn.getFirstChild();
-			r0 = this.getOperandRegister(firstChild);
-			Variable v0 = firstChild.getVariable();
-			if (v0 == null) {
-				v0 = new Variable();
-				v0.linkRegister(r0);
-				firstChild.setVariable(v0);
-			}
-			// Make sure operand variable is in stack
-			if (v0.getStackOffset() < 0) {
-				this.currentScope.pushVariable(v0);
-			}
-			r0.free();
+			// Operand assembles. Operand variable contains data location.
+			this.getOperandRegister(firstChild).free();
 			
 			// Make sure value/result of second child is saved in stack 
 			nextChild = firstChild.getNextSibling();
-			r0 = this.getOperandRegister(nextChild);
-			Variable v1 = nextChild.getVariable();
-			if (v1 == null) {
-				v1 = new Variable();
-				v1.linkRegister(r0);
-				nextChild.setVariable(v1);
-			}
-			// Make sure operand variable is in stack
-			if (v1.getStackOffset() < 0) {
-				this.currentScope.pushVariable(v1);
-			}
-			r0.free();
+			// Operand assembles. Operand variable contains data location.
+			this.getOperandRegister(nextChild).free();
 			
 			// Check for bad type operation
 			TypeSystem type0 = firstChild.getType();
-			if (type0 == null && firstChild.getSymbol() != null) {
-				type0 = firstChild.getSymbol().getType();
-			}
 			TypeSystem type1 = nextChild.getType();
-			if (type1 == null && nextChild.getSymbol() != null) {
-				type1 = nextChild.getType();
-			}
 			
 			if (type0 != type1) {
 				// Different types
@@ -347,6 +314,19 @@ public abstract class AssyLanguage {
 			this.assembleNode(operand);
 			operandRegister = operand.getVariable().register;
 		}
+		
+		// Make sure operand has a variable and is in the stack
+		Variable variable = operand.getVariable();
+		if (variable == null) {
+			variable = new Variable(operandRegister);
+			operand.setVariable(variable);
+		}
+		else {
+			variable.linkRegister(operandRegister);
+		}
+		// Make sure operand variable is in stack
+		this.currentScope.pushVariable(variable);
+		
 		return operandRegister;
 	}
 	

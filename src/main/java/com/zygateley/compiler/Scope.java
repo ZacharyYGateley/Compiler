@@ -40,7 +40,7 @@ public class Scope implements Iterable<Variable> {
 	}
 	
 	public int getStackOffset(Variable variable) throws Exception {
-		if (variable.getStackOffset() < 0) {
+		if (variable.getStackIndex() < 0) {
 			if (variable.register == null) {
 				throw new Exception(String.format("Variable %s is not accessible!", variable));
 			}
@@ -48,7 +48,7 @@ public class Scope implements Iterable<Variable> {
 				this.pushVariable(variable);
 			}
 		}
-		return this.size() - variable.getStackOffset() - 1;
+		return this.size() - variable.getStackIndex() - 1;
 	}
 	
 	public Variable getVariable(Symbol symbol) {
@@ -66,7 +66,7 @@ public class Scope implements Iterable<Variable> {
 	
 	public Variable addVariable(Symbol symbol) throws Exception {
 		Variable variable = new Variable(symbol);
-		variable.setStackOffset(this.stack.size());
+		variable.setStackIndex(this.stack.size());
 		this.stack.push(variable);
 		return variable;
 	}
@@ -106,13 +106,15 @@ public class Scope implements Iterable<Variable> {
 	}
 	
 	public void pushVariable(Variable variable) throws Exception { 
-		this.language.io.setComment("Linked variable added to stack");
-		this.language.assemblePush(variable.register);
-		if (variable.register == null) {
-			throw new Exception(String.format("Variable %s is not currently in a register!", variable));
+		if (variable.getStackIndex() < 0) {
+			this.language.io.setComment("Linked variable added to stack");
+			this.language.assemblePush(variable.register);
+			if (variable.register == null) {
+				throw new Exception(String.format("Variable %s is not currently in a register!", variable));
+			}
+			variable.setStackIndex(this.stack.size());
+			this.stack.push(variable);
 		}
-		variable.setStackOffset(this.stack.size());
-		this.stack.push(variable);
 	}
 	@Override
 	public Iterator<Variable> iterator() {

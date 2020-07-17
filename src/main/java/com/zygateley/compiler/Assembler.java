@@ -2,11 +2,9 @@ package com.zygateley.compiler;
 
 import java.io.FileWriter;
 import java.lang.Exception;
-import java.util.*;
 
 public class Assembler {
 	private Node parseTree;
-	private SymbolTable symbolTable;
 	private Writer io;
 	private AssyLanguage language;
 	
@@ -15,7 +13,6 @@ public class Assembler {
 	}
 	public Assembler(Node parseTree, SymbolTable symbolTable, Class<? extends AssyLanguage> Language, FileWriter fileWriter) throws Exception {
 		this.parseTree = parseTree;
-		this.symbolTable = symbolTable;
 		this.io = new Writer(fileWriter);
 		// Initialize new instance of the assembly language
 		this.language = Language.getDeclaredConstructor(Assembler.Writer.class, SymbolTable.class).newInstance(this.io, symbolTable);

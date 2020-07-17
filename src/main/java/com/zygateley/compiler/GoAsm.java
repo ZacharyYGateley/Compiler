@@ -435,7 +435,7 @@ public class GoAsm extends AssyLanguage {
 	 * 			
 	 */
 	@Override
-	public Register assembleOperand(Node operand) throws Exception { 
+	public Register assembleOperand(Node operand) throws Exception {
 		// Only child
 		io.println("; Prepare operand");
 		Construct operandElement = operand.getElementType();

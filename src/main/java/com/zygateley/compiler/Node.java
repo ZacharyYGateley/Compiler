@@ -139,6 +139,12 @@ public class Node implements Iterable<Node> {
 		return this.basicElement;
 	}
 	public TypeSystem getType() {
+		TypeSystem type = this.type;
+		if (type == null && this.symbol != null) {
+			type = this.symbol.getType();
+			// Type will always be the same as its variable
+			this.type = type;
+		}
 		return this.type;
 	}
 	public NonTerminal getRule() {
