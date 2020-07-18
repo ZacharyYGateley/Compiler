@@ -2,8 +2,9 @@ Bugs
 	unary "!" double parses on expression operand
 
 Output to assembly
-	How to track heap allocations and clear them at scope close? Should they be cleared at scope close?
-	I am not following push/pop and Scope.stack well enough?
+	Construct NOT is a little strange. Is it ever used?
+	Clearing heap allocation at scope close and RETURN values when they are strings.
+	assembleOperation, assembleIntegerOperation, string eqeq, string neq
 	Aliases and pulling/pushing from stack only when necessary
 	On the fly type checker
 		assembleGlobalString boolean...

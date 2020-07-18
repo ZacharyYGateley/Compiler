@@ -1,6 +1,6 @@
-// Functionalities demonstrated in this example:
+// Selected functionalities demonstrated in this example:
 //	Concatenating strings, storing them in the heap
-// 	Saving strings of unknown length to a variable
+// 	Working with strings of lengths unknown at compile time
 //	Outputting the concatenation of a string and a variable
 //	Outputting a number, which is converted from binary to ASCII
 //	Conditional jumps

@@ -6,21 +6,35 @@ public class Variable {
 	public Register register = null;
 	public final Symbol symbol;
 	public TypeSystem type;
-	private int stackOffset = -1;
-	public final static Variable NONE = new Variable(null);
+	private int stackIndex = -1;
+	public final static Variable NONE = new Variable();
 	
 	public Variable() {
-		this(null);
+		symbol = null;
 	}
+	public Variable(Register r) {
+		register = r;
+		symbol = null;
+	}
+	/**
+	 * Symbols (one-to-one with Variables) are created once, before all variables are created.
+	 * Thus, Variable symbols are final.
+	 * @param s
+	 */
 	public Variable(Symbol s) {
 		symbol = s;
 	}
 	
-	public int getStackOffset() {
-		return this.stackOffset;
+	/**
+	 * Distance from first item in stack.<br />
+	 * <strong>Not the stack pointer offset</strong>. Use Scope.getStackOffset for that.
+	 * @return
+	 */
+	public int getStackIndex() {
+		return this.stackIndex;
 	}
-	public void setStackOffset(int stackOffset) {
-		this.stackOffset = stackOffset;
+	public void setStackIndex(int stackIndex) {
+		this.stackIndex = stackIndex;
 	}
 	
 	public Symbol getSymbol() {
