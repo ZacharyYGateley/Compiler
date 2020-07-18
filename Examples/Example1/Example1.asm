@@ -26,193 +26,245 @@ start:
     Mov [outputHandle], Eax             ; Save output handle
     
     ; Open scope
+    Mov Eax, 1028D                      ; Create heap allocation pool
+    Push Eax                            ; Anonymous value added to stack
+    Push 0                              ; Anonymous value added to stack
+    Push [heapHandle]                   ; Anonymous value added to stack
+    Call HeapAlloc
+    Mov W[Eax], 0                       ; Number of current allocations
+    Mov W[Eax + 2], 256                 ; Current allocation capacity
+    Xor Ebx, Ebx                        ; Clear register for new usage
+    Mov Ebx, Eax                        ; Address of heap allocation pool
+    Push Ebx                            ; Linked variable added to stack
     ; Prepare if-then conditional
     ; If true, go to label0
     ; Finally, go to label1
     ; Prepare operand
-    Mov Ebx, 0                          ; Clear register for new usage
+    Xor Ecx, Ecx                        ; Clear register for new usage
     Mov Eax, 1D
-    Mov Ebx, 1                          ; assemble operand TRUE
-    Cmp Ebx, 0                          ; Determine if condition is false
+    Mov Ecx, 1                          ; assemble operand TRUE
+    Cmp Ecx, 0                          ; Determine if condition is false
     Jz > label1                         ; If condition is false, jump
     label0:
         Sub Esp, 4                      ; Open scope
-        ; Store value to b
-        Mov Ecx, 0                      ; Clear register for new usage
-        ; Prepare operand
-        Mov Edx, 0                      ; Clear register for new usage
-        Mov Eax, 11D
-        Mov Edx, Addr str0              ; assemble operand LITERAL
+        Mov Eax, 1028D                  ; Create heap allocation pool
+        ; Caller save registers
+        Push Ebx                        ; Anonymous value added to stack
+        Push Ecx                        ; Anonymous value added to stack
+        Push Eax                        ; Anonymous value added to stack
+        Push 0                          ; Anonymous value added to stack
+        Push [heapHandle]               ; Anonymous value added to stack
+        Call HeapAlloc
+        ; Caller restore registers
+        Pop Ecx                         ; Anonymous value removed from stack
+        Pop Ebx                         ; Anonymous value removed from stack
+        Mov W[Eax], 0                   ; Number of current allocations
+        Mov W[Eax + 2], 256             ; Current allocation capacity
+        Xor Edx, Edx                    ; Clear register for new usage
+        Mov Edx, Eax                    ; Address of heap allocation pool
         Push Edx                        ; Linked variable added to stack
+        ; Store value to b
         ; Prepare operand
-        Mov Esi, 0                      ; Clear register for new usage
-        Mov Eax, 55D
-        Mov Esi, Addr str1              ; assemble operand LITERAL
+        Xor Esi, Esi                    ; Clear register for new usage
+        Mov Eax, 11D
+        Mov Esi, Addr str0              ; assemble operand LITERAL
         Push Esi                        ; Linked variable added to stack
-        ; Caller save registers
-        Push Ebx                        ; Anonymous value added to stack
-        Push Ecx                        ; Anonymous value added to stack
-        Push [Esp + 12D]                ; Parameter for get_string_length
-        Call get_string_length
-        Mov [tempGlobal], Eax
-        Push [Esp + 8D]                 ; Parameter for get_string_length
-        Call get_string_length
-        Mov [tempGlobal + 4], Eax
-        Add Eax, [Esp + 4]              ; Sum string lengths
-        ; Caller save registers
-        Push Ebx                        ; Anonymous value added to stack
-        Push Ecx                        ; Anonymous value added to stack
-        Push Eax                        ; Parameter for HeapAlloc
-        Push 0                          ; Parameter for HeapAlloc
-        Push [heapHandle]               ; Parameter for HeapAlloc
-        Call HeapAlloc
-        ; Caller restore registers
-        Pop Ecx                         ; Anonymous value removed from stack
-        Pop Ebx                         ; Anonymous value removed from stack
-        Mov [tempGlobal + 8], Eax       ; Remember value in temp global
-        ; Caller restore registers
-        Pop Ecx                         ; Anonymous value removed from stack
-        Pop Ebx                         ; Anonymous value removed from stack
-        Mov Edi, 0                      ; Clear register for new usage
-        Mov Edi, [Esp + 4D]
-        ; Caller save registers
-        Push Ecx                        ; Anonymous value added to stack
-        Push Ebx                        ; Anonymous value added to stack
-        Push Edi                        ; Anonymous value added to stack
-        Push [tempGlobal]               ; Parameter for move_memory
-        Push Eax                        ; Parameter for move_memory
-        Push Edi                        ; Parameter for move_memory
-        Call move_memory
-        ; Caller restore registers
-        Pop Edi                         ; Anonymous value removed from stack
-        Pop Ebx                         ; Anonymous value removed from stack
-        Pop Ecx                         ; Anonymous value removed from stack
-        Mov Edi, [Esp + 0D]
-        ; Caller save registers
-        Push Edi                        ; Anonymous value added to stack
-        Push Ebx                        ; Anonymous value added to stack
-        Push Ecx                        ; Anonymous value added to stack
-        Push [tempGlobal + 4]           ; Parameter for move_memory
-        Push Eax                        ; Parameter for move_memory
-        Push Edi                        ; Parameter for move_memory
-        Call move_memory
-        ; Caller restore registers
-        Pop Ecx                         ; Anonymous value removed from stack
-        Pop Ebx                         ; Anonymous value removed from stack
-        Pop Edi                         ; Anonymous value removed from stack
-        Mov B[Eax], 0                   ; Strings must end in 0
-        Mov Edx, 0                      ; Clear register for new usage
-        Mov Edx, [tempGlobal + 8]       ; Move new string location to newly allocated register
-        Mov Eax, [tempGlobal]
-        Add Eax, [tempGlobal + 4]       ; Store string length in Eax
-        
-        Mov [Esp + 8D], Edx             ; Store value to variable
-        
-        ; Output
         ; Prepare operand
-        Mov Esi, 0                      ; Clear register for new usage
+        Xor Edi, Edi                    ; Clear register for new usage
+        Mov Eax, 55D
+        Mov Edi, Addr str1              ; assemble operand LITERAL
+        Push Edi                        ; Linked variable added to stack
         ; Caller save registers
-        Push Ebx                        ; Anonymous value added to stack
-        Push Esi                        ; Anonymous value added to stack
-        Push [Esp + 16D]                ; Parameter for get_string_length
-        Call get_string_length
-        ; Caller restore registers
-        Pop Esi                         ; Anonymous value removed from stack
-        Pop Ebx                         ; Anonymous value removed from stack
-        Mov Esi, [Esp + 8D]             ; assemble operand VARIABLE
-        ; Prepare operand
-        Mov Ecx, 0                      ; Clear register for new usage
-        Mov Eax, 36D
-        Mov Ecx, Addr str2              ; assemble operand LITERAL
-        Push Ecx                        ; Linked variable added to stack
-        ; Caller save registers
-        Push Ebx                        ; Anonymous value added to stack
-        Push [Esp + 16D]                ; Parameter for get_string_length
-        Call get_string_length
-        Mov [tempGlobal], Eax
-        Push [Esp + 4D]                 ; Parameter for get_string_length
-        Call get_string_length
-        Mov [tempGlobal + 4], Eax
-        Add Eax, [Esp + 4]              ; Sum string lengths
-        ; Caller save registers
-        Push Ebx                        ; Anonymous value added to stack
-        Push Eax                        ; Parameter for HeapAlloc
-        Push 0                          ; Parameter for HeapAlloc
-        Push [heapHandle]               ; Parameter for HeapAlloc
-        Call HeapAlloc
-        ; Caller restore registers
-        Pop Ebx                         ; Anonymous value removed from stack
-        Mov [tempGlobal + 8], Eax       ; Remember value in temp global
-        ; Caller restore registers
-        Pop Ebx                         ; Anonymous value removed from stack
-        Mov Edi, 0                      ; Clear register for new usage
-        Mov Edi, [Esp + 12D]
-        ; Caller save registers
-        Push Ebx                        ; Anonymous value added to stack
-        Push Edi                        ; Anonymous value added to stack
-        Push [tempGlobal]               ; Parameter for move_memory
-        Push Eax                        ; Parameter for move_memory
-        Push Edi                        ; Parameter for move_memory
-        Call move_memory
-        ; Caller restore registers
-        Pop Edi                         ; Anonymous value removed from stack
-        Pop Ebx                         ; Anonymous value removed from stack
-        Mov Edi, [Esp + 0D]
-        ; Caller save registers
-        Push Edi                        ; Anonymous value added to stack
-        Push Ebx                        ; Anonymous value added to stack
-        Push [tempGlobal + 4]           ; Parameter for move_memory
-        Push Eax                        ; Parameter for move_memory
-        Push Edi                        ; Parameter for move_memory
-        Call move_memory
-        ; Caller restore registers
-        Pop Ebx                         ; Anonymous value removed from stack
-        Pop Edi                         ; Anonymous value removed from stack
-        Mov B[Eax], 0                   ; Strings must end in 0
-        Mov Edx, 0                      ; Clear register for new usage
-        Mov Edx, [tempGlobal + 8]       ; Move new string location to newly allocated register
-        Mov Eax, [tempGlobal]
-        Add Eax, [tempGlobal + 4]       ; Store string length in Eax
-        
-        ; Caller save registers
+        Push Ecx                        ; Anonymous value added to stack
         Push Ebx                        ; Anonymous value added to stack
         Push Edx                        ; Anonymous value added to stack
-        Push 0                          ; Parameter for WriteConsoleA
-        Push Addr tempGlobal            ; Parameter for WriteConsoleA
-        Push Eax                        ; Parameter for WriteConsoleA
-        Push Edx                        ; Parameter for WriteConsoleA
-        Push [outputHandle]             ; Parameter for WriteConsoleA
-        Call WriteConsoleA
+        Push [Esp + 16D]                ; Anonymous value added to stack
+        Call get_string_length
+        Mov [tempGlobal], Eax
+        Push [Esp + 12D]                ; Anonymous value added to stack
+        Call get_string_length
+        Mov [tempGlobal + 4], Eax
+        Add Eax, [Esp + 4]              ; Sum string lengths
+        ; Caller save registers
+        Push Ecx                        ; Anonymous value added to stack
+        Push Ebx                        ; Anonymous value added to stack
+        Push Edx                        ; Anonymous value added to stack
+        Push Eax                        ; Anonymous value added to stack
+        Push [Esp + 36]                 ; Anonymous value added to stack
+        Push [heapHandle]               ; Anonymous value added to stack
+        Call add_heap_allocation
         ; Caller restore registers
         Pop Edx                         ; Anonymous value removed from stack
         Pop Ebx                         ; Anonymous value removed from stack
+        Pop Ecx                         ; Anonymous value removed from stack
+        Mov [tempGlobal + 8], Eax       ; Remember value in temp global
+        ; Caller restore registers
+        Pop Edx                         ; Anonymous value removed from stack
+        Pop Ebx                         ; Anonymous value removed from stack
+        Pop Ecx                         ; Anonymous value removed from stack
+        Xor Esi, Esi                    ; Clear register for new usage
+        Mov Esi, [Esp + 4D]
+        ; Caller save registers
+        Push Edx                        ; Anonymous value added to stack
+        Push Ebx                        ; Anonymous value added to stack
+        Push Ecx                        ; Anonymous value added to stack
+        Push Esi                        ; Anonymous value added to stack
+        Push [tempGlobal]               ; Anonymous value added to stack
+        Push Eax                        ; Anonymous value added to stack
+        Push Esi                        ; Anonymous value added to stack
+        Call move_memory
+        ; Caller restore registers
+        Pop Esi                         ; Anonymous value removed from stack
+        Pop Ecx                         ; Anonymous value removed from stack
+        Pop Ebx                         ; Anonymous value removed from stack
+        Pop Edx                         ; Anonymous value removed from stack
+        Mov Esi, [Esp + 0D]
+        ; Caller save registers
+        Push Esi                        ; Anonymous value added to stack
+        Push Ecx                        ; Anonymous value added to stack
+        Push Ebx                        ; Anonymous value added to stack
+        Push Edx                        ; Anonymous value added to stack
+        Push [tempGlobal + 4]           ; Anonymous value added to stack
+        Push Eax                        ; Anonymous value added to stack
+        Push Esi                        ; Anonymous value added to stack
+        Call move_memory
+        ; Caller restore registers
+        Pop Edx                         ; Anonymous value removed from stack
+        Pop Ebx                         ; Anonymous value removed from stack
+        Pop Ecx                         ; Anonymous value removed from stack
+        Pop Esi                         ; Anonymous value removed from stack
+        Mov B[Eax], 0                   ; Strings must end in 0
+        Xor Edi, Edi                    ; Clear register for new usage
+        Mov Edi, [tempGlobal + 8]       ; Move new string location to newly allocated register
+        Mov Eax, [tempGlobal]
+        Add Eax, [tempGlobal + 4]       ; Store string length in Eax
+        
+        Push Edi                        ; Linked variable added to stack
+        Mov [Esp + 16D], Edi            ; Store value to variable
         
         ; Output
         ; Prepare operand
-        Mov Esi, 0                      ; Clear register for new usage
+        Xor Edx, Edx                    ; Clear register for new usage
+        ; Caller save registers
+        Push Ebx                        ; Anonymous value added to stack
+        Push Ecx                        ; Anonymous value added to stack
+        Push Edx                        ; Anonymous value added to stack
+        Push [Esp + 28D]                ; Anonymous value added to stack
+        Call get_string_length
+        ; Caller restore registers
+        Pop Edx                         ; Anonymous value removed from stack
+        Pop Ecx                         ; Anonymous value removed from stack
+        Pop Ebx                         ; Anonymous value removed from stack
+        Mov Edx, [Esp + 16D]            ; assemble operand VARIABLE
+        ; Prepare operand
+        Xor Esi, Esi                    ; Clear register for new usage
+        Mov Eax, 36D
+        Mov Esi, Addr str2              ; assemble operand LITERAL
+        Push Esi                        ; Linked variable added to stack
+        ; Caller save registers
+        Push Ecx                        ; Anonymous value added to stack
+        Push Ebx                        ; Anonymous value added to stack
+        Push [Esp + 28D]                ; Anonymous value added to stack
+        Call get_string_length
+        Mov [tempGlobal], Eax
+        Push [Esp + 8D]                 ; Anonymous value added to stack
+        Call get_string_length
+        Mov [tempGlobal + 4], Eax
+        Add Eax, [Esp + 4]              ; Sum string lengths
+        ; Caller save registers
+        Push Ecx                        ; Anonymous value added to stack
+        Push Ebx                        ; Anonymous value added to stack
+        Push Eax                        ; Anonymous value added to stack
+        Push [Esp + 36]                 ; Anonymous value added to stack
+        Push [heapHandle]               ; Anonymous value added to stack
+        Call add_heap_allocation
+        ; Caller restore registers
+        Pop Ebx                         ; Anonymous value removed from stack
+        Pop Ecx                         ; Anonymous value removed from stack
+        Mov [tempGlobal + 8], Eax       ; Remember value in temp global
+        ; Caller restore registers
+        Pop Ebx                         ; Anonymous value removed from stack
+        Pop Ecx                         ; Anonymous value removed from stack
+        Xor Edi, Edi                    ; Clear register for new usage
+        Mov Edi, [Esp + 20D]
+        ; Caller save registers
+        Push Ebx                        ; Anonymous value added to stack
+        Push Ecx                        ; Anonymous value added to stack
+        Push Edi                        ; Anonymous value added to stack
+        Push [tempGlobal]               ; Anonymous value added to stack
+        Push Eax                        ; Anonymous value added to stack
+        Push Edi                        ; Anonymous value added to stack
+        Call move_memory
+        ; Caller restore registers
+        Pop Edi                         ; Anonymous value removed from stack
+        Pop Ecx                         ; Anonymous value removed from stack
+        Pop Ebx                         ; Anonymous value removed from stack
+        Mov Edi, [Esp + 0D]
+        ; Caller save registers
+        Push Edi                        ; Anonymous value added to stack
+        Push Ecx                        ; Anonymous value added to stack
+        Push Ebx                        ; Anonymous value added to stack
+        Push [tempGlobal + 4]           ; Anonymous value added to stack
+        Push Eax                        ; Anonymous value added to stack
+        Push Edi                        ; Anonymous value added to stack
+        Call move_memory
+        ; Caller restore registers
+        Pop Ebx                         ; Anonymous value removed from stack
+        Pop Ecx                         ; Anonymous value removed from stack
+        Pop Edi                         ; Anonymous value removed from stack
+        Mov B[Eax], 0                   ; Strings must end in 0
+        Xor Edx, Edx                    ; Clear register for new usage
+        Mov Edx, [tempGlobal + 8]       ; Move new string location to newly allocated register
+        Mov Eax, [tempGlobal]
+        Add Eax, [tempGlobal + 4]       ; Store string length in Eax
+        
+        Push Edx                        ; Linked variable added to stack
+        ; Caller save registers
+        Push Ebx                        ; Anonymous value added to stack
+        Push Ecx                        ; Anonymous value added to stack
+        Push Edx                        ; Anonymous value added to stack
+        Push 0                          ; Anonymous value added to stack
+        Push Addr tempGlobal            ; Anonymous value added to stack
+        Push Eax                        ; Anonymous value added to stack
+        Push Edx                        ; Anonymous value added to stack
+        Push [outputHandle]             ; Anonymous value added to stack
+        Call WriteConsoleA
+        ; Caller restore registers
+        Pop Edx                         ; Anonymous value removed from stack
+        Pop Ecx                         ; Anonymous value removed from stack
+        Pop Ebx                         ; Anonymous value removed from stack
+        
+        ; Output
+        ; Prepare operand
+        Xor Esi, Esi                    ; Clear register for new usage
         Mov Eax, 4D
         Mov Esi, 1D                     ; assemble operand LITERAL
+        Push Esi                        ; Linked variable added to stack
             ; Convert integer to string in Addr tempGlobal
             ; Caller save registers
+            Push Ecx                    ; Anonymous value added to stack
             Push Ebx                    ; Anonymous value added to stack
             Push Esi                    ; Anonymous value added to stack
                 ; Clear global string Addr tempGlobal
                 ; Caller save registers
+                Push Ecx                ; Anonymous value added to stack
                 Push Ebx                ; Anonymous value added to stack
                 Push Esi                ; Anonymous value added to stack
-                Push 256                ; Parameter for clear_global_string
-                Push Addr tempGlobal    ; Parameter for clear_global_string
+                Push 256                ; Anonymous value added to stack
+                Push Addr tempGlobal    ; Anonymous value added to stack
                 Call clear_global_string
                 ; Caller restore registers
                 Pop Esi                 ; Anonymous value removed from stack
                 Pop Ebx                 ; Anonymous value removed from stack
-            Push 11D                    ; Parameter for int_to_string
-            Push Addr tempGlobal        ; Parameter for int_to_string
-            Push Esi                    ; Parameter for int_to_string
+                Pop Ecx                 ; Anonymous value removed from stack
+            Push 11D                    ; Anonymous value added to stack
+            Push Addr tempGlobal        ; Anonymous value added to stack
+            Push Esi                    ; Anonymous value added to stack
             Call int_to_string
             ; Caller restore registers
             Pop Esi                     ; Anonymous value removed from stack
             Pop Ebx                     ; Anonymous value removed from stack
+            Pop Ecx                     ; Anonymous value removed from stack
             Mov Esi, Eax
             Not Esi                     ; Invert actual length
             Add Esi, 1D
@@ -221,40 +273,51 @@ start:
         ; Caller save registers
         Push Esi                        ; Anonymous value added to stack
         Push Ebx                        ; Anonymous value added to stack
-        Push 0                          ; Parameter for WriteConsoleA
-        Push Addr tempGlobal            ; Parameter for WriteConsoleA
-        Push Eax                        ; Parameter for WriteConsoleA
-        Push Esi                        ; Parameter for WriteConsoleA
-        Push [outputHandle]             ; Parameter for WriteConsoleA
+        Push Ecx                        ; Anonymous value added to stack
+        Push 0                          ; Anonymous value added to stack
+        Push Addr tempGlobal            ; Anonymous value added to stack
+        Push Eax                        ; Anonymous value added to stack
+        Push Esi                        ; Anonymous value added to stack
+        Push [outputHandle]             ; Anonymous value added to stack
         Call WriteConsoleA
         ; Caller restore registers
+        Pop Ecx                         ; Anonymous value removed from stack
         Pop Ebx                         ; Anonymous value removed from stack
         Pop Esi                         ; Anonymous value removed from stack
         
         ; Output
         ; Prepare operand
-        Mov Ecx, 0                      ; Clear register for new usage
+        Xor Edi, Edi                    ; Clear register for new usage
         Mov Eax, 37D
-        Mov Ecx, Addr str3              ; assemble operand LITERAL
+        Mov Edi, Addr str3              ; assemble operand LITERAL
+        Push Edi                        ; Linked variable added to stack
         ; Caller save registers
-        Push Ebx                        ; Anonymous value added to stack
         Push Ecx                        ; Anonymous value added to stack
-        Push 0                          ; Parameter for WriteConsoleA
-        Push Addr tempGlobal            ; Parameter for WriteConsoleA
-        Push Eax                        ; Parameter for WriteConsoleA
-        Push Ecx                        ; Parameter for WriteConsoleA
-        Push [outputHandle]             ; Parameter for WriteConsoleA
+        Push Ebx                        ; Anonymous value added to stack
+        Push Edi                        ; Anonymous value added to stack
+        Push 0                          ; Anonymous value added to stack
+        Push Addr tempGlobal            ; Anonymous value added to stack
+        Push Eax                        ; Anonymous value added to stack
+        Push Edi                        ; Anonymous value added to stack
+        Push [outputHandle]             ; Anonymous value added to stack
         Call WriteConsoleA
         ; Caller restore registers
-        Pop Ecx                         ; Anonymous value removed from stack
+        Pop Edi                         ; Anonymous value removed from stack
         Pop Ebx                         ; Anonymous value removed from stack
+        Pop Ecx                         ; Anonymous value removed from stack
         
-        Add Esp, 16                     ; Close scope
+        Push [Esp + 28]                 ; Anonymous value added to stack
+        Push [heapHandle]               ; Anonymous value added to stack
+        Call free_heap_allocations
+        Add Esp, 36                     ; Close scope
         
     
     label1:
     
-    ; Close scope
+    Push [Esp + 0]                      ; Anonymous value added to stack
+    Push [heapHandle]                   ; Anonymous value added to stack
+    Call free_heap_allocations
+    Add Esp, 4                          ; Close scope
     
     Ret                                 ; Program finish
     
@@ -289,6 +352,66 @@ get_string_length:
 	Push Edx
 
 	Ret						; total # digits in Eax
+
+;;;;;;; INCLUDED FILE add_heap_allocation.asm ;;;;;;;;
+
+
+add_heap_allocation:
+	Push Ebp			; Realign base address to first parameter
+	Mov Ebp, Esp
+	Add Ebp, 8
+	
+	Push Ebx			; Callee saved
+	
+						; [Ebp]: Heap handle
+						; [Ebp + 4]: Address of heap allocation pool
+						; W[[Ebp + 4]]: Number of allocations
+						; W[[Ebp + 4] + 2]: Allocation capacity
+						; D[[Ebp + 4] + 4 * n]: Allocation n
+						; [Ebp + 8]: Number of bytes requested
+						
+	Mov Ebx, [Ebp + 4]	; Address of heap allocation pool
+	Add W[Ebx], 1		; D[Ebx]: High: Number of allocations, Low: Allocation capacity
+	Mov Edx, D[Ebx]		; Pull to registers
+	
+	Cmp Dl, Dh
+	Jl > .fail			; Not enough capacity for addition
+	
+.capable
+	Push [Ebp + 8]		; Number of bytes required
+	Push 0				; Flags
+	Push [Ebp]			; Heap handle
+	Call HeapAlloc
+	; Newly allocated address in Eax
+	Cmp Eax, 0
+	Je > .fail
+	
+	; Add allocated address to heap allocation pool
+	; Ebx should have persisted through HeapAlloc
+	Xor Edx, Edx
+	Mov Dx, W[Ebx]		; Number of allocations, @ first two bytes of heap allocation pool
+	IMul Edx, 4D		; Address width, 4 bytes
+	Add Edx, [Ebp + 4]	; Address of heap allocation pool
+	
+	Mov [Edx], Eax		; Newly allocated address to heap allocation pool
+
+	Jmp > .finally
+
+.fail:
+	Mov Eax, 0			; Not enough space in heap allocation pool
+
+.finally:
+	Pop Ebx				; Restore callee saved
+	
+	Pop Ebp				; Original base pointer
+	Pop Edx				; This procedure's return address
+	
+	Add Esp, 12D		; Consume parameters
+	
+	Push Edx			; Restore this procedure's return address
+	
+	Ret
+	
 
 ;;;;;;; INCLUDED FILE move_memory.asm ;;;;;;;;
 
@@ -459,3 +582,66 @@ int_to_string_final:
 	Add Eax, 1
 
 	Ret
+
+;;;;;;; INCLUDED FILE free_heap_allocations.asm ;;;;;;;;
+
+
+free_heap_allocations:
+	Push Ebp			; Realign base address to first parameter
+	Mov Ebp, Esp
+	Add Ebp, 8
+	
+	Push Ebx			; Callee saved
+	
+	
+						; [Ebp]: Heap handle
+						; [Ebp + 4]: Address of heap allocation pool
+						; W[[Ebp + 4]]: Number of allocations
+						; W[[Ebp + 4] + 2]: Allocation capacity
+						; D[[Ebp + 4] + 4 * n]: Allocation n
+						
+	Mov Ebx, [Ebp + 4]	; Address of heap allocation pool
+	Xor Cx, Cx
+	
+	Xor Edx, Edx
+	Mov Dx, W[Ebx]		; Number of allocations
+	Add Ebx, 4			; First allocation address
+	
+.loop:
+	Cmp Cx, Dx
+	Jz > .next
+	
+	Push Ecx, Edx		; Save local vars
+	
+	Push [Ebx]			; This allocation address
+	Push 0				; Flags
+	Push [Ebp]			; Heap handle
+	Call HeapFree
+	
+	Pop Edx, Ecx		; Recall local vars
+	
+	Add Ebx, 4
+	Add Cx, 1
+
+	Jmp < .loop
+
+.next:
+	Push [Ebp + 4]		; Free heap pool itself
+	Push 0				; Flags
+	Push [Ebp]			; Heap handle
+	Call HeapFree
+	
+	Mov Eax, 1
+
+.finally:
+	Pop Ebx				; Restore callee saved
+	
+	Pop Ebp				; Original base pointer
+	Pop Edx				; This procedure's return address
+	
+	Add Esp, 8			; Consume parameters
+	
+	Push Edx
+	
+	Ret
+	

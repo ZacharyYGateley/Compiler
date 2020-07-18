@@ -10,6 +10,7 @@ public class Scope implements Iterable<Variable> {
 	// Contains all scope variables
 	private final ArrayDeque<Variable> stack;
 	private AssyLanguage language;
+	private Variable heapPool;
 	
 	public Scope(Scope parent) {
 		this(null, parent);
@@ -24,16 +25,6 @@ public class Scope implements Iterable<Variable> {
 		this.stack = new ArrayDeque<>();
 		this.language = language;
 	}
-	
-	/*
-	public Variable declareVariable(Register register, Symbol symbol) throws Exception {
-		this.language.io.println("; Declare new variable " + symbol);
-		Variable variable = new Variable(symbol);
-		variable.linkRegister(register);
-		this.pushVariable(register, variable);
-		return variable;
-	}
-	*/
 	
 	public int size() {
 		return this.stack.size();
@@ -70,15 +61,6 @@ public class Scope implements Iterable<Variable> {
 		this.stack.push(variable);
 		return variable;
 	}
-	
-	/*
-	@Deprecated
-	public void pushVariable(Register register, Variable variable) throws Exception {
-		this.language.assemblePush(register);
-		variable.stackIndex = stack.size();
-		stack.push(variable);
-	}
-	*/
 
 	/**
 	 * Must adjust the stack pointer in your respective assy language
@@ -89,26 +71,31 @@ public class Scope implements Iterable<Variable> {
 		for (int i = 0; i < numberOfVars; i++) this.stack.pop();
 	}
 	
-	public void popAnonymous(Register toRegister) throws Exception {
+	public void pop(Register toRegister) throws Exception {
 		this.language.io.setComment("Anonymous value removed from stack");
-		this.language.assemblePop(toRegister);
+		this.language.assemblePop(toRegister, true);
 		this.stack.pop();
 	}
 	
 	public void pushAnonymous(Register fromRegister) throws Exception {
-		this.pushAnonymous(fromRegister.toString());
+		if (fromRegister.variable == null) {
+			this.pushAnonymous(fromRegister.toString());
+		}
+		else {
+			this.pushVariable(fromRegister.variable);
+		}
 	}
 	
 	public void pushAnonymous(String value) throws Exception {
 		this.language.io.setComment("Anonymous value added to stack");
-		this.language.assemblePush(value);
+		this.language.assemblePush(value, true);
 		this.stack.push(Variable.NONE);
 	}
 	
 	public void pushVariable(Variable variable) throws Exception { 
 		if (variable.getStackIndex() < 0) {
 			this.language.io.setComment("Linked variable added to stack");
-			this.language.assemblePush(variable.register);
+			this.language.assemblePush(variable.register.toString(), true);
 			if (variable.register == null) {
 				throw new Exception(String.format("Variable %s is not currently in a register!", variable));
 			}
@@ -116,6 +103,25 @@ public class Scope implements Iterable<Variable> {
 			this.stack.push(variable);
 		}
 	}
+	
+	public String getHeapPoolAddress() throws Exception {
+		return String.format("[Esp + %d]", this.getStackOffset(this.heapPool) * 4);
+	}
+	
+	/**
+	 * Heap pool
+	 * Address 2[this.heapPool] == Number of allocations
+	 * Address 2[this.heapPool + 2] == Allocation capacity
+	 * Address 4[this.heapPool + 4*n] == Allocation
+	 * 
+	 * @param addressRegister
+	 * @throws Exception
+	 */
+	public void setHeapPoolAddress(Register addressRegister) throws Exception {
+		this.heapPool = new Variable(addressRegister);
+		this.pushVariable(this.heapPool);
+	}
+	
 	@Override
 	public Iterator<Variable> iterator() {
 		// TODO Auto-generated method stub

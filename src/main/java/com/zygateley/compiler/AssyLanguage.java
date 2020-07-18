@@ -55,15 +55,20 @@ public abstract class AssyLanguage {
 	protected abstract String assembleGlobalString(String name, int byteWidth, String value) throws Exception;
 	protected abstract void assembleHandles() throws Exception;
 	protected abstract void assembleHeader() throws Exception;
-	protected abstract void assembleMalloc(Register byteWidth) throws Exception;
+	protected abstract void assembleIntegerOperation(Construct type, Node operand0, Node operand1) throws Exception;
 	protected abstract String assembleIntegerToString(Register register, Node operand) throws Exception;
+	protected abstract void assembleMalloc(Register byteWidth) throws Exception;
 	protected abstract Register assembleOperand(Node operand) throws Exception;
+	protected abstract void assembleOperation(Construct type, Node operand0, Node operand1) throws Exception;
 	protected abstract void assembleOutput(String dataLocation) throws Exception;
 	protected abstract Register[] assemblePreCall() throws Exception;
+	protected abstract void assemblePop(Register toRegister) throws Exception;
+	protected abstract void assemblePop(Register toRegister, boolean scopeReady) throws Exception;
 	protected abstract void assemblePostCall(Register[] registers) throws Exception;
 	protected abstract void assemblePush(Register fromRegister) throws Exception;
 	protected abstract void assemblePush(String value) throws Exception;
-	protected abstract void assemblePop(Register toRegister) throws Exception;
+	protected abstract void assemblePush(Variable variable) throws Exception;
+	protected abstract void assemblePush(String valueOrRegister, boolean scopeReady) throws Exception;
 	protected abstract void assembleScope(boolean open) throws Exception;
 	protected abstract String compile(String fileName, boolean verbose) throws Exception;
 	protected abstract String getPointer(String globalVariable);
@@ -86,6 +91,10 @@ public abstract class AssyLanguage {
 	public void assembleCodeSection(Node parseTree) throws Exception {
 		this.assembleCodeHeader();
 		
+		if (!Construct.SCOPE.equals(parseTree.getElementType())) {
+			throw new Exception("Invalid language organization. Scope should be root of syntax tree.");
+		}
+		
 		// Assemble handles
 		// Reason why it is here and not at the beginning of OUTPUT:
 		//		if first output appears in a conditional, 
@@ -103,6 +112,7 @@ public abstract class AssyLanguage {
 		this.assembleNode(parseTree);
 	}
 	
+	@SuppressWarnings("unused")
 	public void assembleNode(Node pn) throws Exception {
 		Construct construct = pn.getElementType();
 		Variable variable;
@@ -149,27 +159,22 @@ public abstract class AssyLanguage {
 			io.println("; Store value to " + symbol);
 			
 			// Allocate a new temporary register
-			r0 = this.registry.allocate();
 			if (variable == null) {
 				throw new Exception("Variable not properly linked during parsing.");
 				// Variable not found, declare new
 				// Allocates stack space
 				//v0 = this.currentScope.declareVariable(r0, symbol);
 			}
-			else {
-				// Variable found, link to this register
-				variable.linkRegister(r0);
-			}
 			
 			operand = pn.getLastChild();
+			// Let pn and operand share the same variable
+			operand.setVariable(variable);
 			operandRegister = this.getOperandRegister(operand);
 			this.assembleDeclaration(variable, operandRegister);
 			operandRegister.free();
 			
 			// Make sure type of variable is up-to-date
 			symbol.setType(operand.getType());
-			
-			r0.free();
 			
 			break;
 		case OUTPUT:
@@ -190,7 +195,9 @@ public abstract class AssyLanguage {
 			
 			break;
 		case OPERATION:
-		case ADD:
+		case OR: case AND:
+		case ADD: case SUB: case MULT: case INTDIV:
+		case EQEQ: case NEQ: case LT: case LTEQ: case GT: case GTEQ:
 			// Make sure value/result of first child is saved in stack 
 			firstChild = pn.getFirstChild();
 			// Operand assembles. Operand variable contains data location.
@@ -213,18 +220,36 @@ public abstract class AssyLanguage {
 			// Both types are the same
 			variable = new Variable();
 			switch (type0) {
+			case BOOLEAN:
+				// AND, OR, NOT
+				this.assembleOperation(construct, firstChild, nextChild);
+				break;
 			case INTEGER:
+				// ADD, SUB, MULT, INTDIV
+				// EQEQ, NEQ, LT, LTEQ, GT, GTEQ
+				this.assembleIntegerOperation(construct, firstChild, nextChild);
 				break;
 			case STRING:
-				operandRegister = this.assembleConcatenation(firstChild, nextChild);
-				variable.linkRegister(operandRegister);
-				// Non-anonymous variable now stored in register
-				// If future procedures need its register, it will be pushed to stack and remembered
+				if (Construct.ADD.equals(construct)) {
+					operandRegister = this.assembleConcatenation(firstChild, nextChild);
+					variable.linkRegister(operandRegister);
+					// Non-anonymous variable now stored in register
+					// If future procedures need its register, it will be pushed to stack and remembered
 
-				// New string length stored in Eax from assembleConcatenation
+					// New string length stored in Eax from assembleConcatenation
+				}
+				else if (Construct.EQEQ.equals(construct)) {
+					
+				}
+				else if (Construct.NEQ.equals(construct)) {
+					
+				}
+				else {
+					throw new Exception(String.format("Bad string operation: %s", construct));
+				}
 				break;
 			default:
-				throw new Exception(String.format("Bad addition: %s", type0));
+				throw new Exception(String.format("Bad %s operation: %s", type0, construct));
 			}
 			
 			// Link node and register
@@ -325,7 +350,7 @@ public abstract class AssyLanguage {
 			variable.linkRegister(operandRegister);
 		}
 		// Make sure operand variable is in stack
-		this.currentScope.pushVariable(variable);
+		this.assemblePush(variable);
 		
 		return operandRegister;
 	}
@@ -388,14 +413,10 @@ public abstract class AssyLanguage {
 			accessOrder.addLast(leastUsed);
 			
 			// If LRU has a variable, 
-			// move that variable to the stack
-			/* 
-			 * Variable is already in the stack
-			 * 
+			// ensure it is in the stack
 			if (leastUsed.variable != null) {
-				this.language.currentScope.pushVariable(leastUsed, leastUsed.variable);
+				this.language.assemblePush(leastUsed.variable);
 			}
-			*/
 			
 			// Reserve register
 			leastUsed.allocate();

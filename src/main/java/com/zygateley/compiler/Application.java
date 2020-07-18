@@ -30,6 +30,7 @@ public class Application {
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws Exception {
+		//String sourceFile = FileIO.getAbsolutePath(".test/test.fnc");
 		String sourceFile = FileIO.getAbsolutePath("Examples/Example1/Example1.fnc");
 		PushbackReader pushbackReader = FileIO.getReader(sourceFile);
 		
@@ -82,7 +83,7 @@ public class Application {
 				// Assemble
 				Assembler assembler = new Assembler(optimizedTree, symbolTable, GoAsm.class, assemblyFile);
 				log("\n<!-- Assembler initialized -->\n\n", logFile);
-				assembler.assemble();
+				assembler.assemble(true);
 				log("\n<!-- Assembler finished -->\n\n", logFile);
 				if (assemblyFile != null) {
 					assemblyFile.close();

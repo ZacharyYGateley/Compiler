@@ -7,6 +7,7 @@ public class Assembler {
 	private Node parseTree;
 	private Writer io;
 	private AssyLanguage language;
+	private boolean verbose;
 	
 	public Assembler(Node parseTree, SymbolTable symbolTable, Class<? extends AssyLanguage> Language) throws Exception {
 		this(parseTree, symbolTable, Language, null);
@@ -19,6 +20,11 @@ public class Assembler {
 	}
 	
 	public String assemble() throws Exception {
+		return this.assemble(false);
+	}
+	public String assemble(boolean verbose) throws Exception {
+		this.io.setVerbose(verbose);
+		
 		// Any headers before the data section
 		language.assembleHeader();
 		
@@ -50,6 +56,7 @@ public class Assembler {
 		private boolean newLine = true;
 		private String comment = "";
 		private int commentsAt = 40;
+		private boolean verbose = false;
 		
 		public Writer() {
 			this(null);
@@ -68,12 +75,18 @@ public class Assembler {
 				if (fileWriter instanceof FileWriter) {
 					fileWriter.append(indent);
 				}
+				if (verbose) {
+					System.out.print(indent);
+				}
 				newLine = false;
 			}
 			
 			stringBuilder.append(s);
 			if (fileWriter instanceof FileWriter) {
 				fileWriter.append(s);
+			}
+			if (verbose) {
+				System.out.print(s);
 			}
 		}
 		public void print(String s, Object... formatters) throws Exception {
@@ -140,6 +153,10 @@ public class Assembler {
 		}
 		public void setComment(String comment, Object... formatters) {
 			this.comment = String.format(comment, formatters);
+		}
+		
+		public void setVerbose(boolean verbose) {
+			this.verbose = verbose;
 		}
 		
 		@Override
