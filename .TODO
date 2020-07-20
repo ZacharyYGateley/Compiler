@@ -10,6 +10,9 @@ Language additions
 	Wait command?
 
 Output to assembly
+	Constructs still to-do
+		FUNCDEF, FUNCCALL // and verification of parameters
+		native int_to_string, string_to_int
 	Clearing heap allocation at scope close and RETURN values when they are strings.
 	String comparison
 	The scoping problem

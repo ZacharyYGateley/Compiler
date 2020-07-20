@@ -3,8 +3,6 @@ package com.zygateley.compiler;
 import java.io.*;
 
 public class Application {
-
-
 	private static void log(String message, FileWriter logFile) throws IOException {
 		message += "\n";
 		System.out.print(message);

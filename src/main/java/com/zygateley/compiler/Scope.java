@@ -94,6 +94,7 @@ public class Scope implements Iterable<Variable> {
 	
 	public void pushVariable(Variable variable) throws Exception { 
 		if (variable.getStackIndex() < 0) {
+			// Increase stack size, insert variable
 			this.language.io.setComment("Linked variable added to stack");
 			this.language.assemblePush(variable.register.toString(), true);
 			if (variable.register == null) {
