@@ -5,6 +5,7 @@
 //	Conditional jumps
 // 	Arithmetic and boolean operations
 //	Outputting number, converted from binary to ASCII
+//	String comparison
 if (true) {
 	echo "Demonstrate string concatenation and output:\n";
 	first = "First, ";
@@ -36,4 +37,17 @@ echo "\n\n";
 echo "Demonstrate operator precedence:\n";
 echo "4 >= 5 && 6 < 7 - 2 && true || !false = ";
 echo 4>=5 && 6<7-2 && true || !false;
+echo "\n\n";
+
+echo "Demonstrate string comparison:";
+echo "\n\"abc\" == \"def\" = ";
+echo "abc" == "def";
+echo "\n\"abc\" != \"def\" = ";
+echo "abc" != "def";
+echo "\n\"abc\" == \"abc\" = ";
+echo "abc" == "abc";
+echo "\n\"a\"   == \"abc\" = ";
+echo "a" == "abc";
+echo "\n\"abc\" == \"a\"   = ";
+echo "a" == "abc";
 echo "\n";

@@ -44,15 +44,12 @@ public abstract class AssyLanguage {
 	protected int maxIntegerDigits = 11;
 
 	protected abstract Register assembleBooleanOperation(Construct type, Variable variable0, Variable variable1) throws Exception;
-	protected abstract String assembleBooleanToString(Register register, Node operand) throws Exception;
-	protected abstract Register assembleCalculation(Node operation) throws Exception;
+	protected abstract String assembleBooleanToString(Register register) throws Exception;
 	protected abstract void assembleCall(String method) throws Exception;
 	protected abstract void assembleClearRegister(Register register) throws Exception;
 	protected abstract void assembleCodeHeader() throws Exception;
-	protected abstract Register assembleConcatenation(Node operand0, Node operand1) throws Exception;
 	protected abstract void assembleConditionalJump(Node condition, Node subtreeIfTrue, Node subtreeIfFalse) throws Exception;
 	protected abstract void assembleDeclaration(Variable variable, Register register) throws Exception;
-	protected abstract Register assembleExpression(Node parseTree) throws Exception;
 	protected abstract void assembleFinish() throws Exception;
 	protected abstract Register assembleFooter() throws Exception;
 	protected abstract void assembleFunctions() throws Exception;
@@ -60,7 +57,7 @@ public abstract class AssyLanguage {
 	protected abstract void assembleHandles() throws Exception;
 	protected abstract void assembleHeader() throws Exception;
 	protected abstract Register assembleIntegerOperation(Construct type, Variable variable0, Variable variable1) throws Exception;
-	protected abstract String assembleIntegerToString(Register register, Node operand) throws Exception;
+	protected abstract String assembleIntegerToString(Register register) throws Exception;
 	protected abstract void assembleMalloc(Register byteWidth) throws Exception;
 	protected abstract Register assembleOperand(Node operand) throws Exception;
 	protected abstract void assembleOutput(String dataLocation) throws Exception;
@@ -73,6 +70,8 @@ public abstract class AssyLanguage {
 	protected abstract void assemblePush(Variable variable) throws Exception;
 	protected abstract void assemblePush(String valueOrRegister, boolean scopeReady) throws Exception;
 	protected abstract void assembleScope(boolean open) throws Exception;
+	protected abstract Register assembleStringCompare(Construct construct, Variable variable0, Variable variable1) throws Exception;
+	protected abstract Register assembleStringConcatenation(Variable variable0, Variable variable1) throws Exception;
 	protected abstract String compile(String fileName, boolean verbose) throws Exception;
 	protected abstract String getPointer(String globalVariable);
 	
@@ -191,10 +190,10 @@ public abstract class AssyLanguage {
 			String address;
 			switch (type) {
 			case BOOLEAN:
-				address = this.assembleBooleanToString(operandRegister, operand);
+				address = this.assembleBooleanToString(operandRegister);
 				break;
 			case INTEGER:
-				address = this.assembleIntegerToString(operandRegister, operand);
+				address = this.assembleIntegerToString(operandRegister);
 				break;
 			case STRING:
 				address = operandRegister.toString();
@@ -243,7 +242,6 @@ public abstract class AssyLanguage {
 			pn.setType(type0);
 			
 			break;
-		case OPERATION:
 		case OR: case AND:
 		case ADD: case SUB: case MULT: case INTDIV:
 		case EQEQ: case NEQ: case LT: case LTEQ: case GT: case GTEQ:
@@ -269,33 +267,36 @@ public abstract class AssyLanguage {
 			// Both types are the same
 			// And both operands have a variable
 			operandRegister = null;
+			Variable variable0 = firstChild.getVariable();
+			Variable variable1 = nextChild.getVariable();
 			switch (type0) {
 			case BOOLEAN:
 				// AND, OR
 				operandRegister = this.assembleBooleanOperation(
-						construct, firstChild.getVariable(), nextChild.getVariable()
+						construct, variable0, variable1
 						);
 				break;
 			case INTEGER:
 				// ADD, SUB, MULT, INTDIV
 				// EQEQ, NEQ, LT, LTEQ, GT, GTEQ
 				operandRegister = this.assembleIntegerOperation(
-						construct, firstChild.getVariable(), nextChild.getVariable()
+						construct, variable0, variable1
 						);
 				break;
 			case STRING:
 				if (Construct.ADD.equals(construct)) {
-					operandRegister = this.assembleConcatenation(firstChild, nextChild);
+					operandRegister = this.assembleStringConcatenation(variable0, variable1);
 					// New string length stored in Eax from assembleConcatenation
 				}
-				else if (Construct.EQEQ.equals(construct)) {
-					
-				}
-				else if (Construct.NEQ.equals(construct)) {
-					
-				}
 				else {
-					throw new Exception(String.format("Bad string operation: %s", construct));
+					boolean isEQEQ = Construct.EQEQ.equals(construct);
+					boolean isNEQ = Construct.NEQ.equals(construct);
+					if (isEQEQ || isNEQ) {
+						operandRegister = this.assembleStringCompare(construct, variable0, variable1);
+					}
+					else {
+						throw new Exception(String.format("Bad string operation: %s", construct));
+					}
 				}
 				break;
 			default:

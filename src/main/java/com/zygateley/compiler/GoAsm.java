@@ -96,7 +96,7 @@ public class GoAsm extends AssyLanguage {
 	}
 	
 	@Override
-	public String assembleBooleanToString(Register operandRegister, Node operand) throws Exception {
+	public String assembleBooleanToString(Register operandRegister) throws Exception {
 		String label0 = this.getNewLabel();
 		String label1 = this.getNewLabel();
 		io.setComment("Prepare boolean to string");
@@ -114,12 +114,6 @@ public class GoAsm extends AssyLanguage {
 		io.println(label1 + ":");
 		io.indent();
 		return String.format("[%s]", this.temporaryGlobal);
-	}
-
-	@Override
-	public Register assembleCalculation(Node operation) throws Exception {
-		// TODO Auto-generated method stub
-		return null;
 	}
 	
 	@Override
@@ -209,73 +203,6 @@ public class GoAsm extends AssyLanguage {
 		io.println();
 		io.println(labelNext + ":");
 	}
-	
-	@Override
-	public Register assembleConcatenation(Node operand0, Node operand1) throws Exception {
-		// Will call once for each string
-		String procedure = "get_string_length";
-		this.addResource(procedure);
-
-		// Save state
-		Register[] preRegisters = this.assemblePreCall();
-		
-		// Get length of operand0
-		Variable v0 = operand0.getVariable();
-		this.assembleParameter(this.getStackAddress(v0), procedure);
-		this.assembleCall(procedure);
-		// Remember result in temporary global var
-		io.println("Mov [%s], Eax", this.temporaryGlobal);
-		
-		// Get length of operand 1
-		Variable v1 = operand1.getVariable();
-		this.assembleParameter(this.getStackAddress(v1), procedure);
-		this.assembleCall(procedure);
-		// Remember result
-		io.println("Mov [%s + 4], Eax", this.temporaryGlobal);
-		
-		// Registers available
-		// Sum lengths
-		// Length of operand 1 already in Eax
-		io.setComment("Sum string lengths");
-		io.println("Add Eax, [Esp + 4]");
-		
-		// Allocate space in heap
-		this.assembleMalloc("Eax", true);
-		io.setComment("Remember value in temp global");
-		io.println("Mov [%s + 8], Eax", this.temporaryGlobal);
-
-		// Recall state (never overwrites Eax)
-		this.assemblePostCall(preRegisters);
-		
-		// Move first string location to heap
-		// From address
-		Register r2 = this.registry.allocate();
-		io.println("Mov %s, %s", r2, this.getStackAddress(v0));
-		this.assembleMoveMemory(r2.toString(), "Eax", String.format("[%s]", this.temporaryGlobal));
-		// Eax now contains the location of the next byte to be placed
-		
-		// Move second string to heap
-		io.println("Mov %s, %s", r2, this.getStackAddress(v1));
-		this.assembleMoveMemory(r2.toString(), "Eax", String.format("[%s + 4]", this.temporaryGlobal));
-		// Eax now contains the location of the next byte to be placed
-		r2.free();
-
-		// Move \0 to last spot
-		io.setComment("Strings must end in 0");
-		io.println("Mov B[Eax], 0");
-		
-		// Resultant heap address in Eax
-		Register register = this.registry.allocate();
-		io.setComment("Move new string location to newly allocated register");
-		io.println("Mov %s, [%s + 8]", register, this.temporaryGlobal);
-		
-		// Store string length in Eax
-		io.println("Mov Eax, [%s]", this.temporaryGlobal);
-		io.setComment("Store string length in Eax");
-		io.println("Add Eax, [%s + 4]", this.temporaryGlobal);
-		
-		return register;
-	}
 
 	@Override
 	public void assembleDataSection() throws Exception {
@@ -292,12 +219,6 @@ public class GoAsm extends AssyLanguage {
 		String address = this.getStackAddress(variable);
 		io.setComment("Store value to variable");
 		io.println("Mov %s, %s", address, register);
-	}
-
-	@Override
-	public Register assembleExpression(Node parseTree) throws Exception {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 	@Override
@@ -513,7 +434,7 @@ public class GoAsm extends AssyLanguage {
 	}
 	
 	@Override 
-	public String assembleIntegerToString(Register register, Node operand) throws Exception {
+	public String assembleIntegerToString(Register register) throws Exception {
 		io.indent();
 		
 		String address = "Addr " + this.temporaryGlobal;
@@ -915,6 +836,100 @@ public class GoAsm extends AssyLanguage {
 				io.println("; Close scope");
 			}
 		}
+	}
+	
+	@Override
+	public Register assembleStringCompare(Construct construct, Variable variable0, Variable variable1) throws Exception {
+		Register[] preRegisters = this.assemblePreCall();
+		
+		String procedure = "string_compare";
+		this.addResource(procedure);
+		Register r0 = this.getRegister(variable0);
+		Register r1 = this.getRegister(variable1);
+		this.assembleParameter(r0.toString(), procedure);
+		this.assembleParameter(r1.toString(), procedure);
+		this.assembleCall(procedure);
+		r0.free();
+		r1.free();
+		// Equivalence (boolean) in Eax
+		
+		this.assemblePostCall(preRegisters);
+		
+		Register register = this.registry.allocate();
+		io.println("Mov %s, Eax", register);
+		if (Construct.NEQ.equals(construct)) {
+			io.setComment("Invert bit 0 on boolean value");
+			io.println("Not %s", register);
+			io.println("Shl %s, 31D", register);
+			io.println("Shr %s, 31D", register);
+		}
+		
+		return register;
+	}
+	
+	@Override
+	public Register assembleStringConcatenation(Variable variable0, Variable variable1) throws Exception {
+		// Will call once for each string
+		String procedure = "get_string_length";
+		this.addResource(procedure);
+
+		// Save state
+		Register[] preRegisters = this.assemblePreCall();
+		
+		// Get length of operand0
+		this.assembleParameter(this.getStackAddress(variable0), procedure);
+		this.assembleCall(procedure);
+		// Remember result in temporary global var
+		io.println("Mov [%s], Eax", this.temporaryGlobal);
+		
+		// Get length of operand 1
+		this.assembleParameter(this.getStackAddress(variable1), procedure);
+		this.assembleCall(procedure);
+		// Remember result
+		io.println("Mov [%s + 4], Eax", this.temporaryGlobal);
+		
+		// Registers available
+		// Sum lengths
+		// Length of operand 1 already in Eax
+		io.setComment("Sum string lengths");
+		io.println("Add Eax, [Esp + 4]");
+		
+		// Allocate space in heap
+		this.assembleMalloc("Eax", true);
+		io.setComment("Remember value in temp global");
+		io.println("Mov [%s + 8], Eax", this.temporaryGlobal);
+
+		// Recall state (never overwrites Eax)
+		this.assemblePostCall(preRegisters);
+		
+		// Move first string location to heap
+		// From address
+		Register r2 = this.registry.allocate();
+		io.println("Mov %s, %s", r2, this.getStackAddress(variable0));
+		this.assembleMoveMemory(r2.toString(), "Eax", String.format("[%s]", this.temporaryGlobal));
+		// Eax now contains the location of the next byte to be placed
+		
+		// Move second string to heap
+		io.println("Mov %s, %s", r2, this.getStackAddress(variable1));
+		this.assembleMoveMemory(r2.toString(), "Eax", String.format("[%s + 4]", this.temporaryGlobal));
+		// Eax now contains the location of the next byte to be placed
+		r2.free();
+
+		// Move \0 to last spot
+		io.setComment("Strings must end in 0");
+		io.println("Mov B[Eax], 0");
+		
+		// Resultant heap address in Eax
+		Register register = this.registry.allocate();
+		io.setComment("Move new string location to newly allocated register");
+		io.println("Mov %s, [%s + 8]", register, this.temporaryGlobal);
+		
+		// Store string length in Eax
+		io.println("Mov Eax, [%s]", this.temporaryGlobal);
+		io.setComment("Store string length in Eax");
+		io.println("Add Eax, [%s + 4]", this.temporaryGlobal);
+		
+		return register;
 	}
 	
 	@Override
