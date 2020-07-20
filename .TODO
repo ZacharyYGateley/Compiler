@@ -1,14 +1,17 @@
 Bugs
 	unary "!" double parses on expression operand
 
+
+Language additions
+	Loops
+	Variable declarations
+	Return statements
+	Return type
+	Wait command?
+
 Output to assembly
-	Construct NOT is a little strange. Is it ever used?
 	Clearing heap allocation at scope close and RETURN values when they are strings.
-	assembleOperation, assembleIntegerOperation, string eqeq, string neq
-	Aliases and pulling/pushing from stack only when necessary
-	On the fly type checker
-		assembleGlobalString boolean...
-		Type checking for addition - Adding strings - Subtracting strings...? i.e. type checking
+	String comparison
 	The scoping problem
 		Want to determine TypeSystem before assembler
 		But assembler is currently determining scoping rules
@@ -58,12 +61,6 @@ Nodes traversal and node values should be split
 	A la inherit Node
 	Or at least non-traversal Node properties should be abstracted more
 
-
-Language additions
-	Loops
-	Return statements
-	Return type
-	Wait command?
 
 Arbitrary grammar selection
 	Arguably, this should interfere minimally with back-end development

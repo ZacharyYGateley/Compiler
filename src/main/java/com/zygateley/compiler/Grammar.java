@@ -441,6 +441,22 @@ enum Terminal implements GrammarRule {
 	EMPTY 		(GrammarRule.EMPTY, Construct.NULL, "", "^\\s"),
 	// Allow premature termination of compilation
 	EOF 		(GrammarRule.EOF, Construct.NULL, "noco"),
+
+	// Defined as <ops> in CFG.xlsx
+	AND			(GrammarRule.AND, Construct.AND, "&&"),
+	OR			(GrammarRule.OR, Construct.OR, "||"),
+	EQEQ		(GrammarRule.EQEQ, Construct.EQEQ, "=="),
+	NEQ  		(GrammarRule.NEQ, Construct.NEQ, "!="),
+	LTEQ 		(GrammarRule.LTEQ, Construct.LTEQ, "<="),
+	GTEQ  		(GrammarRule.GTEQ, Construct.GTEQ, ">="),
+	LT 			(GrammarRule.LT, Construct.LT, "<"),
+	GT  		(GrammarRule.GT, Construct.GT, ">"),
+	PLUS  		(GrammarRule.PLUS, Construct.ADD, "+"),
+	MINUS 		(GrammarRule.MINUS, Construct.SUB, "-"),
+	ASTERISK 	(GrammarRule.ASTERISK, Construct.MULT, "*"),
+	// Want to define slash before comment
+	SLASH 		(GrammarRule.SLASH, Construct.INTDIV, "/"),
+	NOT			(GrammarRule.NOT, Construct.NOT, "!"),
 	
 	SEMICOLON	(GrammarRule.SEMICOLON, Construct.NULL, ";"),
 	COMMA		(GrammarRule.COMMA, Construct.NULL, ","),
@@ -468,23 +484,8 @@ enum Terminal implements GrammarRule {
 	// Defined as <stmts> in CFG.xlsx
 	ECHO 		(GrammarRule.ECHO, Construct.NULL, "echo"),
 	INPUT		(GrammarRule.INPUT, Construct.NULL, "input"),
-	VARIABLE	(GrammarRule.VARIABLE, Construct.VARIABLE, "", ("^[a-zA-Z_][a-zA-Z\\d_]*")),
+	VARIABLE	(GrammarRule.VARIABLE, Construct.VARIABLE, "", ("^[a-zA-Z_][a-zA-Z\\d_]*"));
 	// Any reserved words must be declared before VAR
-
-	// Defined as <ops> in CFG.xlsx
-	AND			(GrammarRule.AND, Construct.AND, "&&"),
-	OR			(GrammarRule.OR, Construct.OR, "||"),
-	EQEQ		(GrammarRule.EQEQ, Construct.EQEQ, "=="),
-	NEQ  		(GrammarRule.NEQ, Construct.NEQ, "!="),
-	LTEQ 		(GrammarRule.LTEQ, Construct.LTEQ, "<="),
-	GTEQ  		(GrammarRule.GTEQ, Construct.GTEQ, ">="),
-	LT 			(GrammarRule.LT, Construct.LT, "<"),
-	GT  		(GrammarRule.GT, Construct.GT, ">"),
-	PLUS  		(GrammarRule.PLUS, Construct.ADD, "+"),
-	MINUS 		(GrammarRule.MINUS, Construct.SUB, "-"),
-	ASTERISK 	(GrammarRule.ASTERISK, Construct.MULT, "*"),
-	SLASH 		(GrammarRule.SLASH, Construct.INTDIV, "/"),
-	NOT			(GrammarRule.NOT, Construct.NOT, "!");
 	
 	public final int tokenValue;
 	public final String exactString;

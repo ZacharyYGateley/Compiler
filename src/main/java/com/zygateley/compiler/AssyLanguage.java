@@ -34,13 +34,17 @@ public abstract class AssyLanguage {
 	protected final String heapHandle = "heapHandle";
 	protected final String inputHandle = "inputHandle";
 	protected final String outputHandle = "outputHandle";
+	protected final String trueString = "trueString";
+	protected final String falseString = "falseString";
 	protected final String temporaryGlobal = "tempGlobal";
 	protected final int temporaryGlobalLength = 256;
 	protected int labelCount = 0;
 	
 	// Language-specific
 	protected int maxIntegerDigits = 11;
-	
+
+	protected abstract Register assembleBooleanOperation(Construct type, Variable variable0, Variable variable1) throws Exception;
+	protected abstract String assembleBooleanToString(Register register, Node operand) throws Exception;
 	protected abstract Register assembleCalculation(Node operation) throws Exception;
 	protected abstract void assembleCall(String method) throws Exception;
 	protected abstract void assembleClearRegister(Register register) throws Exception;
@@ -55,11 +59,10 @@ public abstract class AssyLanguage {
 	protected abstract String assembleGlobalString(String name, int byteWidth, String value) throws Exception;
 	protected abstract void assembleHandles() throws Exception;
 	protected abstract void assembleHeader() throws Exception;
-	protected abstract void assembleIntegerOperation(Construct type, Node operand0, Node operand1) throws Exception;
+	protected abstract Register assembleIntegerOperation(Construct type, Variable variable0, Variable variable1) throws Exception;
 	protected abstract String assembleIntegerToString(Register register, Node operand) throws Exception;
 	protected abstract void assembleMalloc(Register byteWidth) throws Exception;
 	protected abstract Register assembleOperand(Node operand) throws Exception;
-	protected abstract void assembleOperation(Construct type, Node operand0, Node operand1) throws Exception;
 	protected abstract void assembleOutput(String dataLocation) throws Exception;
 	protected abstract Register[] assemblePreCall() throws Exception;
 	protected abstract void assemblePop(Register toRegister) throws Exception;
@@ -119,6 +122,7 @@ public abstract class AssyLanguage {
 		Symbol symbol;
 		Node operand, firstChild, nextChild;
 		Register operandRegister, r0, r1;
+		TypeSystem type0, type1;
 		switch (construct) {
 		case SCOPE:
 			this.currentScope = pn.getScope();
@@ -184,14 +188,59 @@ public abstract class AssyLanguage {
 			variable = operand.getVariable();
 			TypeSystem type = operand.getType();
 			symbol = operand.getSymbol();
-			if (TypeSystem.INTEGER.equals(type)) {
-				String address = this.assembleIntegerToString(operandRegister, operand);
-				this.assembleOutput(address);
+			String address;
+			switch (type) {
+			case BOOLEAN:
+				address = this.assembleBooleanToString(operandRegister, operand);
+				break;
+			case INTEGER:
+				address = this.assembleIntegerToString(operandRegister, operand);
+				break;
+			case STRING:
+				address = operandRegister.toString();
+				break;
+			default:
+				throw new Exception("Bad output " + type);
 			}
-			else {
-				this.assembleOutput(operandRegister.toString());
-			}
+			this.assembleOutput(address);
 			operandRegister.free();
+			
+			break;
+		case NOT:
+			// Make sure value/result of first child is saved in stack 
+			firstChild = pn.getFirstChild();
+			// Operand assembles. Operand variable contains data location.
+			this.getOperandRegister(firstChild).free();
+			
+			type0 = firstChild.getType();
+			
+			switch (type0) {
+			case BOOLEAN:
+				operandRegister = this.assembleBooleanOperation(
+						construct, firstChild.getVariable(), null
+						);
+				break;
+			case INTEGER:
+				// ADD, SUB, MULT, INTDIV
+				// EQEQ, NEQ, LT, LTEQ, GT, GTEQ
+				operandRegister = this.assembleIntegerOperation(
+						construct, firstChild.getVariable(), null
+						);
+				break;
+			default:
+				throw new Exception("Invalid operand (" + type0 + ") for operation NOT");
+			}
+
+			// Link node and register
+			variable = pn.getVariable();
+			if (variable == null) {
+				variable = new Variable();
+				pn.setVariable(variable);
+			}
+			variable.linkRegister(operandRegister);
+			
+			// Make sure node type is up to date
+			pn.setType(type0);
 			
 			break;
 		case OPERATION:
@@ -209,8 +258,8 @@ public abstract class AssyLanguage {
 			this.getOperandRegister(nextChild).free();
 			
 			// Check for bad type operation
-			TypeSystem type0 = firstChild.getType();
-			TypeSystem type1 = nextChild.getType();
+			type0 = firstChild.getType();
+			type1 = nextChild.getType();
 			
 			if (type0 != type1) {
 				// Different types
@@ -218,24 +267,25 @@ public abstract class AssyLanguage {
 			}
 			
 			// Both types are the same
-			variable = new Variable();
+			// And both operands have a variable
+			operandRegister = null;
 			switch (type0) {
 			case BOOLEAN:
-				// AND, OR, NOT
-				this.assembleOperation(construct, firstChild, nextChild);
+				// AND, OR
+				operandRegister = this.assembleBooleanOperation(
+						construct, firstChild.getVariable(), nextChild.getVariable()
+						);
 				break;
 			case INTEGER:
 				// ADD, SUB, MULT, INTDIV
 				// EQEQ, NEQ, LT, LTEQ, GT, GTEQ
-				this.assembleIntegerOperation(construct, firstChild, nextChild);
+				operandRegister = this.assembleIntegerOperation(
+						construct, firstChild.getVariable(), nextChild.getVariable()
+						);
 				break;
 			case STRING:
 				if (Construct.ADD.equals(construct)) {
 					operandRegister = this.assembleConcatenation(firstChild, nextChild);
-					variable.linkRegister(operandRegister);
-					// Non-anonymous variable now stored in register
-					// If future procedures need its register, it will be pushed to stack and remembered
-
 					// New string length stored in Eax from assembleConcatenation
 				}
 				else if (Construct.EQEQ.equals(construct)) {
@@ -252,13 +302,33 @@ public abstract class AssyLanguage {
 				throw new Exception(String.format("Bad %s operation: %s", type0, construct));
 			}
 			
+			if (operandRegister == null) {
+				throw new Exception("Failed operation on " + type0 + " and " + type1);
+			}
+
 			// Link node and register
-			pn.setVariable(variable);
+			variable = pn.getVariable();
+			if (variable == null) {
+				variable = new Variable();
+				pn.setVariable(variable);
+			}
+			variable.linkRegister(operandRegister);
+			
 			// Make sure node type is up to date 
-			pn.setType(type0);
-			variable.setType(type0);
+			TypeSystem resultantType;
+			switch (construct) {
+			case AND: case OR:
+			case EQEQ: case NEQ: case LT: case LTEQ: case GT: case GTEQ:
+				resultantType = TypeSystem.BOOLEAN;
+				break;
+			default:
+				resultantType = type0;
+				break;
+			}
+			pn.setType(resultantType);
+			variable.setType(resultantType);
 			if (variable.symbol != null) {
-				variable.symbol.setType(type0);
+				variable.symbol.setType(resultantType);
 			}
 			
 			break;
@@ -278,6 +348,7 @@ public abstract class AssyLanguage {
 	 *  
 	 */
 	public void assembleDataSection() throws Exception {
+		io.println("; String pool");
 		for (Symbol symbol : this.symbolTable) {
 			int byteWidth = 0;
 			String prefix = "";
@@ -319,12 +390,20 @@ public abstract class AssyLanguage {
 			}
 		}
 		
+		// String pool true/false
+		assembleGlobalString(this.trueString, 1, "\"TRUE\",0");
+		assembleGlobalString(this.falseString, 1, "\"FALSE\",0");
+		
+		
+		io.println();
+		io.println("; Other global variables");
+		
 		// Location for handles
 		assembleGlobalString(this.heapHandle, 4, "0");
 		assembleGlobalString(this.inputHandle, 4, "0");
 		assembleGlobalString(this.outputHandle, 4, "0");
 		
-		// Locate for output from API
+		// Location for output from API
 		assembleGlobalString(this.temporaryGlobal, this.temporaryGlobalLength, "0");
 	}
 	
@@ -360,6 +439,27 @@ public abstract class AssyLanguage {
 	 */
 	protected String getNewLabel() {
 		return "label" + this.labelCount++;
+	}
+	
+	/**
+	 * For the given node, get a/its register. 
+	 * If the node has a variable, link the variable and register.
+	 * @param variable named or anonymous whose register to retrieve
+	 * @return current or new register for current or no variable
+	 */
+	protected Register getRegister(Variable variable) throws Exception {
+		Register register;
+		if (variable == null || variable.register == null) {
+			register = registry.allocate();
+			if (variable != null) {
+				variable.linkRegister(register);
+			}
+		}
+		else {
+			register = variable.register;
+		}
+		
+		return register;
 	}
 	
 	/**
@@ -408,45 +508,44 @@ public abstract class AssyLanguage {
 		 */
 		public Register allocate() throws Exception {
 			// Pop least-recently-used
-			Register leastUsed = accessOrder.pollFirst();
+			Register leastUsed = accessOrder.peekFirst();
+			return this.allocate(leastUsed);
+		}
+		public Register allocate(Register register) throws Exception {
+			// Get indicated register
+			accessOrder.remove(register);
 			// Add to tail
-			accessOrder.addLast(leastUsed);
+			accessOrder.addLast(register);
 			
 			// If LRU has a variable, 
 			// ensure it is in the stack
-			if (leastUsed.variable != null) {
-				this.language.assemblePush(leastUsed.variable);
+			if (register.variable != null) {
+				this.language.assemblePush(register.variable);
 			}
 			
 			// Reserve register
-			leastUsed.allocate();
+			register.allocate();
 			
 			// Clear register
-			this.language.assembleClearRegister(leastUsed);
+			// This is a really bad idea
+			// It bulks up the assembly code excessively
+			// Very few times do we even need an empty register
+			//this.language.assembleClearRegister(register);
 			
-			return leastUsed;
-		}
-		
-		/**
-		 * Mark register as no longer being used
-		 * 
-		 * @return
-		 * @throws Exception
-		 */
-		public void free(Register register) {
-			register.free();
+			return register;
 		}
 
 		
 		/**
-		 * Get a specific register.
-		 * Moves to most-recently-used position.
+		 * Allocate a specific register.
 		 */
-		public Variable get(int i) {
-			Register r = registerMap.get(i);
-			// Pop register and add to the tail
-			promote(r);
-			return r.variable;
+		public Register allocate(String regName) throws Exception {
+			for (Register register : this.accessOrder) {
+				if (register.registerName == regName) {
+					return this.allocate(register);
+				}
+			}
+			return null;
 		}
 		
 		/**
@@ -487,6 +586,7 @@ public abstract class AssyLanguage {
 		public void free() {
 			this.isAvailable = true;
 			if (this.variable != null) {
+				// Clears this.variable
 				this.variable.unlinkRegister();
 			}
 		}
