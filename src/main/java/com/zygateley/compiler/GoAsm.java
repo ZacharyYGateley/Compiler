@@ -176,7 +176,7 @@ public class GoAsm extends AssyLanguage {
 		io.println("; Finally, go to %s", labelNext);
 		
 		// Condition
-		Register r0 = this.assembleOperand(condition);
+		Register r0 = this.getOperandRegister(condition);
 		io.setComment("Determine if condition is false");
 		io.println("Cmp %s, 0", r0);
 		r0.free();
@@ -339,6 +339,47 @@ public class GoAsm extends AssyLanguage {
 	@Override
 	public void assembleHeader() throws Exception {
 		io.println("; using the GoAsm assembly language");
+	}
+	
+	@Override
+	public void assembleInput(Variable variable) throws Exception {
+		Register[] preRegisters = this.assemblePreCall();
+		
+		// Stores number of characters read
+		this.assemblePush("0");
+		// Memory location of Esp
+		io.println("Mov Eax, Esp");
+		
+		String procedure = "ReadConsoleA";
+		this.assembleParameter("0", procedure);
+		this.assembleParameter("Eax", procedure);
+		this.assembleParameter(String.valueOf(this.temporaryGlobalLength), procedure);
+		this.assembleParameter("Addr " + this.temporaryGlobal, procedure);
+		this.assembleParameter(this.getPointer(this.inputHandle), procedure);
+		this.assembleCall(procedure);
+		
+		this.assemblePostCall(preRegisters);
+		// Number of characters in [Esp]
+
+		// Create heap allocation
+		this.assembleMalloc("[Esp]", true);
+		// Heap location in Eax
+		String address = this.getStackAddress(variable);
+		io.println("Mov %s, Eax", address);
+		// Heap allocation linked to variable and in stack (placed there at beginning of SCOPE)
+		
+		// Move new string to allocation
+		this.assembleMoveMemory("Addr " + this.temporaryGlobal, "Eax", "[Esp]");
+		// Address of next byte address in Eax
+		io.println("Sub Eax, 2");
+		io.setComment("Remove 13,10 add 0");
+		io.println("Mov B[Eax], 0");
+
+		// Number of characters read
+		io.setComment("Retrieve number of characters");
+		io.println("Mov Eax, [Esp + 4]");
+		io.setComment("Account for 13,10 replaced with 0");
+		io.println("Sub Eax, 1");
 	}
 	
 	@Override

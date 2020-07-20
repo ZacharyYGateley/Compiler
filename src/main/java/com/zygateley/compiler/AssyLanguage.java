@@ -56,15 +56,16 @@ public abstract class AssyLanguage {
 	protected abstract String assembleGlobalString(String name, int byteWidth, String value) throws Exception;
 	protected abstract void assembleHandles() throws Exception;
 	protected abstract void assembleHeader() throws Exception;
+	protected abstract void assembleInput(Variable saveVariable) throws Exception;
 	protected abstract Register assembleIntegerOperation(Construct type, Variable variable0, Variable variable1) throws Exception;
 	protected abstract String assembleIntegerToString(Register register) throws Exception;
 	protected abstract void assembleMalloc(Register byteWidth) throws Exception;
 	protected abstract Register assembleOperand(Node operand) throws Exception;
 	protected abstract void assembleOutput(String dataLocation) throws Exception;
-	protected abstract Register[] assemblePreCall() throws Exception;
 	protected abstract void assemblePop(Register toRegister) throws Exception;
 	protected abstract void assemblePop(Register toRegister, boolean scopeReady) throws Exception;
 	protected abstract void assemblePostCall(Register[] registers) throws Exception;
+	protected abstract Register[] assemblePreCall() throws Exception;
 	protected abstract void assemblePush(Register fromRegister) throws Exception;
 	protected abstract void assemblePush(String value) throws Exception;
 	protected abstract void assemblePush(Variable variable) throws Exception;
@@ -203,6 +204,21 @@ public abstract class AssyLanguage {
 			}
 			this.assembleOutput(address);
 			operandRegister.free();
+			
+			break;
+		case INPUT:
+			io.println("; Input");
+			operand = pn.getLastChild();
+			variable = operand.getVariable();
+			if (variable == null) {
+				throw new Exception("Input requested but no variable given.");
+			}
+			this.assembleInput(variable);
+			
+			// Input always received as string
+			pn.setType(TypeSystem.STRING);
+			variable.setType(TypeSystem.STRING);
+			variable.getSymbol().setType(TypeSystem.STRING);
 			
 			break;
 		case NOT:

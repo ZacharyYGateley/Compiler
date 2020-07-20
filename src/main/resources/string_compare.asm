@@ -10,8 +10,8 @@ string_compare:
 	Mov Edx, [Ebp + 4]		; string 2 address
 	
 .loop:
-	Mov Eax, [Ecx]			; actual value of string 1 byte
-	Cmp Eax, [Edx]			; actual value of string 2 byte
+	Mov Al, B[Ecx]			; actual value of string 1 byte
+	Cmp Al, B[Edx]			; actual value of string 2 byte
 	Jne > .not_equivalent
 	
 	Cmp Eax, 0

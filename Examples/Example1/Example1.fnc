@@ -1,6 +1,7 @@
 // Selected functionalities demonstrated in this example:
 //	Concatenating strings, storing them in the heap
 // 	Working with strings of lengths unknown at compile time
+//	Save input to variables
 //	Outputting the concatenation of a string and a variable
 //	Conditional jumps
 // 	Arithmetic and boolean operations
@@ -11,6 +12,10 @@ if (true) {
 	first = "First, ";
 	second = "concatenate" + " a few strings" + " and store the result to a variable.";
 	echo first + second + "\nLater, concatenate the variable with an additional string, and output result.\n\n";
+
+	echo "Anything else you would like to say? ";
+	input extra;
+	echo "\n\"" + extra + "\"\n\n";
 }
 
 echo "Demonstrate arithmetic operations:\n";
