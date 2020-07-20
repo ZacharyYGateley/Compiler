@@ -33,6 +33,11 @@ public class Variable {
 	public int getStackIndex() {
 		return this.stackIndex;
 	}
+	
+	public boolean inStack() {
+		return this.stackIndex > -1;
+	}
+	
 	public void setStackIndex(int stackIndex) {
 		this.stackIndex = stackIndex;
 	}
