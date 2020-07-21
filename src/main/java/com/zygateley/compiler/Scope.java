@@ -38,8 +38,26 @@ public class Scope implements Iterable<Variable> {
 			else {
 				this.pushVariable(variable);
 			}
+			// Just pushed it. Belongs to this scope.
+			return this.size() - variable.getStackIndex() - 1;
 		}
-		return this.size() - variable.getStackIndex() - 1;
+		else {
+			// Get scope to which it belongs
+			Scope scope = variable.getScope();
+			if (scope == this) {
+				return this.size() - variable.getStackIndex() - 1;
+			}
+			else {
+				int offset = 0;
+				Scope nextScope = this;
+				while (scope != nextScope && nextScope != null) {
+					offset += nextScope.size();
+					nextScope = nextScope.parent;
+				}
+				offset += nextScope.size() - variable.getStackIndex() - 1;
+				return offset;
+			}
+		}
 	}
 	
 	public Variable getVariable(Symbol symbol) {
@@ -57,6 +75,7 @@ public class Scope implements Iterable<Variable> {
 	
 	public Variable addVariable(Symbol symbol) throws Exception {
 		Variable variable = new Variable(symbol);
+		variable.setScope(this);
 		variable.setStackIndex(this.stack.size());
 		this.stack.push(variable);
 		return variable;
@@ -101,12 +120,13 @@ public class Scope implements Iterable<Variable> {
 				throw new Exception(String.format("Variable %s is not currently in a register!", variable));
 			}
 			variable.setStackIndex(this.stack.size());
+			variable.setScope(this);
 			this.stack.push(variable);
 		}
 	}
 	
 	public String getHeapPoolAddress() throws Exception {
-		return String.format("[Esp + %d]", this.getStackOffset(this.heapPool) * 4);
+		return String.format("[Esp + %dD]", this.getStackOffset(this.heapPool) * 4);
 	}
 	
 	/**

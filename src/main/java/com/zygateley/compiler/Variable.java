@@ -7,6 +7,7 @@ public class Variable {
 	public final Symbol symbol;
 	public TypeSystem type;
 	private int stackIndex = -1;
+	private Scope scope = null;
 	public final static Variable NONE = new Variable();
 	
 	public Variable() {
@@ -36,6 +37,14 @@ public class Variable {
 	
 	public boolean inStack() {
 		return this.stackIndex > -1;
+	}
+	
+	public Scope getScope() {
+		return this.scope;
+	}
+	
+	public void setScope(Scope scope) {
+		this.scope = scope;
 	}
 	
 	public void setStackIndex(int stackIndex) {

@@ -44,24 +44,25 @@ public abstract class AssyLanguage {
 	protected int maxIntegerDigits = 11;
 
 	protected abstract Register assembleBooleanOperation(Construct type, Variable variable0, Variable variable1) throws Exception;
-	protected abstract String assembleBooleanToString(Register register) throws Exception;
+	protected abstract Variable assembleBooleanToString(Variable variable) throws Exception;
 	protected abstract void assembleCall(String method) throws Exception;
 	protected abstract void assembleClearRegister(Register register) throws Exception;
 	protected abstract void assembleCodeHeader() throws Exception;
 	protected abstract void assembleConditionalJump(Node condition, Node subtreeIfTrue, Node subtreeIfFalse) throws Exception;
-	protected abstract void assembleDeclaration(Variable variable, Register register) throws Exception;
+	protected abstract void assembleVariablePopulation(Variable variable, Register register) throws Exception;
 	protected abstract void assembleFinish() throws Exception;
 	protected abstract Register assembleFooter() throws Exception;
+	protected abstract void assembleForLoop(Variable loopVariable, Variable fromValue, Variable toValue, Variable loopStep, Node loopBody) throws Exception;
 	protected abstract void assembleFunctions() throws Exception;
 	protected abstract String assembleGlobalString(String name, int byteWidth, String value) throws Exception;
 	protected abstract void assembleHandles() throws Exception;
 	protected abstract void assembleHeader() throws Exception;
 	protected abstract void assembleInput(Variable saveVariable) throws Exception;
 	protected abstract Register assembleIntegerOperation(Construct type, Variable variable0, Variable variable1) throws Exception;
-	protected abstract String assembleIntegerToString(Register register) throws Exception;
+	protected abstract Variable assembleIntegerToString(Variable variable) throws Exception;
 	protected abstract void assembleMalloc(Register byteWidth) throws Exception;
 	protected abstract Register assembleOperand(Node operand) throws Exception;
-	protected abstract void assembleOutput(String dataLocation) throws Exception;
+	protected abstract void assembleOutput(Variable variable) throws Exception;
 	protected abstract void assemblePop(Register toRegister) throws Exception;
 	protected abstract void assemblePop(Register toRegister, boolean scopeReady) throws Exception;
 	protected abstract void assemblePostCall(Register[] registers) throws Exception;
@@ -73,6 +74,7 @@ public abstract class AssyLanguage {
 	protected abstract void assembleScope(boolean open) throws Exception;
 	protected abstract Register assembleStringCompare(Construct construct, Variable variable0, Variable variable1) throws Exception;
 	protected abstract Register assembleStringConcatenation(Variable variable0, Variable variable1) throws Exception;
+	protected abstract void assembleWhileLoop(Node loopCondition, Node loopBody) throws Exception;
 	protected abstract String compile(String fileName, boolean verbose) throws Exception;
 	protected abstract String getPointer(String globalVariable);
 	
@@ -94,7 +96,7 @@ public abstract class AssyLanguage {
 	public void assembleCodeSection(Node parseTree) throws Exception {
 		this.assembleCodeHeader();
 		
-		if (!Construct.SCOPE.equals(parseTree.getElementType())) {
+		if (!Construct.SCOPE.equals(parseTree.getConstruct())) {
 			throw new Exception("Invalid language organization. Scope should be root of syntax tree.");
 		}
 		
@@ -117,7 +119,7 @@ public abstract class AssyLanguage {
 	
 	@SuppressWarnings("unused")
 	public void assembleNode(Node pn) throws Exception {
-		Construct construct = pn.getElementType();
+		Construct construct = pn.getConstruct();
 		Variable variable;
 		Symbol symbol;
 		Node operand, firstChild, nextChild;
@@ -142,6 +144,39 @@ public abstract class AssyLanguage {
 			
 			this.currentScope = this.currentScope.parent;
 			break;
+		case LOOP:
+			Node loopBody = pn.getLastChild();
+			if (pn.getChildCount() == 2) {
+				Node loopCondition = loopBody.getPreviousSibling();
+				this.assembleWhileLoop(loopCondition, loopBody);
+			}
+			else {
+				firstChild = pn.getFirstChild();
+				Node loopVariable = firstChild;
+				loopVariable.setType(TypeSystem.INTEGER);
+				nextChild = firstChild.getNextSibling();
+				Node fromValue = nextChild;
+				nextChild = nextChild.getNextSibling();
+				Node toValue = nextChild;
+				nextChild = nextChild.getNextSibling();
+				Variable loopStepVariable = null;
+				if (nextChild != loopBody) {
+					Node loopStep = nextChild;
+					this.getOperandRegister(loopStep);
+					loopStepVariable = loopStep.getVariable(); 
+				}
+				this.getOperandRegister(loopVariable).free();
+				this.getOperandRegister(fromValue).free();
+				this.getOperandRegister(toValue).free();
+				this.assembleForLoop(
+						loopVariable.getVariable(), 
+						fromValue.getVariable(), 
+						toValue.getVariable(), 
+						loopStepVariable,
+						loopBody);
+			}
+			io.println("; loop skipped");
+			break;
 		case IF:
 			Node condition = pn.getFirstChild();
 			Node subtreeIfTrue = condition.getNextSibling();
@@ -156,7 +191,13 @@ public abstract class AssyLanguage {
 			// Finally is function body
 			io.println("; function " + symbol);
 			return;
-		case VARDEF:
+		case VARDECL:
+			if (pn.getChildCount() == 1) {
+				// Variable declarations and scope already handled
+				break;
+			}
+			// If there is a value set to the variable, fall into VARSET
+		case VARSET:
 			firstChild = pn.getFirstChild();
 			variable = firstChild.getVariable();
 			symbol = variable.getSymbol();
@@ -174,7 +215,7 @@ public abstract class AssyLanguage {
 			// Let pn and operand share the same variable
 			operand.setVariable(variable);
 			operandRegister = this.getOperandRegister(operand);
-			this.assembleDeclaration(variable, operandRegister);
+			this.assembleVariablePopulation(variable, operandRegister);
 			operandRegister.free();
 			
 			// Make sure type of variable is up-to-date
@@ -184,26 +225,24 @@ public abstract class AssyLanguage {
 		case OUTPUT:
 			io.println("; Output");
 			operand = pn.getLastChild();
-			operandRegister = this.getOperandRegister(operand);
+			this.getOperandRegister(operand).free();
 			variable = operand.getVariable();
 			TypeSystem type = operand.getType();
 			symbol = operand.getSymbol();
 			String address;
 			switch (type) {
 			case BOOLEAN:
-				address = this.assembleBooleanToString(operandRegister);
+				variable = this.assembleBooleanToString(variable);
 				break;
 			case INTEGER:
-				address = this.assembleIntegerToString(operandRegister);
+				variable = this.assembleIntegerToString(variable);
 				break;
 			case STRING:
-				address = operandRegister.toString();
 				break;
 			default:
 				throw new Exception("Bad output " + type);
 			}
-			this.assembleOutput(address);
-			operandRegister.free();
+			this.assembleOutput(variable);
 			
 			break;
 		case INPUT:
@@ -275,8 +314,16 @@ public abstract class AssyLanguage {
 			type0 = firstChild.getType();
 			type1 = nextChild.getType();
 			
-			if (type0 != type1) {
-				// Different types
+			// Automatically promote boolean or integer to string for concatenation
+			boolean promoteToString = false;
+			TypeSystem operationType = type0;
+			if (construct == Construct.ADD && (type0 == TypeSystem.STRING || type1 == TypeSystem.STRING)) {
+				promoteToString = true;
+				operationType = TypeSystem.STRING;
+			}
+			
+			if (type0 != type1 && !promoteToString) {
+				// Different types, no strings
 				throw new Exception(String.format("Bad addition: %s and %s", type0, type1));
 			}
 			
@@ -285,12 +332,14 @@ public abstract class AssyLanguage {
 			operandRegister = null;
 			Variable variable0 = firstChild.getVariable();
 			Variable variable1 = nextChild.getVariable();
-			switch (type0) {
+			TypeSystem resultantType;
+			switch (operationType) {
 			case BOOLEAN:
 				// AND, OR
 				operandRegister = this.assembleBooleanOperation(
 						construct, variable0, variable1
 						);
+				resultantType = TypeSystem.BOOLEAN;
 				break;
 			case INTEGER:
 				// ADD, SUB, MULT, INTDIV
@@ -298,8 +347,28 @@ public abstract class AssyLanguage {
 				operandRegister = this.assembleIntegerOperation(
 						construct, variable0, variable1
 						);
+				resultantType = TypeSystem.INTEGER;
 				break;
 			case STRING:
+				// Automatic string promotion
+				for (int i = 0; i < 2; i++) {
+					TypeSystem typei = (i==0 ? type0 : type1);
+					Variable variablei = (i==0 ? variable0 : variable1);
+					boolean updateVariable = false;
+					if (typei == TypeSystem.BOOLEAN) {
+						variablei = this.assembleBooleanToString(variablei);
+						updateVariable = true;
+					}
+					else if (typei == TypeSystem.INTEGER) {
+						variablei = this.assembleIntegerToString(variablei);
+						updateVariable = true;
+					}
+					if (updateVariable) {
+						if (i == 0)	variable0 = variablei;
+						else		variable1 = variablei;
+					}
+				}
+				
 				if (Construct.ADD.equals(construct)) {
 					operandRegister = this.assembleStringConcatenation(variable0, variable1);
 					// New string length stored in Eax from assembleConcatenation
@@ -314,6 +383,7 @@ public abstract class AssyLanguage {
 						throw new Exception(String.format("Bad string operation: %s", construct));
 					}
 				}
+				resultantType = TypeSystem.STRING;
 				break;
 			default:
 				throw new Exception(String.format("Bad %s operation: %s", type0, construct));
@@ -332,16 +402,16 @@ public abstract class AssyLanguage {
 			variable.linkRegister(operandRegister);
 			
 			// Make sure node type is up to date 
-			TypeSystem resultantType;
+			// resultantType set above, override with operators that always result in boolean
 			switch (construct) {
-			case AND: case OR:
 			case EQEQ: case NEQ: case LT: case LTEQ: case GT: case GTEQ:
 				resultantType = TypeSystem.BOOLEAN;
 				break;
 			default:
-				resultantType = type0;
 				break;
 			}
+			// ADD, SUB, MULT, INTDIV
+			// EQEQ, NEQ, LT, LTEQ, GT, GTEQ
 			pn.setType(resultantType);
 			variable.setType(resultantType);
 			if (variable.symbol != null) {

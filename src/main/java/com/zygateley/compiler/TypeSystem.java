@@ -19,7 +19,7 @@ public enum TypeSystem {
 			typeAssignAndCheck(subtree);
 		}
 		
-		Construct basicElement = syntaxTree.getElementType();
+		Construct basicElement = syntaxTree.getConstruct();
 		Node leftChild = syntaxTree.getFirstChild();
 		Node nextChild = (leftChild == null ? null : leftChild.getNextSibling());
 		TypeSystem leftType = (leftChild == null ? null : leftChild.getType());
@@ -27,6 +27,18 @@ public enum TypeSystem {
 		Symbol symbol;
 		switch (basicElement) {
 		case SCOPE:
+			break;
+		case LOOP:
+			if (syntaxTree.getChildCount() == 2) {
+				// While loop
+			}
+			else {
+				TypeSystem type = leftChild.getType();
+				if (type != null && type != INTEGER) {
+					fatalError(String.format("Bad loop variable type %s (%s)", leftChild.getSymbol(), type));
+				}
+				leftChild.getVariable().setType(INTEGER);
+			}
 			break;
 		case IF:
 			if (leftChild == null || leftChild.getType() != BOOLEAN) {
@@ -53,7 +65,12 @@ public enum TypeSystem {
 				nextChild = nextChild.getNextSibling();
 			}
 			break;
-		case VARDEF:
+		case VARDECL:
+			if (nextChild != null && nextChild.getType() != null) {
+				leftChild.setType(nextChild.getType());
+			}
+			break;
+		case VARSET:
 			if (leftChild == null || leftChild.getVariable() == null) {
 				fatalError("Bad variable definition at " + syntaxTree);
 			}
@@ -92,6 +109,17 @@ public enum TypeSystem {
 			}
 			break;
 		case ADD:
+			if (leftChild == null || nextChild == null) {
+				fatalError("Incorrect number of operand for operation " + syntaxTree);
+			}
+			// Allow automatic string promotion for concatenation
+			if (leftType == STRING || nextType == STRING) {
+				syntaxTree.setType(STRING);
+			}
+			else if (leftType != null && nextType != null && leftType != nextType) {
+				fatalError("Incorrect operand types on " + syntaxTree);
+			}
+			break;
 		case SUB:
 		case MULT:
 		case INTDIV:

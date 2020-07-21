@@ -39,6 +39,7 @@ public class Grammar {
 		private static class ReflowTransformation {
 			public final Reflow type;
 			public final Construct prevChild;
+			@Deprecated
 			public final Construct result;
 			
 			/**
@@ -148,13 +149,10 @@ public class Grammar {
 		static {
 			// Long term: add method to build these for support for multiple languages
 			
-			/*
-			// VAROUT FUNCCALL --> FUNCCALL
 			reflowBindings.add(new ReflowRelationship(
-					FUNCCALL, 
-					new ReflowTransformation(Reflow.MERGE_LEFT, VARIABLE, FUNCCALL)
+					Construct.FUNCCALL, 
+					new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, Construct.LOOP, Construct.LOOP)
 					));
-			*/
 			reflowBindings.add(new ReflowRelationship(
 					Construct.VARIABLE,
 					// Function Name
@@ -164,9 +162,13 @@ public class Grammar {
 					new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, Construct.PARAMETERS, Construct.VARIABLE),
 					new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, Construct.ARGUMENTS, Construct.VARIABLE),
 					// Variable name
-					new ReflowTransformation(Reflow.MOVE_RIGHT_TO_CHILD, Construct.VARDEF, Construct.VARDEF),
+					new ReflowTransformation(Reflow.MOVE_RIGHT_TO_CHILD, Construct.VARSET, Construct.VARSET),
+					// While condition
+					new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, Construct.LOOP, Construct.LOOP),
 					// If condition
-					new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, Construct.IF, Construct.IF)
+					new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, Construct.IF, Construct.IF),
+					// Variable definition
+					new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, Construct.VARDECL, Construct.VARDECL)
 					));
 			reflowBindings.add(new ReflowRelationship(
 					Construct.IF,
@@ -177,8 +179,12 @@ public class Grammar {
 			for (Construct operation : operations) {
 				reflowBindings.add(new ReflowRelationship(
 						operation,
+						// While condition
+						new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, Construct.LOOP, operation),
 						// If condition
 						new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, Construct.IF, operation),
+						// Variable definition
+						new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, Construct.VARDECL, operation),
 						// Function parameters and arguments
 						new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, Construct.PARAMETERS, operation),
 						new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, Construct.ARGUMENTS, operation)
@@ -188,8 +194,12 @@ public class Grammar {
 			for (Construct valueType : values) {
 				reflowBindings.add(new ReflowRelationship(
 						valueType,
+						// While condition
+						new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, Construct.LOOP, valueType),
 						// If condition
 						new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, Construct.IF, valueType),
+						// Variable definition
+						new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, Construct.VARDECL, valueType),
 						// Function parameters and arguments
 						new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, Construct.PARAMETERS, valueType),
 						new ReflowTransformation(Reflow.MOVE_UPWARDS_AND_LEFT, Construct.ARGUMENTS, valueType)
@@ -197,7 +207,9 @@ public class Grammar {
 			}
 			reflowBindings.add(new ReflowRelationship(
 					Construct.SCOPE,
-					// As code corresponding to condition==true
+					// While body
+					new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, Construct.LOOP, Construct.LOOP),
+					// Conditional body
 					new ReflowTransformation(Reflow.MOVE_LEFT_TO_CHILD, Construct.IF, Construct.IF)
 					));
 		}
@@ -246,18 +258,23 @@ interface GrammarRule {
 		// Primitive set
 		TRUE = 			id.next(),
 		FALSE = 		id.next(),
-		INT = 			id.next(),
+		INTEGER = 			id.next(),
 		STRING = 		id.next(), 
 
 		FUNCTION = 		id.next(),
+		WHILE =			id.next(),
+		FOR = 			id.next(),
+		TO = 			id.next(),
+		STEP = 			id.next(),
 		IF = 			id.next(),
 		ELSE = 			id.next(),
-		// ELSEIF exists as basic type but not as a token: ("else if")
+		// ELSEIF exists as basic type but not as a token: (i.e. "else if", not "elseif")
+		VAR = 			id.next(),
 		
 		// Statement FIRST set
 		ECHO = 			id.next(),
 		INPUT = 		id.next(),
-		VARIABLE = 			id.next();
+		VARIABLE = 		id.next();
 	
 	// Operator set
 	public final static int firstOperator = id.id;
@@ -292,7 +309,11 @@ interface GrammarRule {
 		_PARAMS0_ = 	id.next(),
 		_PARAMS1_ = 	id.next(),
 		_SCOPE_ = 		id.next(),
-		_IF_ =		id.next(),
+		_WHILE_ = 		id.next(),
+		_FOR_ = 		id.next(),
+		_FORBOUND_ = 	id.next(),
+		_FORSTEP_ =		id.next(),
+		_IF_ =			id.next(),
 		_ELSE_ = 		id.next(),
 		_ELSEIF_ = 		id.next(),
 		_BLOCKSTMT_ = 	id.next(),
@@ -300,12 +321,13 @@ interface GrammarRule {
 		_STMT_ = 		id.next(),
 		_ECHO_ = 		id.next(),
 		_INPUT_ = 		id.next(),
-		_VARSTMT_ =		id.next(),
-		_VARDEF_ = 		id.next(),
+		_VARDECLSTMT_ = 	id.next(),
+		_VARSETSTMT_ =	id.next(),
+		_VARSET_ = 		id.next(),
 		_VALUEOREXPR_ = id.next(),
 		_EXPR_ = 		id.next(),
 		_VALUE_ = 		id.next(),
-		_VARIABLE_ = 		id.next(),
+		_VARIABLE_ = 	id.next(),
 		_VAREXPR_ = 	id.next(),
 		_FUNCCALL_ = 	id.next(),
 		_ARGS0_ = 		id.next(),
@@ -366,11 +388,12 @@ interface GrammarRule {
 	}
 	public static final int[] _STMT_FIRST = {
 			VARIABLE,
+			VAR,
 			INPUT,
 			ECHO,
 			COMMENT
 	};
-	public static final int[] _STMTS_FIRST = combineArrays(_STMT_FIRST, FUNCTION, IF, CURLY_OPEN, VARIABLE, ECHO);
+	public static final int[] _STMTS_FIRST = combineArrays(_STMT_FIRST, FUNCTION, WHILE, FOR, IF, CURLY_OPEN, VARIABLE, ECHO);
 
 	public final static int[] operatorSetRank1 = {
 			AND,
@@ -402,14 +425,16 @@ interface GrammarRule {
 	public static final int[] primitiveSet = {
 			TRUE,
 			FALSE,
-			INT,
+			INTEGER,
 			STRING
 	};
 	public static final int[][] commonFollow1 = new int[][] { combineArrays(_STMTS_FIRST, EOF, CURLY_CLOSE) };
 	public static final int[][] commonFollow2 = new int[][] { combineArrays(_STMTS_FIRST, EOF, CURLY_CLOSE, 
 			//ELSEIF,
 			ELSE) };
-	public static final int[][] commonFollow3 = new int[][] { combineArrays(operatorSet, SEMICOLON, COMMA, PAREN_CLOSE) };
+	public static final int[][] commonFollow3 = new int[][] { combineArrays(
+			operatorSet, SEMICOLON, TO, STEP, COMMA, PAREN_CLOSE
+			) };
 	
 
 	public boolean isTerminal();
@@ -472,14 +497,19 @@ enum Terminal implements GrammarRule {
 	// PRIMITIVES
 	TRUE		(GrammarRule.TRUE, TypeSystem.BOOLEAN, Construct.TRUE, "", ("^[tT](?:[rR](?:[uU](?:[eE])?)?)?$")),
 	FALSE		(GrammarRule.FALSE, TypeSystem.BOOLEAN, Construct.FALSE, "", ("^[fF](?:[aA](?:[lL](?:[sS](?:[eE])?)?)?)?$")),
-	INT 		(GrammarRule.INT, TypeSystem.INTEGER, Construct.LITERAL, "", ("^\\d*")),
+	INTEGER		(GrammarRule.INTEGER, TypeSystem.INTEGER, Construct.LITERAL, "", ("^\\d*")),
 	STRING      (GrammarRule.STRING, TypeSystem.STRING, Construct.LITERAL, "", ("^\".*"), ("^\"(?:[^\"\\\\]|\\\\.)*\"$")), // ("^\"(?:(?:.*(?:[^\\\\]))?(?:\\\\{2})*)?\"$")
 	
 	// Other reserved words
 	FUNCTION	(GrammarRule.FUNCTION, Construct.NULL, "function"),
+	WHILE		(GrammarRule.WHILE, Construct.LOOP, "while"),
+	FOR			(GrammarRule.FOR, Construct.LOOP, "for"),
+	TO			(GrammarRule.TO, Construct.NULL, "to"),
+	STEP		(GrammarRule.STEP, Construct.NULL, "step"),
 	IF			(GrammarRule.IF, Construct.IF, "if"),
 	ELSE		(GrammarRule.ELSE, Construct.NULL, "else"),
 	// ELSEIF exists as basic type but not as a token: ("else if")
+	VAR		 	(GrammarRule.VAR, Construct.VARDECL, "var"),
 	
 	// Defined as <stmts> in CFG.xlsx
 	ECHO 		(GrammarRule.ECHO, Construct.NULL, "echo"),
@@ -569,12 +599,14 @@ enum NonTerminal implements GrammarRule {
 	// Patterns not precedence by FIRST Terminal
 	// SINGLE UNDERSCORE
 	_PROGRAM_	(GrammarRule._PROGRAM_, Construct.SCOPE,
-				 firstTerminalsAndPattern(GrammarRule.combineArrays(new int[] { GrammarRule.FUNCTION, GrammarRule.IF, GrammarRule.CURLY_OPEN }, GrammarRule._STMT_FIRST), GrammarRule._STMTS_),
+				 firstTerminalsAndPattern(GrammarRule.combineArrays(new int[] { GrammarRule.FUNCTION, GrammarRule.WHILE, GrammarRule.FOR, GrammarRule.IF, GrammarRule.CURLY_OPEN }, GrammarRule._STMT_FIRST), GrammarRule._STMTS_),
 				 firstTerminalsAndPattern(GrammarRule.EMPTY, GrammarRule.EMPTY),
 				 follow(GrammarRule.EOF)),
 	
 	_STMTS_		(GrammarRule._STMTS_, Construct.REFLOW_LIMIT,
 				 firstTerminalsAndPattern(GrammarRule.FUNCTION, GrammarRule._FUNCDEF_, GrammarRule._STMTS_),
+				 firstTerminalsAndPattern(GrammarRule.WHILE, GrammarRule._WHILE_, GrammarRule._STMTS_),
+				 firstTerminalsAndPattern(GrammarRule.FOR, GrammarRule._FOR_, GrammarRule._STMTS_),
 				 firstTerminalsAndPattern(GrammarRule.IF, GrammarRule._IF_, GrammarRule._STMTS_),
 				 firstTerminalsAndPattern(GrammarRule.combineArrays(GrammarRule._STMT_FIRST, GrammarRule.CURLY_OPEN), GrammarRule._BLOCKSTMT_, GrammarRule._STMTS_),
 				 firstTerminalsAndPattern(GrammarRule.EMPTY, GrammarRule.EMPTY),
@@ -597,6 +629,29 @@ enum NonTerminal implements GrammarRule {
 	_SCOPE_		(GrammarRule._SCOPE_, Construct.SCOPE,
 		 	 	 firstTerminalsAndPattern(GrammarRule.combineArrays(GrammarRule._STMT_FIRST, GrammarRule.CURLY_OPEN), GrammarRule._BLOCKSTMT_),
 		 	 	 GrammarRule.commonFollow2),
+	
+	_WHILE_		(GrammarRule._WHILE_, Construct.PASS,
+				 firstTerminalsAndPattern(GrammarRule.WHILE, GrammarRule.WHILE, GrammarRule._EXPR_, GrammarRule._SCOPE_),
+				 GrammarRule.commonFollow1),
+	
+	_FOR_		(GrammarRule._FOR_, Construct.PASS,
+			 	 firstTerminalsAndPattern(GrammarRule.FOR, 
+			 			 GrammarRule.FOR, GrammarRule.PAREN_OPEN,
+			 			 GrammarRule.VARIABLE, GrammarRule.EQ,
+			 			 GrammarRule._EXPR_, GrammarRule.TO, GrammarRule._EXPR_,
+			 			 GrammarRule._FORSTEP_, GrammarRule.PAREN_CLOSE,
+			 			 GrammarRule._SCOPE_),
+			 	 GrammarRule.commonFollow1),
+	
+	_FORBOUND_	(GrammarRule._FORBOUND_, Construct.PASS,
+				 firstTerminalsAndPattern(GrammarRule.INTEGER, GrammarRule.INTEGER),
+				 firstTerminalsAndPattern(GrammarRule.VARIABLE, GrammarRule._VARIABLE_),
+				 follow(GrammarRule.combineArrays(GrammarRule._STMT_FIRST, GrammarRule.TO, GrammarRule.STEP, GrammarRule.PAREN_CLOSE))),
+	
+	_FORSTEP_ 	(GrammarRule._FORSTEP_, Construct.PASS,
+				 firstTerminalsAndPattern(GrammarRule.STEP, GrammarRule.STEP, GrammarRule._EXPR_),
+				 firstTerminalsAndPattern(GrammarRule.EMPTY, GrammarRule.EMPTY),
+			 	 follow(GrammarRule.PAREN_CLOSE)),
 	
 	_IF_		(GrammarRule._IF_, Construct.PASS,
 			 	 firstTerminalsAndPattern(GrammarRule.IF, GrammarRule.IF, GrammarRule.PAREN_OPEN, GrammarRule._EXPR_, GrammarRule.PAREN_CLOSE, GrammarRule._SCOPE_, GrammarRule._ELSE_),
@@ -625,7 +680,8 @@ enum NonTerminal implements GrammarRule {
 			 	 firstTerminalsAndPattern(GrammarRule.ECHO, GrammarRule._ECHO_, GrammarRule.SEMICOLON),
 			 	 firstTerminalsAndPattern(GrammarRule.INPUT, GrammarRule._INPUT_, GrammarRule.SEMICOLON),
 			 	 firstTerminalsAndPattern(GrammarRule.COMMENT, GrammarRule.COMMENT),
-				 firstTerminalsAndPattern(GrammarRule.VARIABLE, GrammarRule.VARIABLE, GrammarRule._VARSTMT_, GrammarRule.SEMICOLON),
+			 	 firstTerminalsAndPattern(GrammarRule.VAR, GrammarRule.VAR, GrammarRule.VARIABLE, GrammarRule._VARDECLSTMT_, GrammarRule.SEMICOLON),
+				 firstTerminalsAndPattern(GrammarRule.VARIABLE, GrammarRule.VARIABLE, GrammarRule._VARSETSTMT_, GrammarRule.SEMICOLON),
 				 GrammarRule.commonFollow2),
 	
 	_ECHO_		(GrammarRule._ECHO_, Construct.OUTPUT,
@@ -636,19 +692,24 @@ enum NonTerminal implements GrammarRule {
 				 firstTerminalsAndPattern(GrammarRule.INPUT, GrammarRule.INPUT, GrammarRule.VARIABLE),
 				 follow(GrammarRule.SEMICOLON)),
 
-	_VARSTMT_	(GrammarRule._VARSTMT_, Construct.PASS,
-				 firstTerminalsAndPattern(GrammarRule.EQ, GrammarRule._VARDEF_),
+	_VARDECLSTMT_(GrammarRule._VARDECLSTMT_, Construct.PASS,
+				 firstTerminalsAndPattern(GrammarRule.EQ, GrammarRule.EQ, GrammarRule._EXPR_),
+				 firstTerminalsAndPattern(GrammarRule.EMPTY, GrammarRule.EMPTY),
+				 follow(GrammarRule.SEMICOLON)),
+	
+	_VARSETSTMT_(GrammarRule._VARSETSTMT_, Construct.PASS,
+				 firstTerminalsAndPattern(GrammarRule.EQ, GrammarRule._VARSET_),
 				 firstTerminalsAndPattern(GrammarRule.PAREN_OPEN, GrammarRule._FUNCCALL_),
 				 follow(GrammarRule.SEMICOLON)),
 	
-	_VARDEF_	(GrammarRule._VARDEF_, Construct.VARDEF,
+	_VARSET_	(GrammarRule._VARSET_, Construct.VARSET,
 				 firstTerminalsAndPattern(GrammarRule.EQ, GrammarRule.EQ, GrammarRule._EXPR_),
 				 follow(GrammarRule.SEMICOLON)),
 	
 	_EXPR_		(GrammarRule._EXPR_, Construct.PASS,
 				 // Send stream to precedence branch no matter what
 				 firstTerminalsAndPattern(IntStream.rangeClosed(1, id.id).toArray(), GrammarRule.__PRECEDENCE1__),
-	 			 follow(new int[] {GrammarRule.SEMICOLON, GrammarRule.PAREN_CLOSE, GrammarRule.COMMA})),
+	 			 follow(new int[] {GrammarRule.SEMICOLON, GrammarRule.PAREN_CLOSE, GrammarRule.COMMA, GrammarRule.TO, GrammarRule.STEP})),
 	
 	_VALUE_		(GrammarRule._VALUE_, Construct.PASS,
 				 firstTerminalsAndPattern(GrammarRule.VARIABLE, GrammarRule._VARIABLE_),

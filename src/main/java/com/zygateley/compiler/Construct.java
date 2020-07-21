@@ -27,11 +27,11 @@ public enum Construct {
 	PASS (true),
 	
 	// Control
-	SCOPE, IF, 
+	SCOPE, LOOP, IF, 
 	// Definitions
-	FUNCDEF, VARDEF,
+	FUNCDEF, VARDECL, 
 	// Execution
-	FUNCCALL, OPERATION,
+	VARSET, FUNCCALL, OPERATION (true),
 	// IO
 	OUTPUT, INPUT,
 	// Temporary holding variables for clarity

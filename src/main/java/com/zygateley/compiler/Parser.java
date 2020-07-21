@@ -167,9 +167,6 @@ public class Parser {
 			if (this.globalScope == null) {
 				this.globalScope = this.currentScope;
 			}
-			if (this.currentScope == null) {
-				System.out.println("");
-			}
 		}
 		else {
 			syntaxSubtree = new Node(rule);
@@ -191,7 +188,7 @@ public class Parser {
         		this.log("<" + rule.toString().replaceAll("_",  "") + " />");
         	}
         	else {
-        		this.fatalError("Syntax error: Production rule terminated prematurely.");
+        		this.fatalError("Syntax error: Production rule (" + rule + ") terminated prematurely.");
         	}
         	return null;
     	}
@@ -229,7 +226,7 @@ public class Parser {
 				boolean inFollow = rule.inFollow(nextItem.token);
 				if (!inFollow) {
 					// Syntax error
-					fatalError("Syntax error: Non-empty production rule terminated prematurely.");
+					fatalError("Syntax error: Non-empty production rule (" + rule + ") terminated prematurely. " + nextItem + " is not in its follow set.");
 					return null;
 				}
 				// Pattern finished successfully
@@ -267,7 +264,7 @@ public class Parser {
 				}
 				
 				// Add new terminal
-				Node terminalNode = addTerminal(syntaxSubtree, item.token, item.symbol, item.value);
+				addTerminal(syntaxSubtree, item.token, item.symbol, item.value);
 			}
 			// NonTerminals
 			// Recur into parseRule
@@ -784,25 +781,54 @@ public class Parser {
 	 * @throws IOException 
 	 */
 	private Node addTerminal(Node parentNode, Terminal terminal, Symbol symbol, String value) throws Exception {
-		Node node;
+		Node node = null;
 		
 		// Make sure the current symbol is scoped correctly
-		// Static scoping
-		if (symbol != null && Construct.VARIABLE.equals(terminal.construct)) {
-			Variable variable = null;
-			for (Scope scope : this.scopeStack) {
-				variable = scope.getVariable(symbol);
-				if (variable != null) {
-					break;
+		if (symbol != null && symbol.getName() instanceof String) {
+			boolean parentIsVardef = Construct.VARDECL.equals(parentNode.getConstruct());
+			Node previousSibling = parentNode.getLastChild();
+			boolean previousIsVardef = previousSibling != null && Construct.VARDECL.equals(previousSibling.getConstruct());
+			if (parentIsVardef || previousIsVardef) {
+				// Add to this scope
+				Variable variable = this.currentScope.addVariable(symbol);
+				node = new Node(terminal, variable);
+			}
+			else {
+				// Static scoping
+				Variable variable = this.currentScope.getVariable(symbol);
+				if (variable == null) {
+					for (Scope scope : this.scopeStack) {
+						variable = scope.getVariable(symbol);
+						if (variable != null) {
+							break;
+						}
+					}
 				}
+				if (variable == null) {
+					// Allow for loop variables to be previously undeclared
+					if (previousSibling != null) {
+						Construct prev = previousSibling.getConstruct();
+						while (prev == Construct.NULL || prev == Construct.PASS) {
+							previousSibling = previousSibling.getPreviousSibling();
+							if (previousSibling == null) break;
+							prev = previousSibling.getConstruct();
+						}
+					}
+					boolean previousSiblingIsLoop = previousSibling != null && Construct.LOOP.equals(previousSibling.getConstruct());
+					if (previousSiblingIsLoop) {
+						// Add to this scope
+						variable = this.currentScope.addVariable(symbol);
+						node = new Node(terminal, variable);
+					}
+					else {
+						throw new Exception("Parse error: Variable used before it was declared.");
+					}
+				}
+				
+				node = new Node(terminal, variable);
 			}
-			if (variable == null) {
-				variable = this.currentScope.addVariable(symbol);
-			}
-			
-			node = new Node(terminal, variable);
 		}
-		else {
+		if (node == null) {
 			// Symbols need to be stored for literals
 			node = new Node(terminal, symbol, value);
 		}
