@@ -314,8 +314,16 @@ public abstract class AssyLanguage {
 			type0 = firstChild.getType();
 			type1 = nextChild.getType();
 			
-			if (type0 != type1) {
-				// Different types
+			// Automatically promote boolean or integer to string for concatenation
+			boolean promoteToString = false;
+			TypeSystem operationType = type0;
+			if (construct == Construct.ADD && (type0 == TypeSystem.STRING || type1 == TypeSystem.STRING)) {
+				promoteToString = true;
+				operationType = TypeSystem.STRING;
+			}
+			
+			if (type0 != type1 && !promoteToString) {
+				// Different types, no strings
 				throw new Exception(String.format("Bad addition: %s and %s", type0, type1));
 			}
 			
@@ -324,12 +332,14 @@ public abstract class AssyLanguage {
 			operandRegister = null;
 			Variable variable0 = firstChild.getVariable();
 			Variable variable1 = nextChild.getVariable();
-			switch (type0) {
+			TypeSystem resultantType;
+			switch (operationType) {
 			case BOOLEAN:
 				// AND, OR
 				operandRegister = this.assembleBooleanOperation(
 						construct, variable0, variable1
 						);
+				resultantType = TypeSystem.BOOLEAN;
 				break;
 			case INTEGER:
 				// ADD, SUB, MULT, INTDIV
@@ -337,8 +347,28 @@ public abstract class AssyLanguage {
 				operandRegister = this.assembleIntegerOperation(
 						construct, variable0, variable1
 						);
+				resultantType = TypeSystem.INTEGER;
 				break;
 			case STRING:
+				// Automatic string promotion
+				for (int i = 0; i < 2; i++) {
+					TypeSystem typei = (i==0 ? type0 : type1);
+					Variable variablei = (i==0 ? variable0 : variable1);
+					boolean updateVariable = false;
+					if (typei == TypeSystem.BOOLEAN) {
+						variablei = this.assembleBooleanToString(variablei);
+						updateVariable = true;
+					}
+					else if (typei == TypeSystem.INTEGER) {
+						variablei = this.assembleIntegerToString(variablei);
+						updateVariable = true;
+					}
+					if (updateVariable) {
+						if (i == 0)	variable0 = variablei;
+						else		variable1 = variablei;
+					}
+				}
+				
 				if (Construct.ADD.equals(construct)) {
 					operandRegister = this.assembleStringConcatenation(variable0, variable1);
 					// New string length stored in Eax from assembleConcatenation
@@ -353,6 +383,7 @@ public abstract class AssyLanguage {
 						throw new Exception(String.format("Bad string operation: %s", construct));
 					}
 				}
+				resultantType = TypeSystem.STRING;
 				break;
 			default:
 				throw new Exception(String.format("Bad %s operation: %s", type0, construct));
@@ -371,16 +402,16 @@ public abstract class AssyLanguage {
 			variable.linkRegister(operandRegister);
 			
 			// Make sure node type is up to date 
-			TypeSystem resultantType;
+			// resultantType set above, override with operators that always result in boolean
 			switch (construct) {
-			case AND: case OR:
 			case EQEQ: case NEQ: case LT: case LTEQ: case GT: case GTEQ:
 				resultantType = TypeSystem.BOOLEAN;
 				break;
 			default:
-				resultantType = type0;
 				break;
 			}
+			// ADD, SUB, MULT, INTDIV
+			// EQEQ, NEQ, LT, LTEQ, GT, GTEQ
 			pn.setType(resultantType);
 			variable.setType(resultantType);
 			if (variable.symbol != null) {

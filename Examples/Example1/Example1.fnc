@@ -5,19 +5,22 @@
 //	Outputting the concatenation of a string and a variable
 //	Conditional jumps
 // 	Arithmetic and boolean operations
-//	Outputting number, converted from binary to ASCII
+//	Outputting numbers and boolean values, converted from binary to ASCII
+// 	Integer and boolean promotion for string concatenation
 //	String comparison
-if (true) {
-	echo "Demonstrate string concatenation and output:\n";
-	var first = "First, ";
-	var second = "concatenate" + " a few strings" + " and store the result to a variable.";
-	echo first + second + "\nLater, concatenate the variable with an additional string, and output result.\n\n";
+echo "Demonstrate string concatenation and output:\n";
+var first = "First, ";
+var second = "concatenate" + " a few strings" + " and store the result to a variable.";
+echo first + second + "\nLater, concatenate the variable with an additional string, and output result.\n\n";
 
-	echo "Anything else you would like to say? ";
-	var extra;
-	input extra;
-	echo "\n\"" + extra + "\"\n\n";
+echo "What is your favorite color? ";
+var color;
+input color;
+if (color == "green" || color == "Green" || color == "GREEN") {
+	echo "I like green, too.";
 }
+else 	echo color + " is a nice color.";
+echo "\n\n";
 
 echo "Demonstrate arithmetic operations:\n";
 echo "1 + 2 - 3 * 4 / 5 = ";
@@ -26,35 +29,16 @@ a = 1 + 2 - 3 * 4 / 5;
 echo a;
 echo "\n\n";
 
-echo "Demonstrate boolean operations:\n";
-echo "-1 ? -2 ... (==, !=, <, <=, >, >=)\n";
-echo -1 == -2;
-echo "\n";
-echo -1 != -2;
-echo "\n";
-echo -1 < -2;
-echo "\n";
-echo -1 <= -2;
-echo "\n";
-echo -1 > -2;
-echo "\n";
-echo -1 >= -2;
-echo "\n\n";
-
-echo "Demonstrate operator precedence:\n";
-echo "4 >= 5 && 6 < 7 - 2 && true || !false = ";
-echo 4>=5 && 6<7-2 && true || !false;
-echo "\n\n";
-
-echo "Demonstrate string comparison:";
-echo "\n\"abc\" == \"def\" = ";
-echo "abc" == "def";
-echo "\n\"abc\" != \"def\" = ";
-echo "abc" != "def";
-echo "\n\"abc\" == \"abc\" = ";
-echo "abc" == "abc";
-echo "\n\"a\"   == \"abc\" = ";
-echo "a" == "abc";
-echo "\n\"abc\" == \"a\"   = ";
-echo "a" == "abc";
-echo "\n";
+echo "Demonstrate FOR loop, boolean operations, and boolean/integer promotion to string for concatenation:\n";
+var initialValue = -3;
+var myOtherVariable = 5;
+var comparator = -1;
+// Remember that only integer division is currently supported.
+for (i = initialValue to myOtherVariable/4 step 2) {
+	echo i + "==" + comparator +" = " + (i==comparator) + "\n";
+	echo i + "!=" + comparator +" = " + (i!=comparator) + "\n";
+	echo i + "< " + comparator +" = " + (i< comparator) + "\n";
+	echo i + "<=" + comparator +" = " + (i<=comparator) + "\n";
+	echo i + "> " + comparator +" = " + (i> comparator) + "\n";
+	echo i + ">=" + comparator +" = " + (i>=comparator) + "\n\n";
+}

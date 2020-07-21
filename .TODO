@@ -4,8 +4,7 @@ Bugs
 
 Language additions
 	Force functions to be at end of program (or beginning)
-	For loop
-		variable may be new or current variable
+	Arrays
 	Return statements
 	Return type
 	Wait command?

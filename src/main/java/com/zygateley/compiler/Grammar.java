@@ -433,7 +433,7 @@ interface GrammarRule {
 			//ELSEIF,
 			ELSE) };
 	public static final int[][] commonFollow3 = new int[][] { combineArrays(
-			operatorSet, SEMICOLON, TO, COMMA, PAREN_CLOSE
+			operatorSet, SEMICOLON, TO, STEP, COMMA, PAREN_CLOSE
 			) };
 	
 
@@ -638,7 +638,7 @@ enum NonTerminal implements GrammarRule {
 			 	 firstTerminalsAndPattern(GrammarRule.FOR, 
 			 			 GrammarRule.FOR, GrammarRule.PAREN_OPEN,
 			 			 GrammarRule.VARIABLE, GrammarRule.EQ,
-			 			 GrammarRule._FORBOUND_, GrammarRule.TO, GrammarRule._FORBOUND_,
+			 			 GrammarRule._EXPR_, GrammarRule.TO, GrammarRule._EXPR_,
 			 			 GrammarRule._FORSTEP_, GrammarRule.PAREN_CLOSE,
 			 			 GrammarRule._SCOPE_),
 			 	 GrammarRule.commonFollow1),
@@ -709,7 +709,7 @@ enum NonTerminal implements GrammarRule {
 	_EXPR_		(GrammarRule._EXPR_, Construct.PASS,
 				 // Send stream to precedence branch no matter what
 				 firstTerminalsAndPattern(IntStream.rangeClosed(1, id.id).toArray(), GrammarRule.__PRECEDENCE1__),
-	 			 follow(new int[] {GrammarRule.SEMICOLON, GrammarRule.PAREN_CLOSE, GrammarRule.COMMA})),
+	 			 follow(new int[] {GrammarRule.SEMICOLON, GrammarRule.PAREN_CLOSE, GrammarRule.COMMA, GrammarRule.TO, GrammarRule.STEP})),
 	
 	_VALUE_		(GrammarRule._VALUE_, Construct.PASS,
 				 firstTerminalsAndPattern(GrammarRule.VARIABLE, GrammarRule._VARIABLE_),

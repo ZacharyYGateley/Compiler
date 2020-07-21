@@ -109,6 +109,17 @@ public enum TypeSystem {
 			}
 			break;
 		case ADD:
+			if (leftChild == null || nextChild == null) {
+				fatalError("Incorrect number of operand for operation " + syntaxTree);
+			}
+			// Allow automatic string promotion for concatenation
+			if (leftType == STRING || nextType == STRING) {
+				syntaxTree.setType(STRING);
+			}
+			else if (leftType != null && nextType != null && leftType != nextType) {
+				fatalError("Incorrect operand types on " + syntaxTree);
+			}
+			break;
 		case SUB:
 		case MULT:
 		case INTDIV:

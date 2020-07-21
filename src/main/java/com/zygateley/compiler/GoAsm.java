@@ -577,14 +577,46 @@ public class GoAsm extends AssyLanguage {
 		io.println("Add %s, %s", register, maxDig);
 		io.setComment("Positive offset from string pointer at which non-zero values start");
 		io.println("Add %s, %s", register, address);
-		Variable stringAddress = new Variable(register);
-		this.currentScope.pushVariable(stringAddress);
+		Variable tempAddress = new Variable(register);
+		this.currentScope.pushVariable(tempAddress);
 		register.free();
 		// Length in Eax
+		Register r = this.registry.allocate();
+		io.println("Mov %s, Eax", r);
+		Variable length = new Variable(r);
+		this.currentScope.pushVariable(length);
+		r.free();
 		
-		// Address stored in register
+		// Allocate memory
+		io.setComment("+1 for \0");
+		io.println("Add Eax, 1");
+		this.assembleMalloc("Eax", true);
+		// Location in Eax
+		Register r2 = this.registry.allocate();
+		io.println("Mov %s, Eax", r2);
+		Variable newAddress = new Variable(r2);
+		this.currentScope.pushVariable(newAddress);
+		r2.free();
+		
+		// Move memory to allocation
+		Register r0 = this.registry.allocate();
+		io.println("Mov %s, %s", r0, this.getStackAddress(tempAddress));
+		Register r1 = this.registry.allocate();
+		io.println("Mov %s, %s", r1, this.getStackAddress(length));
+		this.assembleMoveMemory(r0.toString(), "Eax", r1.toString());
+		r1.free();
+		r0.free();
+		
+		// Suffix with \0
+		io.setComment("Strings end with \0");
+		io.println("Mov B[Eax], 0");
+		
+		// Store length in Eax
+		io.setComment("Store length in Eax");
+		io.println("Mov Eax, %s", this.getStackAddress(length));
+		
 		io.outdent();
-		return stringAddress;
+		return newAddress;
 	}
 	
 	/**
@@ -1008,7 +1040,9 @@ public class GoAsm extends AssyLanguage {
 		// Sum lengths
 		// Length of operand 1 already in Eax
 		io.setComment("Sum string lengths");
-		io.println("Add Eax, [Esp + 4]");
+		io.println("Add Eax, D[%s]", this.temporaryGlobal);
+		io.setComment("+1 for string termination \0");
+		io.println("Add Eax, 1");
 		
 		// Allocate space in heap
 		this.assembleMalloc("Eax", true);
