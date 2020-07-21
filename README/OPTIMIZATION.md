@@ -10,7 +10,11 @@ In practice, optimization results in an extensive decrease in size of the syntax
 
 ## Elementary Language Constructs
 
-The following are diagrams of the elementary language constructs available at the time of this writing. 
+At the time of this writing, the current elementary language constructs are as follows.
+
+![](C:\Users\Zachary Gateley\Dropbox\Languages\Java\Compiler\README\Images\GrammarAndReflow_Constructs.png)
+
+These can be exemplified through the following diagrams.
 
 Green backgrounds represent definitions. Lavender background represent required nodes. Blue backgrounds represent optional nodes.
 
@@ -52,7 +56,7 @@ Each one of the original grammar rules is linked in some way to elementary const
 
 
 
-The best way to understand optimization is to look at the process as it happens. Consider the following code.
+The best way to understand optimization is to observe the process as it happens. Consider the following code.
 
 ```
 // An if statement, its condition, and its body
@@ -94,27 +98,7 @@ From here, reflow bindings must be applied.
 
 ## Reflow Bindings
 
-Reflow bindings are certain rules for reorganizing the syntax tree so that the resulting syntax tree corresponds to the [elementary language constructs](#Elementary Language Constructs) listed above. At the time of writing, the current full list of bindings are as follows. The [language information spreadsheet](GrammarAndReflow.xlsx "Grammar and Reflow Spreadsheet") may be more up-to-date.
-
-| Elementary  Language Constructs | Temporary? |
-| ------------------------------- | ---------- |
-| ***REFLOW_LIMIT***              | ***X***    |
-| ***PASS***                      | ***X***    |
-| ***SCOPE***                     |            |
-| ***IF***                        |            |
-| ***FUNCDEF***                   |            |
-| ***VARDEF***                    |            |
-| ***FUNCCALL***                  |            |
-| ***OPERATION***                 |            |
-| ***OUTPUT***                    |            |
-| ***INPUT***                     |            |
-| ***PARAMETERS***                | ***X***    |
-| ***ARGUMENTS***                 | ***X***    |
-| ***NULL***                      | ***X***    |
-| ***VARIABLE***                  |            |
-| ***LITERAL***                   |            |
-
-
+Reflow bindings are certain rules for reorganizing the syntax tree so that the resulting syntax tree corresponds to the [elementary language constructs](#Elementary Language Constructs) listed above. The available bindings are as follows.
 
 | Available Binding           | Description                                                  |
 | --------------------------- | ------------------------------------------------------------ |
@@ -122,23 +106,9 @@ Reflow bindings are certain rules for reorganizing the syntax tree so that the r
 | ***MOVE_LEFT_TO_CHILD***    | If the target node is the first sibling on the left of the source node, move the source node to the end of the target node's children. |
 | ***MOVE_UPWARDS_AND_LEFT*** | Move this node upwards and to the left.                      |
 
+At the time of writing, the current full list of bindings are as follows. The [language information spreadsheet](GrammarAndReflow.xlsx "Grammar and Reflow Spreadsheet") may be more up-to-date.
 
-
-| Source  Language Construct | Target Language Construct | REFLOW BINDING              | Resulting Language Construct |
-| -------------------------- | ------------------------- | --------------------------- | ---------------------------- |
-| ***VARIABLE***             | ***FUNCDEF***             | ***MOVE_RIGHT_TO_CHILD***   | ***FUNCDEF***                |
-| ***VARIABLE***             | ***FUNCCALL***            | ***MOVE_RIGHT_TO_CHILD***   | ***FUNCCALL***               |
-| ***VARIABLE***             | ***PARAMETERS***          | ***MOVE_UPWARDS_AND_LEFT*** | ***VARIABLE***               |
-| ***VARIABLE***             | ***ARGUMENTS***           | ***MOVE_UPWARDS_AND_LEFT*** | ***VARIABLE***               |
-| ***VARIABLE***             | ***IF***                  | ***MOVE_LEFT_TO_CHILD***    | ***IF***                     |
-| ***IF***                   | ***IF***                  | ***MOVE_LEFT_TO_CHILD***    | ***IF***                     |
-| ***OPERATION***            | ***IF***                  | ***MOVE_LEFT_TO_CHILD***    | ***OPERATION***              |
-| ***OPERATION***            | ***PARAMETERS***          | ***MOVE_UPWARDS_AND_LEFT*** | ***OPERATION***              |
-| ***OPERATION***            | ***ARGUMENTS***           | ***MOVE_UPWARDS_AND_LEFT*** | ***OPERATION***              |
-| ***LITERAL***              | ***IF***                  | ***MOVE_LEFT_TO_CHILD***    | ***LITERAL***                |
-| ***LITERAL***              | ***PARAMETERS***          | ***MOVE_UPWARDS_AND_LEFT*** | ***LITERAL***                |
-| ***LITERAL***              | ***ARGUMENTS***           | ***MOVE_UPWARDS_AND_LEFT*** | ***LITERAL***                |
-| ***SCOPE***                | ***IF***                  | ***MOVE_LEFT_TO_CHILD***    | ***IF***                     |
+![](C:\Users\Zachary Gateley\Dropbox\Languages\Java\Compiler\README\Images\GrammarAndReflow_ReflowBindings.png)
 
 
 

@@ -54,80 +54,22 @@ If you are unfamiliar with Context Free Grammars and their respective FIRST and 
 
 The grammar for this language was designed with the intention of making it as concise as possible. At the same time, as you will see on the [optimization information](OPTIMIZATION.md "Optimization Information Page") page, some of these rules also have additional bindings not listed here. In some cases, making this CFG less concise was appropriate for maintaining simple bindings.
 
-Notes:
+
+
+#### Non-Terminals
+
+* **Non-Terminal** names have a <u>single underscore</u> prefix and suffix.
+* <span style="color:#0000aa">**Non-Terminal**</span> names of rules *that do not have unique first and follow terminal sets* have a <u>double underscore</u> prefix and suffix.
+
+![](C:\Users\Zachary Gateley\Dropbox\Languages\Java\Compiler\README\Images\GrammarAndReflow_NonTerminals.png)
+
+
+
+#### Terminals
 
 * **Terminal** names have <u>no</u> prefix or suffix.
-* **Non-Terminal** names have a <u>single underscore</u> prefix and suffix.
-* <span style="color:#0000aa">**Non-Terminal**</span> names of rules *that do not have unique first and follow sets* have a <u>double underscore</u> prefix and suffix.
 
-| Non-Terminals |      | Production Rule                                              | FIRST SET {}                                 | FOLLOW SET {}                         |
-| ------------- | ---- | ------------------------------------------------------------ | -------------------------------------------- | ------------------------------------- |
-| `_PROGRAM_`     | →    | `_STMTS_` \| `EMPTY`                                           | `FUNCTION`, `IF`, {, `<stmts>`,  `EMPTY`      | `EOF`                                   |
-| `_STMTS_`       | →    | `_FUNCDEF_` `_STMTS_` \| `_IF_` `_STMTS_` \| `_BLOCKSTMT_` `_STMTS_` \|  `EMPTY` | `FUNCTION`, `IF`, {, `<stmts>`, `EMPTY`       | `EOF`, }                                |
-| `_FUNCDEF_`     | →    | `FUNCTION` `VAR` ( `_PARAMS0_` ) `_SCOPE_`                        | `FUNCTION`                                     | `EOF`, }, `<_STMTS_.FIRST>`               |
-| `_PARAMS0_`     | →    | `VAR` `_PARAMS1_` \| `EMPTY`                                     | `VAR`, `EMPTY`                                 | )                                     |
-| `_PARAMS1_`     | →    | , `VAR` `_PARAMS1_` \| `EMPTY`                                   | `comma`, `EMPTY`                             | )                                     |
-| `_SCOPE_`       |      | `_BLOCKSTMT_`                                                  | {, `<stmts>`                                 | `EOF`, }, `<_STMTS_.FIRST>`, `ELSE` |
-| `_IF_`          | →    | `IF` ( `_EXPR_` ) `_SCOPE_` `_ELSE_`                             | `IF`                                        | `EOF`, }, `<_STMTS_.FIRST>`               |
-| `_ELSE_`        | →    | `ELSE` `_ELSEIF_` \| `EMPTY`                              | else, `EMPTY`                        | `EOF`, }, `<_STMTS_.FIRST>`               |
-| `_ELSEIF_`      |      | `IF` ( `_EXPR_` ) `_SCOPE_` `_ELSE_` \| `_SCOPE_`                |                                              |                                       |
-| `_BLOCKSTMT_`   | →    | `_BLOCK_` \| `_STMT_`                                            | {, `<stmts>`                                 | `EOF`, }, `<_STMTS_.FIRST>`, `ELSE` |
-| `_BLOCK_`       | →    | { `_STMTS_` }                                                  | {                                            | `EOF`, }, `<_STMTS_.FIRST>`, `ELSE` |
-| `_STMT_`        | →    | `_ECHO_`; \| `_INPUT_` `VAR`; \| `VAR` `_VARSTMT_`; \| `comment`     | `<stmts>` | `EOF`, }, `<_STMTS_.FIRST>`, `ELSE` |
-| `_ECHO_`        | →    | `ECHO` `_EXPR_`                                                  | `ECHO`                                         | ;                                     |
-| `_INPUT_`       | →    | `INPUT` `VAR`                                                    | `INPUT`                                        | ;                                     |
-| `_VARSTMT_`     | →    | `_VARDEF_` \| `_FUNCCALL_`                                       | =, (                                         | ;                                     |
-| `_VARDEF_`      | →    | = `_EXPR_`                                                     | =                                            | ;                                     |
-| `_EXPR_`        | →    | <span style="color:#0000aa">`__PRECEDENCE1__`</span>                                            | `<terminal>`                                 | ), ;, `COMMA`                     |
-| <span style="color:#0000aa">`__PRECEDENCE1__`</span> | →    | <span style="color:#0000aa">`__PRECEDENCE1__`</span> `<operatorsPrecedence1>` <span style="color:#0000aa">`__PRECEDENCE2__`</span> | N/A                                          | N/A |
-| <span style="color:#0000aa">`__PRECEDENCE2__`</span> | →    | <span style="color:#0000aa">`__PRECEDENCE2__`</span> `<operatorsPrecedence2>` <span style="color:#0000aa">`__PRECEDENCE3__`</span> | N/A                                          | N/A |
-| <span style="color:#0000aa">`__PRECEDENCE3__`</span> | →    | <span style="color:#0000aa">`__PRECEDENCE3__`</span> `<operatorsPrecedence3>` <span style="color:#0000aa">`__PRECEDENCE4__`</span> | N/A                                          | N/A |
-| <span style="color:#0000aa">`__PRECEDENCE4__`</span> | →    | <span style="color:#0000aa">`__PRECEDENCE4__`</span> `<operatorsPrecedence4>` <span style="color:#0000aa">`__PRECEDENCE5__`</span> | N/A                                          | N/A |
-| <span style="color:#0000aa">`__PRECEDENCE5__`</span> |      | <span style="color:#0000aa">`__PRECEDENCE5__`</span> `<operatorsPrecedence5>` `_VALUE_`     | N/A                                          | N/A |
-| `_VALUE_`       | →    | `_VAR_` \| `_LITERAL_`                                           | `VAR`, `<primitives>`                          | `<ops>`, ;, comma, )                  |
-| `_VAR_`         | →    | `VAR` `_VAREXPR_`                                                | `VAR`                                          | `<ops>`, ;, comma, )                  |
-| `_VAREXPR_`     | →    | `_FUNCCALL_` \| `EMPTY`                                        | (, `EMPTY`                                   | `<ops>`, ;, comma, )                  |
-| `_FUNCCALL_`    | →    | ( `_ARGS0_` )                                                  | (                                            | `<ops>`, ;, comma, )                  |
-| `_ARGS0_`       | →    | `_EXPR_` `_ARGS1_` \| `EMPTY`                                    | (, `VAR`, `<primitives>`, `PLUS`, `MINUS`, `EMPTY` | )                                     |
-| `_ARGS1_`       | →    | , `_EXPR_` `_ARGS1_` \| `EMPTY`                                  | `COMMA`, `EMPTY`                         | )                                     |
-| `_LITERAL_`     | →    | `BOOLEAN`\| `INT` \| `STRING`                | `<primitives>`                               | `<ops>`, ;, comma, )                  |
-|               |      |                                                              |                                              |                                       |
-| **Terminals** |  | **Match**                                                    | **Precedence Set**                           | **Token Set**                         |
-| `EMPTY`       | →    | "" (Empty string, $\varepsilon$)                 |                                              |                                       |
-| `SEMILCOLON`  | →    | ";"                                                          |                                              |                                       |
-| `COMMA`       | →    | ","                                                          |                                              |                                       |
-| `EQ`          | →    | "=" (indicates variable definition)                          |                                              |                                       |
-| `PAREN_OPEN`  | →    | "("                                                          |                                              |                                       |
-| `PAREN_CLOSE` | →    | ")"                                                          |                                              |                                       |
-| `CURLY_OPEN`  | →    | "{"                                                          |                                              |                                       |
-| `CURLY_CLOSE` | →    | "}"                                                          |                                              |                                       |
-| `SQUARE_OPEN` | →    | "["                                                          |                                              |                                       |
-| `SQUARE_CLOSE` | →    | "]"                                                          |                                              |                                       |
-| `COMMENT`     | →    | "//" to "\r\|\n\|\f"                                         |                                              | $\in$ `<primitives>` |
-| `TRUE`        | →    | "true"                                                       |                                              | $\in$ `<primitives>`                  |
-| `FALSE`       | →    | "false"                                                      |                                              | $\in$ `<primitives>` |
-| `INT`         | →    | r/\\d*/                                                      |                                              | $\in$ `<primitives>` |
-| `STRING`      | →    | String enclosed in quotes (escaped quotes does not terminate  string) |                                              | $\in$ `<primitives>` |
-| `FUNCTION`      | →    | "function"                                            |                                              |                                       |
-| `IF`          | →    | "if"                                                         |                                              | $\in$ `<stmts>` |
-| `ELSE`        | →    | "else"                                                       |                                              | $\in$ `<stmts>` |
-| `ECHO`          | →    | "echo"                                                       |                                              | $\in$ `<stmts>`                       |
-| `INPUT`         | →    | "input"                                                      |                                              | $\in$ `<stmts>` |
-| `VAR`           | →    | Starts with any a-z, A-Z, or \_, <br />Follows with any combination of a-z, A-Z, 0-9, \_ |                                              |                                       |
-| `PLUS`        | →    | "+"                                                         | $\in$ `<precedence 1>` (low)                       | $\in$ `<ops>`                         |
-| `MINUS`       | →    | "-"                                                          | $\in$ `<precedence 1>` | $\in$ `<ops>` |
-| `ASTERISK`    | →    | "*"                                                          | $\in$ `<precedence 2>` | $\in$ `<ops>` |
-| `SLASH`       | →    | "/"                                                          | $\in$ `<precedence 2>` | $\in$ `<ops>` |
-| `NEQ`         | →    | "!="                                                         | $\in$`<precedence 3>` | $\in$ `<ops>` |
-| `LTEQ`        | →    | "<="                                                         | $\in$`<precedence 3>`  | $\in$ `<ops>` |
-| `GTEQ`        | →    | ">="                                                         | $\in$ `<precedence 3>` | $\in$ `<ops>` |
-| `LT`          | →    | "<"                                                          | $\in$ `<precedence 3>` | $\in$ `<ops>` |
-| `GT`          | →    | ">"                                                          | $\in$ `<precedence 3>` | $\in$ `<ops>` |
-| `EQEQ`        | →    | "=="                                                         | $\in$ `<precedence 3>` | $\in$ `<ops>` |
-| `AND`         | →    | "&&"                                                         | $\in$ `<precedence 4>` | $\in$ `<ops>` |
-| `OR`          | →    | "\|\|"                                                       | $\in$ `<precedence 4>` | $\in$ `<ops>` |
-| `NOT` | → | "!" | $\in$ `<precedence 5>` (high) | $\in$ `<ops>` |
-| `EOF`           | →    | End of file                                                  |                                              |                                       |
+![](C:\Users\Zachary Gateley\Dropbox\Languages\Java\Compiler\README\Images\GrammarAndReflow_Terminals.png)
 
 
 

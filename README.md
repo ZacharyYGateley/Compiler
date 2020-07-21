@@ -6,39 +6,47 @@ The **front end** is composed of a <u>lexer</u> and a <u>parser</u>. The lexer r
 
 The **middle stage** crawls the bulky syntax tree that results from the parser and builds an optimized, bare-bones syntax tree that represents the entirety of the program without containing any elements that will not be used by the back end. This is achieved by binding predefined elements that will be used by the compiler with different parse rules and tokens. In this way, the syntax tree can be crawled to find these basic elements, building a valid, optimized tree meanwhile. To accommodate grammar rules that do not lend themselves easily to syntax trees as the back-end expects them, the language can define reflow rules adjust the primary syntax tree to the final optimized counterpart. 
 
-The **back end** is composed of an <u>assembler</u> and an interface with the <u>compiler of the assembler</u>. This stage is in progress. For an up-to-date demonstration of the currently-available backend functionalities, [please see Example1](Examples/Example1 "Demonstration of currently-available backend functionalities"). At the moment, the aim is to create a generalized assembler with links to assembly language Java classes, which with carefully chosen methods can output the code from the assembler without knowing the specific assembly language in question. Finally, the assembly language in question will indicate the assembly compiler command line directive, which will generate the final executable file.
+The **back end** is composed of an <u>assembler</u> and an interface with the <u>compiler of the assembler</u>. For an up-to-date demonstration of the currently-available backend functionalities, [please see Example1](Examples/Example1 "Demonstration of currently-available backend functionalities"). At the moment, the aim is to create a generalized assembler with links to assembly language Java classes, which with carefully chosen methods can output the code from the assembler without knowing the specific assembly language in question. Finally, the assembly language in question will indicate the assembly compiler command-line directives, which will generate the final executable file.
 
-To assist in development, there is also a Python translator. 
+To assist in development, there is also a Python translator, which is equivalent in all major ways. Scoping rules and other details may be different.
 
 <br />
 
-## See also
+## (Some) Highlights
 
-* Grammar
+* **Grammar**
   * There is a [full listing of the grammar](README/LANGUAGE.md "Prepackaged Language Information") for the prepackaged language with all sorts of interesting additional information on how parsing occurs.
   * The [grammar development spreadsheet](README/GrammarAndReflow.xlsx "Grammar Development Spreadsheet") in the README folder is a more detailed representation of this information in the prior link.
   * There is a [collection of flow diagrams](README/Grammar.drawio "Grammar Flow Diagrams") that can be opened with [draw.io (external link)](http://draw.io). Screen captures from these flow diagrams can be found on the [grammar explanation page](README/LANGUAGE.md "Prepackaged Language Information"), linked above.
-* Optimization
+* **Optimization**
   * See the in-depth [explanation of optimization and reflow](README/OPTIMIZATION.md "Explanation of Optimization and Reflow") for more information on how optimization takes place in this package.
+* **Assembly**
+  * [Please see Example1](Examples/Example1 "Demonstration of currently-available backend functionalities") for an up-to-date demonstration of current assembly functionalities.
+  * Once you are working in assembly, the game changes, and procedures that you might normally take for granted become visible hurdles. If you look into the [assembly resources folder](src/main/resources/), you can see the helper functions designed for the challenges so far overcome. These include...
+    * Converting integers to strings so that they can be output in human-readable forms (ASCII). Boolean values are also converted, but their code was short enough not to demand an additional assembly file.
+    * **String concatenation** opens up a big can of worms. You must know the lengths of each individual string. You must allocate new memory with the new length. Then you must move the strings one-by-one to the new memory allocation. What to do if one of the operands is not a string? You must convert it to ASCII first. Furthermore, what do you do with the heap allocation?!
+    * Thus, my **memory allocation solution**. When a new scope is opened, a heap allocation table is initialized for that scope. This table holds the number of current allocations, the allocation capacity of the table, and free space to store addresses of heap memory allocations. At the moment, this table has a generous, but static, capacity of 256 addresses. When the scope is closed, each of the heap allocations is freed, and the table itself is freed. In other words, this compiler has **automatic garbage collection** run when variables are out of scope.
+
+
 
 ## Goals
+
 Below are listed the goals of the program.
 
-1. Create a working compiler corresponding to a simple, made-up language.
-
-2. Allow for custom-designed of language plug-ins, so that the compiler can work with any language, given a properly-designed plug-in. This would include:
-
-<div style="margin-left:40px;">
-<ul>
-<li>Tokens as the designer desires.</li>
-<li>Any CFG rules to utilize the custom token set, with their relations to the elemental code constructs.</li>
-</ul>
-</div>
-
-
-3. Allow for the selection of any back-end compiler, given a properly-created assembly language plug-in.
+1. <s>Create a working compiler corresponding to a simple, made-up language. Run a lexer, parser, optimizer, and assembler on it. Following, compile and link the assembly code. </s>
+2. Add support for more complex language constructs such as functions and arrays.
+3. Allow for custom-designing of language plug-ins, so that the compiler can work with any language, given a properly-designed plug-in. Ideally, at least a simple form of almost any language could be built as a language plugin for this compiler.
+4. Allow for the selection of any back-end compiler (e.g. MIPS, Masm, etc.), given a properly-created assembly language plug-in.
 
 <br />
+
+
+
+
+
+# Explanation of Functionality
+
+
 
 ## Front End
 
@@ -192,11 +200,11 @@ What an improvement over the raw syntax tree that resulted directly from the par
 
 ## Back End
 
-**Note!** This step is still in progress. Initially, it is being built with [GoAsm](http://www.godevtool.com/ "GoAsm Homepage"), which can compile into Windows executables as well as Linux executables. Using a stepped abstraction from the assembler Java code to the resulting assembly language Java class, the code should be extendable into other assembly languages as subclasses of AssyLanguage.java.
+The current compiler plugin is [GoAsm](http://www.godevtool.com/ "GoAsm Homepage"), which can compile into Windows as well as Linux executables. Using a stepped abstraction from the assembler Java code to the resulting assembly language Java class, in future revisions, the code should be extendable into other assembly languages as subclasses of AssyLanguage.java.
 
 ### Assembler
 
-The assembler then crawls through the optimized syntax tree and outputs appropriate assembly code. For a Windows executable using GoAsm, the resulting assembly code for the above code is shown below.
+The assembler crawls through the optimized syntax tree composed solely of so-called **elementary language constructs** and outputs appropriate assembly code. For a Windows executable using GoAsm, the resulting assembly code for the above code is shown below.
 
 	; This code generated by com.zygateley.compiler
 	
@@ -249,8 +257,9 @@ The assembler then crawls through the optimized syntax tree and outputs appropri
 	        Pop Ebx                         ; Anonymous value removed from stack
 	        
 	        ; Close scope
-	        
-	    
+
+
+​	    
 	    label1:
 	    
 	    ; Close scope
@@ -268,8 +277,9 @@ The code then accesses the assemblers internal compiler to generate the final ex
 	GoAsm.exe output:
 		GoAsm.Exe Version 0.61.0.1 - Copyright Jeremy Gordon 2001-2017 - JG@JGnet.co.uk
 		Output file: Example0.obj
-		
-	
+
+
+​	
 	GoLink.exe output:
 		GoLink.Exe Version 1.0.2.3 - Copyright Jeremy Gordon 2002-2016 - JG@JGnet.co.uk
 		Output file: Examples/Example0/Example0.exe
