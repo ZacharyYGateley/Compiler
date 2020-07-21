@@ -643,11 +643,6 @@ enum NonTerminal implements GrammarRule {
 			 			 GrammarRule._SCOPE_),
 			 	 GrammarRule.commonFollow1),
 	
-	_FORBOUND_	(GrammarRule._FORBOUND_, Construct.PASS,
-				 firstTerminalsAndPattern(GrammarRule.INTEGER, GrammarRule.INTEGER),
-				 firstTerminalsAndPattern(GrammarRule.VARIABLE, GrammarRule._VARIABLE_),
-				 follow(GrammarRule.combineArrays(GrammarRule._STMT_FIRST, GrammarRule.TO, GrammarRule.STEP, GrammarRule.PAREN_CLOSE))),
-	
 	_FORSTEP_ 	(GrammarRule._FORSTEP_, Construct.PASS,
 				 firstTerminalsAndPattern(GrammarRule.STEP, GrammarRule.STEP, GrammarRule._EXPR_),
 				 firstTerminalsAndPattern(GrammarRule.EMPTY, GrammarRule.EMPTY),

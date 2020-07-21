@@ -10,7 +10,7 @@ public class Scope implements Iterable<Variable> {
 	// Contains all scope variables
 	private final ArrayDeque<Variable> stack;
 	private AssyLanguage language;
-	private Variable heapPool;
+	private Variable heapAllocationTable;
 	
 	public Scope(Scope parent) {
 		this(null, parent);
@@ -125,22 +125,22 @@ public class Scope implements Iterable<Variable> {
 		}
 	}
 	
-	public String getHeapPoolAddress() throws Exception {
-		return String.format("[Esp + %dD]", this.getStackOffset(this.heapPool) * 4);
+	public String getHeapTableAddress() throws Exception {
+		return String.format("[Esp + %dD]", this.getStackOffset(this.heapAllocationTable) * 4);
 	}
 	
 	/**
-	 * Heap pool
-	 * Address 2[this.heapPool] == Number of allocations
-	 * Address 2[this.heapPool + 2] == Allocation capacity
-	 * Address 4[this.heapPool + 4*n] == Allocation
+	 * Heap allocation table
+	 * Address 2[this.heapAllocationTable] == Number of allocations
+	 * Address 2[this.heapAllocationTable + 2] == Allocation capacity
+	 * Address 4[this.heapAllocationTable + 4*n] == Allocation
 	 * 
 	 * @param addressRegister
 	 * @throws Exception
 	 */
-	public void setHeapPoolAddress(Register addressRegister) throws Exception {
-		this.heapPool = new Variable(addressRegister);
-		this.pushVariable(this.heapPool);
+	public void setHeapTableAddress(Register addressRegister) throws Exception {
+		this.heapAllocationTable = new Variable(addressRegister);
+		this.pushVariable(this.heapAllocationTable);
 	}
 	
 	@Override

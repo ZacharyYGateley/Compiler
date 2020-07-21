@@ -635,7 +635,7 @@ public class GoAsm extends AssyLanguage {
 			String procedure = "add_heap_allocation";
 			this.addResource(procedure);
 			this.assembleParameter(byteWidthRegister, procedure);
-			this.assembleParameter(this.currentScope.getHeapPoolAddress(), procedure);
+			this.assembleParameter(this.currentScope.getHeapTableAddress(), procedure);
 			this.assembleParameter(this.getPointer(this.heapHandle), procedure);
 			this.assembleCall(procedure);
 		}
@@ -949,7 +949,7 @@ public class GoAsm extends AssyLanguage {
 				io.println("; Open scope");
 			}
 			
-			// Heap allocation pool
+			// Init heap allocation table
 			// Create a space to remember heap allocations
 			io.setComment("Create heap allocation pool");
 			io.println("Mov Eax, 1028D");
@@ -963,15 +963,15 @@ public class GoAsm extends AssyLanguage {
 			Register heapRegister = this.registry.allocate();
 			io.setComment("Address of heap allocation pool");
 			io.println("Mov %s, Eax", heapRegister);
-			this.currentScope.setHeapPoolAddress(heapRegister);
+			this.currentScope.setHeapTableAddress(heapRegister);
 			heapRegister.free();
 		}
 		else {
-			// Free all heap allocations in scope
+			// Free all heap allocations in scope, including heap allocation table
 			String procedure = "free_heap_allocations";
 			this.addResource(procedure);
 			io.setComment("Free all heap allocations in this scope");
-			this.assembleParameter(this.currentScope.getHeapPoolAddress(), procedure);
+			this.assembleParameter(this.currentScope.getHeapTableAddress(), procedure);
 			this.assembleParameter(String.format("[%s]", this.heapHandle), procedure);
 			this.assembleCall(procedure);
 
