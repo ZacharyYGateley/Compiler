@@ -135,7 +135,7 @@ public class Node implements Iterable<Node> {
 
 	
 	// Basic element, CFG, and Symbols
-	public Construct getElementType() {
+	public Construct getConstruct() {
 		return this.basicElement;
 	}
 	public TypeSystem getType() {
@@ -144,6 +144,11 @@ public class Node implements Iterable<Node> {
 			type = this.symbol.getType();
 			// Type will always be the same as its variable
 			this.type = type;
+			if (type == null && this.variable != null) {
+				type = this.variable.type;
+				this.type = type;
+				this.symbol.setType(type);
+			}
 		}
 		return this.type;
 	}

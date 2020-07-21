@@ -64,7 +64,7 @@ public class PythonTranslator {
 		}
 		
 		// Try NonTerminal
-		Construct element = node.getElementType();
+		Construct element = node.getConstruct();
 		Node firstChild = (Node) node.getFirstChild();
 		Node nextChild = null;
 		if (firstChild != null) {
@@ -102,6 +102,46 @@ public class PythonTranslator {
 				depth--;
 				println();
 				break;
+			case LOOP:
+				if (childCount == 2) {
+					print("while ");
+					translateNode(firstChild);
+					println(":");
+				}
+				else {
+					print("for ");
+					
+					// Variable
+					translateNode(firstChild);
+					print(" in range(");
+					
+					// Initial value
+					translateNode(nextChild);
+					print(", ");
+					
+					// High limit
+					nextChild = nextChild.getNextSibling();
+					translateNode(nextChild);
+					
+					// Step
+					nextChild = nextChild.getNextSibling();
+					if (nextChild != node.getLastChild()) {
+						print(", ");
+						translateNode(nextChild);
+					}
+					println("):");
+				}
+
+				// Body
+				depth++;
+				if (nextChild.getChildCount() == 0) {
+					print("pass");
+				}
+				else {
+					translateNode(nextChild);
+				}
+				depth--;
+				break;
 			case IF:
 				print("if ");
 				// Condition
@@ -110,9 +150,11 @@ public class PythonTranslator {
 
 				// Body
 				depth++;
-				translateNode(nextChild);
 				if (nextChild.getChildCount() == 0) {
 					print("pass");
+				}
+				else {
+					translateNode(nextChild);
 				}
 				depth--;
 				
@@ -120,7 +162,7 @@ public class PythonTranslator {
 				nextChild = nextChild.getNextSibling();
 				if (nextChild != null) {
 					println();
-					if (Construct.IF.equals(nextChild.getElementType())) {
+					if (Construct.IF.equals(nextChild.getConstruct())) {
 						print("el");
 						translateNode(nextChild);
 					}
@@ -174,7 +216,14 @@ public class PythonTranslator {
 				
 				println(")");
 				break;
-			case VARDEF:
+			case VARDECL:
+				if (childCount == 1) {
+					break;
+				}
+				// Go into varset
+				firstChild = node.getFirstChild();
+				nextChild = firstChild.getNextSibling();
+			case VARSET:
 				translateNode(firstChild);
 				print(" = ");
 				translateNode(nextChild);
@@ -233,7 +282,7 @@ public class PythonTranslator {
 		Terminal t = node.getToken();
 		String value;
 		switch (t) {
-		case INT:
+		case INTEGER:
 			value = node.getValue();
 			print(value);
 			break;
@@ -245,7 +294,7 @@ public class PythonTranslator {
 			print(value);
 			break;
 		case VARIABLE:
-			print(node.getVariable().getSymbol().getName());
+			print(node.getSymbol().toString());
 			break;
 		default:
 			printTerminal(t);

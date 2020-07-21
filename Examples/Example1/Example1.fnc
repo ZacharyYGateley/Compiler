@@ -9,17 +9,19 @@
 //	String comparison
 if (true) {
 	echo "Demonstrate string concatenation and output:\n";
-	first = "First, ";
-	second = "concatenate" + " a few strings" + " and store the result to a variable.";
+	var first = "First, ";
+	var second = "concatenate" + " a few strings" + " and store the result to a variable.";
 	echo first + second + "\nLater, concatenate the variable with an additional string, and output result.\n\n";
 
 	echo "Anything else you would like to say? ";
+	var extra;
 	input extra;
 	echo "\n\"" + extra + "\"\n\n";
 }
 
 echo "Demonstrate arithmetic operations:\n";
 echo "1 + 2 - 3 * 4 / 5 = ";
+var a;
 a = 1 + 2 - 3 * 4 / 5;
 echo a;
 echo "\n\n";

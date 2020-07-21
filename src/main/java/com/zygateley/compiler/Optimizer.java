@@ -81,7 +81,7 @@ public class Optimizer {
 		this.log("<!-- Middle stage optimization finished -->\n\n");
 		
 		// Remove placeholder SCOPE
-		if (optimizedTree.getChildCount() != 1 || !Construct.SCOPE.equals(optimizedTree.getFirstChild().getElementType())) {
+		if (optimizedTree.getChildCount() != 1 || !Construct.SCOPE.equals(optimizedTree.getFirstChild().getConstruct())) {
 			throw new IllegalClassFormatException("The top level of the grammar must be a SCOPE construct.");
 		}
 		optimizedTree = optimizedTree.getFirstChild();
@@ -171,7 +171,7 @@ public class Optimizer {
 		for (Node childNodeAsBasic : parseParentNode) {
 			Node parseChildNode = (Node) childNodeAsBasic;
 			// Get basic element type
-			Construct basicElement = parseChildNode.getElementType();
+			Construct basicElement = parseChildNode.getConstruct();
 			// Backup, element should not be null
 			if (basicElement == null) {
 				nonTerminal = parseChildNode.getRule();
@@ -227,7 +227,7 @@ public class Optimizer {
 			// Execute reflow on this node, if it applies
 			// Does not apply to REFLOW_LIMIT
 			// (or PASS, which has already been ignored--not in tree)
-			Construct basicElement = child.getElementType();
+			Construct basicElement = child.getConstruct();
 			if (!Construct.REFLOW_LIMIT.equals(basicElement)) {
 				applyReflow(child, true);
 			}
@@ -264,13 +264,13 @@ public class Optimizer {
 	 */
 	private void applyReflow(final Node source, final boolean allowMerge) throws Exception {
 		try {
-			Construct sourceType = source.getElementType();
+			Construct sourceType = source.getConstruct();
 			
 			// Upwards bindings
 			Node parent = source.getParent();
 			{
 				Node target = parent;
-				Construct targetType = (target != null ? target.getElementType() : null);
+				Construct targetType = (target != null ? target.getConstruct() : null);
 				
 				// Move this element to the child of the next sibling?
 				Construct resultType = Grammar.getReflowResult(
@@ -290,7 +290,7 @@ public class Optimizer {
 			// Rightward bindings
 			Node rightTarget = source.getNextSibling();
 			if (rightTarget != null) {
-				Construct targetType = (rightTarget != null ? rightTarget.getElementType() : null);
+				Construct targetType = (rightTarget != null ? rightTarget.getConstruct() : null);
 				
 				// Move this element to the child of the next sibling?
 				Construct resultType = Grammar.getReflowResult(
@@ -314,7 +314,7 @@ public class Optimizer {
 			// Leftward bindings
 			Node leftTarget = source.getPreviousSibling();
 			if (leftTarget != null) {
-				Construct targetType = (leftTarget != null ? leftTarget.getElementType() : null);
+				Construct targetType = (leftTarget != null ? leftTarget.getConstruct() : null);
 				
 				/*
 				// Merge this node into the next node
@@ -409,7 +409,7 @@ public class Optimizer {
 	 */
 	private Node cleanOptimizedTree(Node optimizedNode) { 
 		Node nextNode;
-		Construct nodeElement = optimizedNode.getElementType();
+		Construct nodeElement = optimizedNode.getConstruct();
 		if (nodeElement.isTemporary) {
 			// Temporary element found
 			// Remove all children and place as right siblings to STOP

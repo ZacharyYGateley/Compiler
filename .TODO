@@ -3,19 +3,26 @@ Bugs
 
 
 Language additions
-	Loops
-	Variable declarations
+	Force functions to be at end of program (or beginning)
+	For loop
+		variable may be new or current variable
 	Return statements
 	Return type
 	Wait command?
 
+Optimizer
+	Symbols don't have a type. Variables do.
+
 Output to assembly
 	Constructs still to-do
+		while LOOP,
 		FUNCDEF, FUNCCALL // and verification of parameters
+			<-- and loop condition
 		native int_to_string, string_to_int
 	Clearing heap allocation at scope close and RETURN values when they are strings.
 	String comparison
 	The scoping problem
+		Must update WHILE and IF conditions
 		Want to determine TypeSystem before assembler
 		But assembler is currently determining scoping rules
 		So before assembler, all variables with the same name

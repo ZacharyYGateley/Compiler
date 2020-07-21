@@ -54,7 +54,7 @@ start:
     Call GetStdHandle
     Mov [outputHandle], Eax             ; Save output handle
     
-    Sub Esp, 4                          ; Open scope
+    Sub Esp, 4D                         ; Open scope
     Mov Eax, 1028D                      ; Create heap allocation pool
     Push Eax                            ; Anonymous value added to stack
     Push 0                              ; Anonymous value added to stack
@@ -72,9 +72,9 @@ start:
     Mov Ecx, 1                          ; assemble operand TRUE
     Push Ecx                            ; Linked variable added to stack
     Cmp Ecx, 0                          ; Determine if condition is false
-    Jz > label1                         ; If condition is false, jump
+    Jz >> label1                        ; If condition is false, jump
     label0:
-        Sub Esp, 12                     ; Open scope
+        Sub Esp, 12D                    ; Open scope
         Mov Eax, 1028D                  ; Create heap allocation pool
         Push Eax                        ; Anonymous value added to stack
         Push 0                          ; Anonymous value added to stack
@@ -89,16 +89,12 @@ start:
         Mov Eax, 45D
         Mov Esi, Addr str0              ; assemble operand LITERAL
         Push Esi                        ; Linked variable added to stack
-        ; Caller save registers Esi
-        Push Esi                        ; Anonymous value added to stack
         Push 0                          ; Anonymous value added to stack
         Push Addr tempGlobal            ; Anonymous value added to stack
         Push Eax                        ; Anonymous value added to stack
-        Push Esi                        ; Anonymous value added to stack
+        Push [Esp + 12D]                ; Anonymous value added to stack
         Push [outputHandle]             ; Anonymous value added to stack
         Call WriteConsoleA
-        ; Caller restore registers Esi
-        Pop Esi                         ; Anonymous value removed from stack
         
         ; Store value to first
         ; Prepare operand
@@ -123,7 +119,7 @@ start:
         Mov [tempGlobal + 4], Eax
         Add Eax, [Esp + 4]              ; Sum string lengths
         Push Eax                        ; Anonymous value added to stack
-        Push [Esp + 16]                 ; Anonymous value added to stack
+        Push [Esp + 16D]                ; Anonymous value added to stack
         Push [heapHandle]               ; Anonymous value added to stack
         Call add_heap_allocation
         Mov [tempGlobal + 8], Eax       ; Remember value in temp global
@@ -163,7 +159,7 @@ start:
         Mov [tempGlobal + 4], Eax
         Add Eax, [Esp + 4]              ; Sum string lengths
         Push Eax                        ; Anonymous value added to stack
-        Push [Esp + 24]                 ; Anonymous value added to stack
+        Push [Esp + 24D]                ; Anonymous value added to stack
         Push [heapHandle]               ; Anonymous value added to stack
         Call add_heap_allocation
         Mov [tempGlobal + 8], Eax       ; Remember value in temp global
@@ -209,7 +205,7 @@ start:
         Mov [tempGlobal + 4], Eax
         Add Eax, [Esp + 4]              ; Sum string lengths
         Push Eax                        ; Anonymous value added to stack
-        Push [Esp + 24]                 ; Anonymous value added to stack
+        Push [Esp + 24D]                ; Anonymous value added to stack
         Push [heapHandle]               ; Anonymous value added to stack
         Call add_heap_allocation
         Mov [tempGlobal + 8], Eax       ; Remember value in temp global
@@ -249,7 +245,7 @@ start:
         Mov [tempGlobal + 4], Eax
         Add Eax, [Esp + 4]              ; Sum string lengths
         Push Eax                        ; Anonymous value added to stack
-        Push [Esp + 32]                 ; Anonymous value added to stack
+        Push [Esp + 32D]                ; Anonymous value added to stack
         Push [heapHandle]               ; Anonymous value added to stack
         Call add_heap_allocation
         Mov [tempGlobal + 8], Eax       ; Remember value in temp global
@@ -277,32 +273,25 @@ start:
         Add Eax, [tempGlobal + 4]       ; Store string length in Eax
         
         Push Esi                        ; Linked variable added to stack
-        ; Caller save registers Esi
-        Push Esi                        ; Anonymous value added to stack
         Push 0                          ; Anonymous value added to stack
         Push Addr tempGlobal            ; Anonymous value added to stack
         Push Eax                        ; Anonymous value added to stack
-        Push Esi                        ; Anonymous value added to stack
+        Push [Esp + 12D]                ; Anonymous value added to stack
         Push [outputHandle]             ; Anonymous value added to stack
         Call WriteConsoleA
-        ; Caller restore registers Esi
-        Pop Esi                         ; Anonymous value removed from stack
         
         ; Output
         ; Prepare operand
         Mov Eax, 37D
         Mov Edi, Addr str6              ; assemble operand LITERAL
         Push Edi                        ; Linked variable added to stack
-        ; Caller save registers Edi
-        Push Edi                        ; Anonymous value added to stack
         Push 0                          ; Anonymous value added to stack
         Push Addr tempGlobal            ; Anonymous value added to stack
         Push Eax                        ; Anonymous value added to stack
-        Push Edi                        ; Anonymous value added to stack
+        Push [Esp + 12D]                ; Anonymous value added to stack
         Push [outputHandle]             ; Anonymous value added to stack
         Call WriteConsoleA
-        ; Caller restore registers Edi
-        Pop Edi                         ; Anonymous value removed from stack
+        
         
         ; Input
         Push 0                          ; Anonymous value added to stack
@@ -314,7 +303,7 @@ start:
         Push [inputHandle]              ; Anonymous value added to stack
         Call ReadConsoleA
         Push [Esp]                      ; Anonymous value added to stack
-        Push [Esp + 44]                 ; Anonymous value added to stack
+        Push [Esp + 44D]                ; Anonymous value added to stack
         Push [heapHandle]               ; Anonymous value added to stack
         Call add_heap_allocation
         Mov [Esp + 44D], Eax
@@ -344,7 +333,7 @@ start:
         Mov [tempGlobal + 4], Eax
         Add Eax, [Esp + 4]              ; Sum string lengths
         Push Eax                        ; Anonymous value added to stack
-        Push [Esp + 48]                 ; Anonymous value added to stack
+        Push [Esp + 48D]                ; Anonymous value added to stack
         Push [heapHandle]               ; Anonymous value added to stack
         Call add_heap_allocation
         Mov [tempGlobal + 8], Eax       ; Remember value in temp global
@@ -384,7 +373,7 @@ start:
         Mov [tempGlobal + 4], Eax
         Add Eax, [Esp + 4]              ; Sum string lengths
         Push Eax                        ; Anonymous value added to stack
-        Push [Esp + 56]                 ; Anonymous value added to stack
+        Push [Esp + 56D]                ; Anonymous value added to stack
         Push [heapHandle]               ; Anonymous value added to stack
         Call add_heap_allocation
         Mov [tempGlobal + 8], Eax       ; Remember value in temp global
@@ -412,21 +401,17 @@ start:
         Add Eax, [tempGlobal + 4]       ; Store string length in Eax
         
         Push Ecx                        ; Linked variable added to stack
-        ; Caller save registers Ecx
-        Push Ecx                        ; Anonymous value added to stack
         Push 0                          ; Anonymous value added to stack
         Push Addr tempGlobal            ; Anonymous value added to stack
         Push Eax                        ; Anonymous value added to stack
-        Push Ecx                        ; Anonymous value added to stack
+        Push [Esp + 12D]                ; Anonymous value added to stack
         Push [outputHandle]             ; Anonymous value added to stack
         Call WriteConsoleA
-        ; Caller restore registers Ecx
-        Pop Ecx                         ; Anonymous value removed from stack
         
-        Push [Esp + 56]                 ; Anonymous value added to stack
+        Push [Esp + 56D]                ; Anonymous value added to stack
         Push [heapHandle]               ; Anonymous value added to stack
         Call free_heap_allocations
-        Add Esp, 72                     ; Close scope
+        Add Esp, 72D                    ; Close scope
         
     
     label1:
@@ -436,32 +421,25 @@ start:
     Mov Eax, 35D
     Mov Edx, Addr str9                  ; assemble operand LITERAL
     Push Edx                            ; Linked variable added to stack
-    ; Caller save registers Edx
-    Push Edx                            ; Anonymous value added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
-    Push Edx                            ; Anonymous value added to stack
+    Push [Esp + 12D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
-    ; Caller restore registers Edx
-    Pop Edx                             ; Anonymous value removed from stack
     
     ; Output
     ; Prepare operand
     Mov Eax, 20D
     Mov Esi, Addr str10                 ; assemble operand LITERAL
     Push Esi                            ; Linked variable added to stack
-    ; Caller save registers Esi
-    Push Esi                            ; Anonymous value added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
-    Push Esi                            ; Anonymous value added to stack
+    Push [Esp + 12D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
-    ; Caller restore registers Esi
-    Pop Esi                             ; Anonymous value removed from stack
+    
     
     ; Store value to a
     ; Prepare operand
@@ -472,8 +450,8 @@ start:
     Mov Eax, 4D
     Mov Ebx, 2D                         ; assemble operand LITERAL
     Push Ebx                            ; Linked variable added to stack
-    Mov Ecx, [Esp + 4]                  ; Retrieve value from stack
-    Mov Edx, [Esp + 0]                  ; Retrieve value from stack
+    Mov Ecx, [Esp + 4D]                 ; Retrieve value from stack
+    Mov Edx, [Esp + 0D]                 ; Retrieve value from stack
     Mov Esi, Ecx                        ; Prepare integer addition
     Add Esi, Edx
     
@@ -486,8 +464,8 @@ start:
     Mov Eax, 4D
     Mov Ebx, 4D                         ; assemble operand LITERAL
     Push Ebx                            ; Linked variable added to stack
-    Mov Ecx, [Esp + 4]                  ; Retrieve value from stack
-    Mov Edx, [Esp + 0]                  ; Retrieve value from stack
+    Mov Ecx, [Esp + 4D]                 ; Retrieve value from stack
+    Mov Edx, [Esp + 0D]                 ; Retrieve value from stack
     Mov Eax, Ecx                        ; Prepare integer multiplication
     IMul Edx
     Mov Esi, Eax
@@ -497,16 +475,16 @@ start:
     Mov Eax, 4D
     Mov Edi, 5D                         ; assemble operand LITERAL
     Push Edi                            ; Linked variable added to stack
-    Mov Ebx, [Esp + 4]                  ; Retrieve value from stack
-    Mov Ecx, [Esp + 0]                  ; Retrieve value from stack
+    Mov Ebx, [Esp + 4D]                 ; Retrieve value from stack
+    Mov Ecx, [Esp + 0D]                 ; Retrieve value from stack
     Mov Eax, Ebx                        ; Prepare integer division
     Xor Edx, Edx                        ; Must clear Edx for integer division
     IDiv Ecx
     Mov Edx, Eax
     
     Push Edx                            ; Linked variable added to stack
-    Mov Esi, [Esp + 20]                 ; Retrieve value from stack
-    Mov Edi, [Esp + 0]                  ; Retrieve value from stack
+    Mov Esi, [Esp + 20D]                ; Retrieve value from stack
+    Mov Edi, [Esp + 0D]                 ; Retrieve value from stack
     Mov Ebx, Esi                        ; Prepare integer subtraction
     Sub Ebx, Edi
     
@@ -517,105 +495,82 @@ start:
     Mov Eax, 4D
     Mov Ecx, [Esp + 48D]                ; assemble operand VARIABLE
         ; Convert integer to string in Addr tempGlobal
-        ; Caller save registers Ecx
-        Push Ecx                        ; Anonymous value added to stack
             ; Clear global string Addr tempGlobal
-            ; Caller save registers Ecx
-            Push Ecx                    ; Anonymous value added to stack
             Push 256                    ; Anonymous value added to stack
             Push Addr tempGlobal        ; Anonymous value added to stack
             Call clear_global_string
-            ; Caller restore registers Ecx
-            Pop Ecx                     ; Anonymous value removed from stack
         Push 11D                        ; Anonymous value added to stack
         Push Addr tempGlobal            ; Anonymous value added to stack
-        Push Ecx                        ; Anonymous value added to stack
+        Push [Esp + 56D]                ; Anonymous value added to stack
         Call int_to_string
-        ; Caller restore registers Ecx
-        Pop Ecx                         ; Anonymous value removed from stack
-        Mov Ecx, Eax
-        Not Ecx                         ; Invert actual length
-        Add Ecx, 1D
-        Add Ecx, 11D                    ; Add total available number of digits
-        Add Ecx, Addr tempGlobal        ; Positive offset from string pointer at which non-zero values start
-    ; Caller save registers Ecx
-    Push Ecx                            ; Anonymous value added to stack
+        Mov Edx, Eax
+        Not Edx                         ; Invert actual length
+        Add Edx, 1D
+        Add Edx, 11D                    ; Add total available number of digits
+        Add Edx, Addr tempGlobal        ; Positive offset from string pointer at which non-zero values start
+        Push Edx                        ; Linked variable added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
-    Push Ecx                            ; Anonymous value added to stack
+    Push [Esp + 12D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
-    ; Caller restore registers Ecx
-    Pop Ecx                             ; Anonymous value removed from stack
     
     ; Output
     ; Prepare operand
     Mov Eax, 2D
-    Mov Edx, Addr str11                 ; assemble operand LITERAL
-    Push Edx                            ; Linked variable added to stack
-    ; Caller save registers Edx
-    Push Edx                            ; Anonymous value added to stack
+    Mov Esi, Addr str11                 ; assemble operand LITERAL
+    Push Esi                            ; Linked variable added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
-    Push Edx                            ; Anonymous value added to stack
+    Push [Esp + 12D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
-    ; Caller restore registers Edx
-    Pop Edx                             ; Anonymous value removed from stack
     
     ; Output
     ; Prepare operand
     Mov Eax, 32D
-    Mov Esi, Addr str12                 ; assemble operand LITERAL
-    Push Esi                            ; Linked variable added to stack
-    ; Caller save registers Esi
-    Push Esi                            ; Anonymous value added to stack
+    Mov Edi, Addr str12                 ; assemble operand LITERAL
+    Push Edi                            ; Linked variable added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
-    Push Esi                            ; Anonymous value added to stack
+    Push [Esp + 12D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
-    ; Caller restore registers Esi
-    Pop Esi                             ; Anonymous value removed from stack
     
     ; Output
     ; Prepare operand
     Mov Eax, 35D
-    Mov Edi, Addr str13                 ; assemble operand LITERAL
-    Push Edi                            ; Linked variable added to stack
-    ; Caller save registers Edi
-    Push Edi                            ; Anonymous value added to stack
+    Mov Ebx, Addr str13                 ; assemble operand LITERAL
+    Push Ebx                            ; Linked variable added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
-    Push Edi                            ; Anonymous value added to stack
+    Push [Esp + 12D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
-    ; Caller restore registers Edi
-    Pop Edi                             ; Anonymous value removed from stack
     
     ; Output
     ; Prepare operand
     Mov Eax, 4D
-    Mov Ebx, -1D                        ; assemble operand LITERAL
-    Push Ebx                            ; Linked variable added to stack
+    Mov Ecx, -1D                        ; assemble operand LITERAL
+    Push Ecx                            ; Linked variable added to stack
     ; Prepare operand
     Mov Eax, 4D
-    Mov Ecx, -2D                        ; assemble operand LITERAL
-    Push Ecx                            ; Linked variable added to stack
-    Mov Edx, [Esp + 4]                  ; Retrieve value from stack
-    Mov Esi, [Esp + 0]                  ; Retrieve value from stack
-    Cmp Edx, Esi                        ; Prepare integer comparision
-    Mov Edi, 1
+    Mov Edx, -2D                        ; assemble operand LITERAL
+    Push Edx                            ; Linked variable added to stack
+    Mov Esi, [Esp + 4D]                 ; Retrieve value from stack
+    Mov Edi, [Esp + 0D]                 ; Retrieve value from stack
+    Cmp Esi, Edi                        ; Prepare integer comparision
+    Mov Ebx, 1
     Je > label2
-    Xor Edi, Edi
+    Xor Ebx, Ebx
 label2:
     
-    Push Edi                            ; Linked variable added to stack
-    Cmp Edi, 0                          ; Prepare boolean to string
+    Push Ebx                            ; Linked variable added to stack
+    Cmp B[Esp + 0D], 0                  ; Prepare boolean to string
     Jz > label3
     Mov [tempGlobal], Addr trueString
     Mov Eax, 4
@@ -624,28 +579,142 @@ label3:
     Mov [tempGlobal], Addr falseString
     Mov Eax, 5
 label4:
-    ; Caller save registers Edi
-    Push Edi                            ; Anonymous value added to stack
+    Mov Ecx, [tempGlobal]
+    Push Ecx                            ; Linked variable added to stack
+    ; Caller save registers Ecx
+    Push Ecx                            ; Anonymous value added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
-    Push [tempGlobal]                   ; Anonymous value added to stack
+    Push [Esp + 16D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
-    ; Caller restore registers Edi
-    Pop Edi                             ; Anonymous value removed from stack
+    ; Caller restore registers Ecx
+    Pop Ecx                             ; Anonymous value removed from stack
     
     ; Output
     ; Prepare operand
     Mov Eax, 1D
-    Mov Ebx, Addr str14                 ; assemble operand LITERAL
+    Mov Edx, Addr str14                 ; assemble operand LITERAL
+    Push Edx                            ; Linked variable added to stack
+    ; Caller save registers Ecx
+    Push Ecx                            ; Anonymous value added to stack
+    Push 0                              ; Anonymous value added to stack
+    Push Addr tempGlobal                ; Anonymous value added to stack
+    Push Eax                            ; Anonymous value added to stack
+    Push [Esp + 16D]                    ; Anonymous value added to stack
+    Push [outputHandle]                 ; Anonymous value added to stack
+    Call WriteConsoleA
+    ; Caller restore registers Ecx
+    Pop Ecx                             ; Anonymous value removed from stack
+    
+    ; Output
+    ; Prepare operand
+    Mov Eax, 4D
+    Mov Esi, -1D                        ; assemble operand LITERAL
+    Push Esi                            ; Linked variable added to stack
+    ; Prepare operand
+    Mov Eax, 4D
+    Mov Edi, -2D                        ; assemble operand LITERAL
+    Push Edi                            ; Linked variable added to stack
+    Mov Ebx, [Esp + 4D]                 ; Retrieve value from stack
+    Mov Edx, [Esp + 0D]                 ; Retrieve value from stack
+    Cmp Ebx, Edx                        ; Prepare integer comparision
+    Mov Ecx, 1
+    Jne > label5
+    Xor Ecx, Ecx
+label5:
+    
+    Push Ecx                            ; Linked variable added to stack
+    Cmp B[Esp + 0D], 0                  ; Prepare boolean to string
+    Jz > label6
+    Mov [tempGlobal], Addr trueString
+    Mov Eax, 4
+    Jmp > label7
+label6:
+    Mov [tempGlobal], Addr falseString
+    Mov Eax, 5
+label7:
+    Mov Esi, [tempGlobal]
+    Push Esi                            ; Linked variable added to stack
+    ; Caller save registers Esi
+    Push Esi                            ; Anonymous value added to stack
+    Push 0                              ; Anonymous value added to stack
+    Push Addr tempGlobal                ; Anonymous value added to stack
+    Push Eax                            ; Anonymous value added to stack
+    Push [Esp + 16D]                    ; Anonymous value added to stack
+    Push [outputHandle]                 ; Anonymous value added to stack
+    Call WriteConsoleA
+    ; Caller restore registers Esi
+    Pop Esi                             ; Anonymous value removed from stack
+    
+    ; Output
+    ; Prepare operand
+    Mov Eax, 1D
+    Mov Edi, Addr str14                 ; assemble operand LITERAL
+    Push Edi                            ; Linked variable added to stack
+    ; Caller save registers Esi
+    Push Esi                            ; Anonymous value added to stack
+    Push 0                              ; Anonymous value added to stack
+    Push Addr tempGlobal                ; Anonymous value added to stack
+    Push Eax                            ; Anonymous value added to stack
+    Push [Esp + 16D]                    ; Anonymous value added to stack
+    Push [outputHandle]                 ; Anonymous value added to stack
+    Call WriteConsoleA
+    ; Caller restore registers Esi
+    Pop Esi                             ; Anonymous value removed from stack
+    
+    ; Output
+    ; Prepare operand
+    Mov Eax, 4D
+    Mov Ebx, -1D                        ; assemble operand LITERAL
+    Push Ebx                            ; Linked variable added to stack
+    ; Prepare operand
+    Mov Eax, 4D
+    Mov Edx, -2D                        ; assemble operand LITERAL
+    Push Edx                            ; Linked variable added to stack
+    Mov Ecx, [Esp + 4D]                 ; Retrieve value from stack
+    Mov Edi, [Esp + 0D]                 ; Retrieve value from stack
+    Cmp Ecx, Edi                        ; Prepare integer comparision
+    Mov Esi, 1
+    Jl > label8
+    Xor Esi, Esi
+label8:
+    
+    Push Esi                            ; Linked variable added to stack
+    Cmp B[Esp + 0D], 0                  ; Prepare boolean to string
+    Jz > label9
+    Mov [tempGlobal], Addr trueString
+    Mov Eax, 4
+    Jmp > label10
+label9:
+    Mov [tempGlobal], Addr falseString
+    Mov Eax, 5
+label10:
+    Mov Ebx, [tempGlobal]
     Push Ebx                            ; Linked variable added to stack
     ; Caller save registers Ebx
     Push Ebx                            ; Anonymous value added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
+    Push [Esp + 16D]                    ; Anonymous value added to stack
+    Push [outputHandle]                 ; Anonymous value added to stack
+    Call WriteConsoleA
+    ; Caller restore registers Ebx
+    Pop Ebx                             ; Anonymous value removed from stack
+    
+    ; Output
+    ; Prepare operand
+    Mov Eax, 1D
+    Mov Edx, Addr str14                 ; assemble operand LITERAL
+    Push Edx                            ; Linked variable added to stack
+    ; Caller save registers Ebx
     Push Ebx                            ; Anonymous value added to stack
+    Push 0                              ; Anonymous value added to stack
+    Push Addr tempGlobal                ; Anonymous value added to stack
+    Push Eax                            ; Anonymous value added to stack
+    Push [Esp + 16D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
     ; Caller restore registers Ebx
@@ -658,126 +727,18 @@ label4:
     Push Ecx                            ; Linked variable added to stack
     ; Prepare operand
     Mov Eax, 4D
-    Mov Edx, -2D                        ; assemble operand LITERAL
-    Push Edx                            ; Linked variable added to stack
-    Mov Esi, [Esp + 4]                  ; Retrieve value from stack
-    Mov Edi, [Esp + 0]                  ; Retrieve value from stack
-    Cmp Esi, Edi                        ; Prepare integer comparision
-    Mov Ebx, 1
-    Jne > label5
-    Xor Ebx, Ebx
-label5:
-    
-    Push Ebx                            ; Linked variable added to stack
-    Cmp Ebx, 0                          ; Prepare boolean to string
-    Jz > label6
-    Mov [tempGlobal], Addr trueString
-    Mov Eax, 4
-    Jmp > label7
-label6:
-    Mov [tempGlobal], Addr falseString
-    Mov Eax, 5
-label7:
-    ; Caller save registers Ebx
-    Push Ebx                            ; Anonymous value added to stack
-    Push 0                              ; Anonymous value added to stack
-    Push Addr tempGlobal                ; Anonymous value added to stack
-    Push Eax                            ; Anonymous value added to stack
-    Push [tempGlobal]                   ; Anonymous value added to stack
-    Push [outputHandle]                 ; Anonymous value added to stack
-    Call WriteConsoleA
-    ; Caller restore registers Ebx
-    Pop Ebx                             ; Anonymous value removed from stack
-    
-    ; Output
-    ; Prepare operand
-    Mov Eax, 1D
-    Mov Ecx, Addr str14                 ; assemble operand LITERAL
-    Push Ecx                            ; Linked variable added to stack
-    ; Caller save registers Ecx
-    Push Ecx                            ; Anonymous value added to stack
-    Push 0                              ; Anonymous value added to stack
-    Push Addr tempGlobal                ; Anonymous value added to stack
-    Push Eax                            ; Anonymous value added to stack
-    Push Ecx                            ; Anonymous value added to stack
-    Push [outputHandle]                 ; Anonymous value added to stack
-    Call WriteConsoleA
-    ; Caller restore registers Ecx
-    Pop Ecx                             ; Anonymous value removed from stack
-    
-    ; Output
-    ; Prepare operand
-    Mov Eax, 4D
-    Mov Edx, -1D                        ; assemble operand LITERAL
-    Push Edx                            ; Linked variable added to stack
-    ; Prepare operand
-    Mov Eax, 4D
-    Mov Esi, -2D                        ; assemble operand LITERAL
-    Push Esi                            ; Linked variable added to stack
-    Mov Edi, [Esp + 4]                  ; Retrieve value from stack
-    Mov Ebx, [Esp + 0]                  ; Retrieve value from stack
-    Cmp Edi, Ebx                        ; Prepare integer comparision
-    Mov Ecx, 1
-    Jl > label8
-    Xor Ecx, Ecx
-label8:
-    
-    Push Ecx                            ; Linked variable added to stack
-    Cmp Ecx, 0                          ; Prepare boolean to string
-    Jz > label9
-    Mov [tempGlobal], Addr trueString
-    Mov Eax, 4
-    Jmp > label10
-label9:
-    Mov [tempGlobal], Addr falseString
-    Mov Eax, 5
-label10:
-    ; Caller save registers Ecx
-    Push Ecx                            ; Anonymous value added to stack
-    Push 0                              ; Anonymous value added to stack
-    Push Addr tempGlobal                ; Anonymous value added to stack
-    Push Eax                            ; Anonymous value added to stack
-    Push [tempGlobal]                   ; Anonymous value added to stack
-    Push [outputHandle]                 ; Anonymous value added to stack
-    Call WriteConsoleA
-    ; Caller restore registers Ecx
-    Pop Ecx                             ; Anonymous value removed from stack
-    
-    ; Output
-    ; Prepare operand
-    Mov Eax, 1D
-    Mov Edx, Addr str14                 ; assemble operand LITERAL
-    Push Edx                            ; Linked variable added to stack
-    ; Caller save registers Edx
-    Push Edx                            ; Anonymous value added to stack
-    Push 0                              ; Anonymous value added to stack
-    Push Addr tempGlobal                ; Anonymous value added to stack
-    Push Eax                            ; Anonymous value added to stack
-    Push Edx                            ; Anonymous value added to stack
-    Push [outputHandle]                 ; Anonymous value added to stack
-    Call WriteConsoleA
-    ; Caller restore registers Edx
-    Pop Edx                             ; Anonymous value removed from stack
-    
-    ; Output
-    ; Prepare operand
-    Mov Eax, 4D
-    Mov Esi, -1D                        ; assemble operand LITERAL
-    Push Esi                            ; Linked variable added to stack
-    ; Prepare operand
-    Mov Eax, 4D
     Mov Edi, -2D                        ; assemble operand LITERAL
     Push Edi                            ; Linked variable added to stack
-    Mov Ebx, [Esp + 4]                  ; Retrieve value from stack
-    Mov Ecx, [Esp + 0]                  ; Retrieve value from stack
-    Cmp Ebx, Ecx                        ; Prepare integer comparision
-    Mov Edx, 1
+    Mov Esi, [Esp + 4D]                 ; Retrieve value from stack
+    Mov Edx, [Esp + 0D]                 ; Retrieve value from stack
+    Cmp Esi, Edx                        ; Prepare integer comparision
+    Mov Ebx, 1
     Jle > label11
-    Xor Edx, Edx
+    Xor Ebx, Ebx
 label11:
     
-    Push Edx                            ; Linked variable added to stack
-    Cmp Edx, 0                          ; Prepare boolean to string
+    Push Ebx                            ; Linked variable added to stack
+    Cmp B[Esp + 0D], 0                  ; Prepare boolean to string
     Jz > label12
     Mov [tempGlobal], Addr trueString
     Mov Eax, 4
@@ -786,52 +747,54 @@ label12:
     Mov [tempGlobal], Addr falseString
     Mov Eax, 5
 label13:
-    ; Caller save registers Edx
-    Push Edx                            ; Anonymous value added to stack
+    Mov Ecx, [tempGlobal]
+    Push Ecx                            ; Linked variable added to stack
+    ; Caller save registers Ecx
+    Push Ecx                            ; Anonymous value added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
-    Push [tempGlobal]                   ; Anonymous value added to stack
+    Push [Esp + 16D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
-    ; Caller restore registers Edx
-    Pop Edx                             ; Anonymous value removed from stack
+    ; Caller restore registers Ecx
+    Pop Ecx                             ; Anonymous value removed from stack
     
     ; Output
     ; Prepare operand
     Mov Eax, 1D
-    Mov Esi, Addr str14                 ; assemble operand LITERAL
-    Push Esi                            ; Linked variable added to stack
-    ; Caller save registers Esi
-    Push Esi                            ; Anonymous value added to stack
+    Mov Edi, Addr str14                 ; assemble operand LITERAL
+    Push Edi                            ; Linked variable added to stack
+    ; Caller save registers Ecx
+    Push Ecx                            ; Anonymous value added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
-    Push Esi                            ; Anonymous value added to stack
+    Push [Esp + 16D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
-    ; Caller restore registers Esi
-    Pop Esi                             ; Anonymous value removed from stack
+    ; Caller restore registers Ecx
+    Pop Ecx                             ; Anonymous value removed from stack
     
     ; Output
     ; Prepare operand
     Mov Eax, 4D
-    Mov Edi, -1D                        ; assemble operand LITERAL
-    Push Edi                            ; Linked variable added to stack
+    Mov Esi, -1D                        ; assemble operand LITERAL
+    Push Esi                            ; Linked variable added to stack
     ; Prepare operand
     Mov Eax, 4D
-    Mov Ebx, -2D                        ; assemble operand LITERAL
-    Push Ebx                            ; Linked variable added to stack
-    Mov Ecx, [Esp + 4]                  ; Retrieve value from stack
-    Mov Edx, [Esp + 0]                  ; Retrieve value from stack
-    Cmp Ecx, Edx                        ; Prepare integer comparision
-    Mov Esi, 1
+    Mov Edx, -2D                        ; assemble operand LITERAL
+    Push Edx                            ; Linked variable added to stack
+    Mov Ebx, [Esp + 4D]                 ; Retrieve value from stack
+    Mov Edi, [Esp + 0D]                 ; Retrieve value from stack
+    Cmp Ebx, Edi                        ; Prepare integer comparision
+    Mov Ecx, 1
     Jg > label14
-    Xor Esi, Esi
+    Xor Ecx, Ecx
 label14:
     
-    Push Esi                            ; Linked variable added to stack
-    Cmp Esi, 0                          ; Prepare boolean to string
+    Push Ecx                            ; Linked variable added to stack
+    Cmp B[Esp + 0D], 0                  ; Prepare boolean to string
     Jz > label15
     Mov [tempGlobal], Addr trueString
     Mov Eax, 4
@@ -840,12 +803,14 @@ label15:
     Mov [tempGlobal], Addr falseString
     Mov Eax, 5
 label16:
+    Mov Esi, [tempGlobal]
+    Push Esi                            ; Linked variable added to stack
     ; Caller save registers Esi
     Push Esi                            ; Anonymous value added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
-    Push [tempGlobal]                   ; Anonymous value added to stack
+    Push [Esp + 16D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
     ; Caller restore registers Esi
@@ -854,18 +819,18 @@ label16:
     ; Output
     ; Prepare operand
     Mov Eax, 1D
-    Mov Edi, Addr str14                 ; assemble operand LITERAL
-    Push Edi                            ; Linked variable added to stack
-    ; Caller save registers Edi
-    Push Edi                            ; Anonymous value added to stack
+    Mov Edx, Addr str14                 ; assemble operand LITERAL
+    Push Edx                            ; Linked variable added to stack
+    ; Caller save registers Esi
+    Push Esi                            ; Anonymous value added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
-    Push Edi                            ; Anonymous value added to stack
+    Push [Esp + 16D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
-    ; Caller restore registers Edi
-    Pop Edi                             ; Anonymous value removed from stack
+    ; Caller restore registers Esi
+    Pop Esi                             ; Anonymous value removed from stack
     
     ; Output
     ; Prepare operand
@@ -874,18 +839,18 @@ label16:
     Push Ebx                            ; Linked variable added to stack
     ; Prepare operand
     Mov Eax, 4D
-    Mov Ecx, -2D                        ; assemble operand LITERAL
-    Push Ecx                            ; Linked variable added to stack
-    Mov Edx, [Esp + 4]                  ; Retrieve value from stack
-    Mov Esi, [Esp + 0]                  ; Retrieve value from stack
-    Cmp Edx, Esi                        ; Prepare integer comparision
-    Mov Edi, 1
+    Mov Edi, -2D                        ; assemble operand LITERAL
+    Push Edi                            ; Linked variable added to stack
+    Mov Ecx, [Esp + 4D]                 ; Retrieve value from stack
+    Mov Edx, [Esp + 0D]                 ; Retrieve value from stack
+    Cmp Ecx, Edx                        ; Prepare integer comparision
+    Mov Esi, 1
     Jge > label17
-    Xor Edi, Edi
+    Xor Esi, Esi
 label17:
     
-    Push Edi                            ; Linked variable added to stack
-    Cmp Edi, 0                          ; Prepare boolean to string
+    Push Esi                            ; Linked variable added to stack
+    Cmp B[Esp + 0D], 0                  ; Prepare boolean to string
     Jz > label18
     Mov [tempGlobal], Addr trueString
     Mov Eax, 4
@@ -894,28 +859,30 @@ label18:
     Mov [tempGlobal], Addr falseString
     Mov Eax, 5
 label19:
-    ; Caller save registers Edi
-    Push Edi                            ; Anonymous value added to stack
-    Push 0                              ; Anonymous value added to stack
-    Push Addr tempGlobal                ; Anonymous value added to stack
-    Push Eax                            ; Anonymous value added to stack
-    Push [tempGlobal]                   ; Anonymous value added to stack
-    Push [outputHandle]                 ; Anonymous value added to stack
-    Call WriteConsoleA
-    ; Caller restore registers Edi
-    Pop Edi                             ; Anonymous value removed from stack
-    
-    ; Output
-    ; Prepare operand
-    Mov Eax, 2D
-    Mov Ebx, Addr str11                 ; assemble operand LITERAL
+    Mov Ebx, [tempGlobal]
     Push Ebx                            ; Linked variable added to stack
     ; Caller save registers Ebx
     Push Ebx                            ; Anonymous value added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
+    Push [Esp + 16D]                    ; Anonymous value added to stack
+    Push [outputHandle]                 ; Anonymous value added to stack
+    Call WriteConsoleA
+    ; Caller restore registers Ebx
+    Pop Ebx                             ; Anonymous value removed from stack
+    
+    ; Output
+    ; Prepare operand
+    Mov Eax, 2D
+    Mov Edi, Addr str11                 ; assemble operand LITERAL
+    Push Edi                            ; Linked variable added to stack
+    ; Caller save registers Ebx
     Push Ebx                            ; Anonymous value added to stack
+    Push 0                              ; Anonymous value added to stack
+    Push Addr tempGlobal                ; Anonymous value added to stack
+    Push Eax                            ; Anonymous value added to stack
+    Push [Esp + 16D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
     ; Caller restore registers Ebx
@@ -926,32 +893,32 @@ label19:
     Mov Eax, 33D
     Mov Ecx, Addr str15                 ; assemble operand LITERAL
     Push Ecx                            ; Linked variable added to stack
-    ; Caller save registers Ecx
-    Push Ecx                            ; Anonymous value added to stack
+    ; Caller save registers Ebx
+    Push Ebx                            ; Anonymous value added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
-    Push Ecx                            ; Anonymous value added to stack
+    Push [Esp + 16D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
-    ; Caller restore registers Ecx
-    Pop Ecx                             ; Anonymous value removed from stack
+    ; Caller restore registers Ebx
+    Pop Ebx                             ; Anonymous value removed from stack
     
     ; Output
     ; Prepare operand
     Mov Eax, 40D
     Mov Edx, Addr str16                 ; assemble operand LITERAL
     Push Edx                            ; Linked variable added to stack
-    ; Caller save registers Edx
-    Push Edx                            ; Anonymous value added to stack
+    ; Caller save registers Ebx
+    Push Ebx                            ; Anonymous value added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
-    Push Edx                            ; Anonymous value added to stack
+    Push [Esp + 16D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
-    ; Caller restore registers Edx
-    Pop Edx                             ; Anonymous value removed from stack
+    ; Caller restore registers Ebx
+    Pop Ebx                             ; Anonymous value removed from stack
     
     ; Output
     ; Prepare operand
@@ -962,15 +929,15 @@ label19:
     Mov Eax, 4D
     Mov Edi, 5D                         ; assemble operand LITERAL
     Push Edi                            ; Linked variable added to stack
-    Mov Ebx, [Esp + 4]                  ; Retrieve value from stack
-    Mov Ecx, [Esp + 0]                  ; Retrieve value from stack
-    Cmp Ebx, Ecx                        ; Prepare integer comparision
-    Mov Edx, 1
+    Mov Ecx, [Esp + 4D]                 ; Retrieve value from stack
+    Mov Edx, [Esp + 0D]                 ; Retrieve value from stack
+    Cmp Ecx, Edx                        ; Prepare integer comparision
+    Mov Ebx, 1
     Jge > label20
-    Xor Edx, Edx
+    Xor Ebx, Ebx
 label20:
     
-    Push Edx                            ; Linked variable added to stack
+    Push Ebx                            ; Linked variable added to stack
     ; Prepare operand
     Mov Eax, 4D
     Mov Esi, 6D                         ; assemble operand LITERAL
@@ -981,54 +948,54 @@ label20:
     Push Edi                            ; Linked variable added to stack
     ; Prepare operand
     Mov Eax, 4D
-    Mov Ebx, 2D                         ; assemble operand LITERAL
-    Push Ebx                            ; Linked variable added to stack
-    Mov Ecx, [Esp + 4]                  ; Retrieve value from stack
-    Mov Edx, [Esp + 0]                  ; Retrieve value from stack
-    Mov Esi, Ecx                        ; Prepare integer subtraction
-    Sub Esi, Edx
+    Mov Ecx, 2D                         ; assemble operand LITERAL
+    Push Ecx                            ; Linked variable added to stack
+    Mov Edx, [Esp + 4D]                 ; Retrieve value from stack
+    Mov Ebx, [Esp + 0D]                 ; Retrieve value from stack
+    Mov Esi, Edx                        ; Prepare integer subtraction
+    Sub Esi, Ebx
     
     Push Esi                            ; Linked variable added to stack
-    Mov Edi, [Esp + 12]                 ; Retrieve value from stack
-    Mov Ebx, [Esp + 0]                  ; Retrieve value from stack
-    Cmp Edi, Ebx                        ; Prepare integer comparision
-    Mov Ecx, 1
+    Mov Edi, [Esp + 12D]                ; Retrieve value from stack
+    Mov Ecx, [Esp + 0D]                 ; Retrieve value from stack
+    Cmp Edi, Ecx                        ; Prepare integer comparision
+    Mov Edx, 1
     Jl > label21
-    Xor Ecx, Ecx
+    Xor Edx, Edx
 label21:
     
-    Push Ecx                            ; Linked variable added to stack
-    Mov Edx, [Esp + 20]                 ; Retrieve value from stack
-    Mov Esi, [Esp + 0]                  ; Retrieve value from stack
-    Mov Edi, Edx                        ; Prepare AND operation
-    And Edi, Esi                        ; Execute Edx AND Esi
+    Push Edx                            ; Linked variable added to stack
+    Mov Ebx, [Esp + 20D]                ; Retrieve value from stack
+    Mov Esi, [Esp + 0D]                 ; Retrieve value from stack
+    Mov Edi, Ebx                        ; Prepare AND operation
+    And Edi, Esi                        ; Execute Ebx AND Esi
     
     Push Edi                            ; Linked variable added to stack
     ; Prepare operand
     Mov Eax, 1D
-    Mov Ebx, 1                          ; assemble operand TRUE
-    Push Ebx                            ; Linked variable added to stack
-    Mov Ecx, [Esp + 4]                  ; Retrieve value from stack
-    Mov Edx, [Esp + 0]                  ; Retrieve value from stack
-    Mov Esi, Ecx                        ; Prepare AND operation
-    And Esi, Edx                        ; Execute Ecx AND Edx
+    Mov Ecx, 1                          ; assemble operand TRUE
+    Push Ecx                            ; Linked variable added to stack
+    Mov Edx, [Esp + 4D]                 ; Retrieve value from stack
+    Mov Ebx, [Esp + 0D]                 ; Retrieve value from stack
+    Mov Esi, Edx                        ; Prepare AND operation
+    And Esi, Ebx                        ; Execute Edx AND Ebx
     
     Push Esi                            ; Linked variable added to stack
     ; Prepare operand
     Mov Eax, 1D
     Mov Edi, 0                          ; assemble operand FALSE
     Push Edi                            ; Linked variable added to stack
-    Mov Ebx, [Esp + 0]                  ; Retrieve value from stack
-    NOT Ebx                             ; Execute Not Ebx
+    Mov Ecx, [Esp + 0D]                 ; Retrieve value from stack
+    NOT Ecx                             ; Execute Not Ecx
     
-    Push Ebx                            ; Linked variable added to stack
-    Mov Ecx, [Esp + 8]                  ; Retrieve value from stack
-    Mov Edx, [Esp + 0]                  ; Retrieve value from stack
-    Mov Esi, Ecx                        ; Prepare OR operation
-    Or Esi, Edx                         ; Execute Ecx OR Edx
+    Push Ecx                            ; Linked variable added to stack
+    Mov Edx, [Esp + 8D]                 ; Retrieve value from stack
+    Mov Ebx, [Esp + 0D]                 ; Retrieve value from stack
+    Mov Esi, Edx                        ; Prepare OR operation
+    Or Esi, Ebx                         ; Execute Edx OR Ebx
     
     Push Esi                            ; Linked variable added to stack
-    Cmp Esi, 0                          ; Prepare boolean to string
+    Cmp B[Esp + 0D], 0                  ; Prepare boolean to string
     Jz > label22
     Mov [tempGlobal], Addr trueString
     Mov Eax, 4
@@ -1037,28 +1004,30 @@ label22:
     Mov [tempGlobal], Addr falseString
     Mov Eax, 5
 label23:
-    ; Caller save registers Esi
-    Push Esi                            ; Anonymous value added to stack
-    Push 0                              ; Anonymous value added to stack
-    Push Addr tempGlobal                ; Anonymous value added to stack
-    Push Eax                            ; Anonymous value added to stack
-    Push [tempGlobal]                   ; Anonymous value added to stack
-    Push [outputHandle]                 ; Anonymous value added to stack
-    Call WriteConsoleA
-    ; Caller restore registers Esi
-    Pop Esi                             ; Anonymous value removed from stack
-    
-    ; Output
-    ; Prepare operand
-    Mov Eax, 2D
-    Mov Edi, Addr str11                 ; assemble operand LITERAL
+    Mov Edi, [tempGlobal]
     Push Edi                            ; Linked variable added to stack
     ; Caller save registers Edi
     Push Edi                            ; Anonymous value added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
+    Push [Esp + 16D]                    ; Anonymous value added to stack
+    Push [outputHandle]                 ; Anonymous value added to stack
+    Call WriteConsoleA
+    ; Caller restore registers Edi
+    Pop Edi                             ; Anonymous value removed from stack
+    
+    ; Output
+    ; Prepare operand
+    Mov Eax, 2D
+    Mov Ecx, Addr str11                 ; assemble operand LITERAL
+    Push Ecx                            ; Linked variable added to stack
+    ; Caller save registers Edi
     Push Edi                            ; Anonymous value added to stack
+    Push 0                              ; Anonymous value added to stack
+    Push Addr tempGlobal                ; Anonymous value added to stack
+    Push Eax                            ; Anonymous value added to stack
+    Push [Esp + 16D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
     ; Caller restore registers Edi
@@ -1067,87 +1036,34 @@ label23:
     ; Output
     ; Prepare operand
     Mov Eax, 30D
-    Mov Ebx, Addr str17                 ; assemble operand LITERAL
-    Push Ebx                            ; Linked variable added to stack
-    ; Caller save registers Ebx
-    Push Ebx                            ; Anonymous value added to stack
-    Push 0                              ; Anonymous value added to stack
-    Push Addr tempGlobal                ; Anonymous value added to stack
-    Push Eax                            ; Anonymous value added to stack
-    Push Ebx                            ; Anonymous value added to stack
-    Push [outputHandle]                 ; Anonymous value added to stack
-    Call WriteConsoleA
-    ; Caller restore registers Ebx
-    Pop Ebx                             ; Anonymous value removed from stack
-    
-    ; Output
-    ; Prepare operand
-    Mov Eax, 18D
-    Mov Ecx, Addr str18                 ; assemble operand LITERAL
-    Push Ecx                            ; Linked variable added to stack
-    ; Caller save registers Ecx
-    Push Ecx                            ; Anonymous value added to stack
-    Push 0                              ; Anonymous value added to stack
-    Push Addr tempGlobal                ; Anonymous value added to stack
-    Push Eax                            ; Anonymous value added to stack
-    Push Ecx                            ; Anonymous value added to stack
-    Push [outputHandle]                 ; Anonymous value added to stack
-    Call WriteConsoleA
-    ; Caller restore registers Ecx
-    Pop Ecx                             ; Anonymous value removed from stack
-    
-    ; Output
-    ; Prepare operand
-    Mov Eax, 3D
-    Mov Edx, Addr str19                 ; assemble operand LITERAL
+    Mov Edx, Addr str17                 ; assemble operand LITERAL
     Push Edx                            ; Linked variable added to stack
-    ; Prepare operand
-    Mov Eax, 3D
-    Mov Esi, Addr str20                 ; assemble operand LITERAL
-    Push Esi                            ; Linked variable added to stack
-    Mov Edi, [Esp + 4]                  ; Retrieve value from stack
-    Mov Ebx, [Esp + 0]                  ; Retrieve value from stack
+    ; Caller save registers Edi
     Push Edi                            ; Anonymous value added to stack
-    Push Ebx                            ; Anonymous value added to stack
-    Call string_compare
-    Mov Ecx, Eax
-    
-    Push Ecx                            ; Linked variable added to stack
-    Cmp Ecx, 0                          ; Prepare boolean to string
-    Jz > label24
-    Mov [tempGlobal], Addr trueString
-    Mov Eax, 4
-    Jmp > label25
-label24:
-    Mov [tempGlobal], Addr falseString
-    Mov Eax, 5
-label25:
-    ; Caller save registers Ecx
-    Push Ecx                            ; Anonymous value added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
-    Push [tempGlobal]                   ; Anonymous value added to stack
+    Push [Esp + 16D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
-    ; Caller restore registers Ecx
-    Pop Ecx                             ; Anonymous value removed from stack
+    ; Caller restore registers Edi
+    Pop Edi                             ; Anonymous value removed from stack
     
     ; Output
     ; Prepare operand
     Mov Eax, 18D
-    Mov Edx, Addr str21                 ; assemble operand LITERAL
-    Push Edx                            ; Linked variable added to stack
-    ; Caller save registers Edx
-    Push Edx                            ; Anonymous value added to stack
+    Mov Ebx, Addr str18                 ; assemble operand LITERAL
+    Push Ebx                            ; Linked variable added to stack
+    ; Caller save registers Edi
+    Push Edi                            ; Anonymous value added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
-    Push Edx                            ; Anonymous value added to stack
+    Push [Esp + 16D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
-    ; Caller restore registers Edx
-    Pop Edx                             ; Anonymous value removed from stack
+    ; Caller restore registers Edi
+    Pop Edi                             ; Anonymous value removed from stack
     
     ; Output
     ; Prepare operand
@@ -1156,20 +1072,89 @@ label25:
     Push Esi                            ; Linked variable added to stack
     ; Prepare operand
     Mov Eax, 3D
-    Mov Edi, Addr str20                 ; assemble operand LITERAL
-    Push Edi                            ; Linked variable added to stack
-    Mov Ebx, [Esp + 4]                  ; Retrieve value from stack
-    Mov Ecx, [Esp + 0]                  ; Retrieve value from stack
+    Mov Ecx, Addr str20                 ; assemble operand LITERAL
+    Push Ecx                            ; Linked variable added to stack
+    ; Caller save registers Edi
+    Push Edi                            ; Anonymous value added to stack
+    Mov Edx, [Esp + 8D]                 ; Retrieve value from stack
+    Mov Ebx, [Esp + 4D]                 ; Retrieve value from stack
+    Push Edx                            ; Anonymous value added to stack
     Push Ebx                            ; Anonymous value added to stack
-    Push Ecx                            ; Anonymous value added to stack
     Call string_compare
-    Mov Edx, Eax
-    Not Edx                             ; Invert bit 0 on boolean value
-    Shl Edx, 31D
-    Shr Edx, 31D
+    ; Caller restore registers Edi
+    Pop Edi                             ; Anonymous value removed from stack
+    Mov Esi, Eax
     
+    Push Esi                            ; Linked variable added to stack
+    Cmp B[Esp + 0D], 0                  ; Prepare boolean to string
+    Jz > label24
+    Mov [tempGlobal], Addr trueString
+    Mov Eax, 4
+    Jmp > label25
+label24:
+    Mov [tempGlobal], Addr falseString
+    Mov Eax, 5
+label25:
+    Mov Ecx, [tempGlobal]
+    Push Ecx                            ; Linked variable added to stack
+    ; Caller save registers Edi, Ecx
+    Push Edi                            ; Anonymous value added to stack
+    Push Ecx                            ; Anonymous value added to stack
+    Push 0                              ; Anonymous value added to stack
+    Push Addr tempGlobal                ; Anonymous value added to stack
+    Push Eax                            ; Anonymous value added to stack
+    Push [Esp + 20D]                    ; Anonymous value added to stack
+    Push [outputHandle]                 ; Anonymous value added to stack
+    Call WriteConsoleA
+    ; Caller restore registers Edi, Ecx
+    Pop Ecx                             ; Anonymous value removed from stack
+    Pop Edi                             ; Anonymous value removed from stack
+    
+    ; Output
+    ; Prepare operand
+    Mov Eax, 18D
+    Mov Edx, Addr str21                 ; assemble operand LITERAL
     Push Edx                            ; Linked variable added to stack
-    Cmp Edx, 0                          ; Prepare boolean to string
+    ; Caller save registers Ecx, Edi
+    Push Ecx                            ; Anonymous value added to stack
+    Push Edi                            ; Anonymous value added to stack
+    Push 0                              ; Anonymous value added to stack
+    Push Addr tempGlobal                ; Anonymous value added to stack
+    Push Eax                            ; Anonymous value added to stack
+    Push [Esp + 20D]                    ; Anonymous value added to stack
+    Push [outputHandle]                 ; Anonymous value added to stack
+    Call WriteConsoleA
+    ; Caller restore registers Ecx, Edi
+    Pop Edi                             ; Anonymous value removed from stack
+    Pop Ecx                             ; Anonymous value removed from stack
+    
+    ; Output
+    ; Prepare operand
+    Mov Eax, 3D
+    Mov Ebx, Addr str19                 ; assemble operand LITERAL
+    Push Ebx                            ; Linked variable added to stack
+    ; Prepare operand
+    Mov Eax, 3D
+    Mov Esi, Addr str20                 ; assemble operand LITERAL
+    Push Esi                            ; Linked variable added to stack
+    ; Caller save registers Edi, Ecx
+    Push Edi                            ; Anonymous value added to stack
+    Push Ecx                            ; Anonymous value added to stack
+    Mov Edx, [Esp + 12D]                ; Retrieve value from stack
+    Mov Edi, [Esp + 8D]                 ; Retrieve value from stack
+    Push Edx                            ; Anonymous value added to stack
+    Push Edi                            ; Anonymous value added to stack
+    Call string_compare
+    ; Caller restore registers Edi, Ecx
+    Pop Ecx                             ; Anonymous value removed from stack
+    Pop Edi                             ; Anonymous value removed from stack
+    Mov Ebx, Eax
+    Not Ebx                             ; Invert bit 0 on boolean value
+    Shl Ebx, 31D
+    Shr Ebx, 31D
+    
+    Push Ebx                            ; Linked variable added to stack
+    Cmp B[Esp + 0D], 0                  ; Prepare boolean to string
     Jz > label26
     Mov [tempGlobal], Addr trueString
     Mov Eax, 4
@@ -1178,51 +1163,69 @@ label26:
     Mov [tempGlobal], Addr falseString
     Mov Eax, 5
 label27:
-    ; Caller save registers Edx
-    Push Edx                            ; Anonymous value added to stack
+    Mov Esi, [tempGlobal]
+    Push Esi                            ; Linked variable added to stack
+    ; Caller save registers Ecx, Edi, Esi
+    Push Ecx                            ; Anonymous value added to stack
+    Push Edi                            ; Anonymous value added to stack
+    Push Esi                            ; Anonymous value added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
-    Push [tempGlobal]                   ; Anonymous value added to stack
+    Push [Esp + 24D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
-    ; Caller restore registers Edx
-    Pop Edx                             ; Anonymous value removed from stack
+    ; Caller restore registers Ecx, Edi, Esi
+    Pop Esi                             ; Anonymous value removed from stack
+    Pop Edi                             ; Anonymous value removed from stack
+    Pop Ecx                             ; Anonymous value removed from stack
     
     ; Output
     ; Prepare operand
     Mov Eax, 18D
-    Mov Esi, Addr str22                 ; assemble operand LITERAL
-    Push Esi                            ; Linked variable added to stack
-    ; Caller save registers Esi
+    Mov Edx, Addr str22                 ; assemble operand LITERAL
+    Push Edx                            ; Linked variable added to stack
+    ; Caller save registers Esi, Edi, Ecx
     Push Esi                            ; Anonymous value added to stack
+    Push Edi                            ; Anonymous value added to stack
+    Push Ecx                            ; Anonymous value added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
-    Push Esi                            ; Anonymous value added to stack
+    Push [Esp + 24D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
-    ; Caller restore registers Esi
+    ; Caller restore registers Esi, Edi, Ecx
+    Pop Ecx                             ; Anonymous value removed from stack
+    Pop Edi                             ; Anonymous value removed from stack
     Pop Esi                             ; Anonymous value removed from stack
     
     ; Output
     ; Prepare operand
     Mov Eax, 3D
-    Mov Edi, Addr str19                 ; assemble operand LITERAL
-    Push Edi                            ; Linked variable added to stack
-    ; Prepare operand
-    Mov Eax, 3D
     Mov Ebx, Addr str19                 ; assemble operand LITERAL
     Push Ebx                            ; Linked variable added to stack
-    Mov Ecx, [Esp + 4]                  ; Retrieve value from stack
-    Mov Edx, [Esp + 0]                  ; Retrieve value from stack
+    ; Prepare operand
+    Mov Eax, 3D
+    Mov Edx, Addr str19                 ; assemble operand LITERAL
+    Push Edx                            ; Linked variable added to stack
+    ; Caller save registers Ecx, Edi, Esi
     Push Ecx                            ; Anonymous value added to stack
-    Push Edx                            ; Anonymous value added to stack
+    Push Edi                            ; Anonymous value added to stack
+    Push Esi                            ; Anonymous value added to stack
+    Mov Ecx, [Esp + 16D]                ; Retrieve value from stack
+    Mov Edi, [Esp + 12D]                ; Retrieve value from stack
+    Push Ecx                            ; Anonymous value added to stack
+    Push Edi                            ; Anonymous value added to stack
     Call string_compare
-    Mov Esi, Eax
+    ; Caller restore registers Ecx, Edi, Esi
+    Pop Esi                             ; Anonymous value removed from stack
+    Pop Edi                             ; Anonymous value removed from stack
+    Pop Ecx                             ; Anonymous value removed from stack
+    Mov Ebx, Eax
     
-    Push Esi                            ; Linked variable added to stack
-    Cmp Esi, 0                          ; Prepare boolean to string
+    Push Ebx                            ; Linked variable added to stack
+    Cmp B[Esp + 0D], 0                  ; Prepare boolean to string
     Jz > label28
     Mov [tempGlobal], Addr trueString
     Mov Eax, 4
@@ -1231,32 +1234,46 @@ label28:
     Mov [tempGlobal], Addr falseString
     Mov Eax, 5
 label29:
-    ; Caller save registers Esi
+    Mov Edx, [tempGlobal]
+    Push Edx                            ; Linked variable added to stack
+    ; Caller save registers Esi, Edi, Ecx, Edx
     Push Esi                            ; Anonymous value added to stack
+    Push Edi                            ; Anonymous value added to stack
+    Push Ecx                            ; Anonymous value added to stack
+    Push Edx                            ; Anonymous value added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
-    Push [tempGlobal]                   ; Anonymous value added to stack
+    Push [Esp + 28D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
-    ; Caller restore registers Esi
+    ; Caller restore registers Esi, Edi, Ecx, Edx
+    Pop Edx                             ; Anonymous value removed from stack
+    Pop Ecx                             ; Anonymous value removed from stack
+    Pop Edi                             ; Anonymous value removed from stack
     Pop Esi                             ; Anonymous value removed from stack
     
     ; Output
     ; Prepare operand
     Mov Eax, 18D
-    Mov Edi, Addr str23                 ; assemble operand LITERAL
-    Push Edi                            ; Linked variable added to stack
-    ; Caller save registers Edi
+    Mov Ebx, Addr str23                 ; assemble operand LITERAL
+    Push Ebx                            ; Linked variable added to stack
+    ; Caller save registers Edx, Ecx, Edi, Esi
+    Push Edx                            ; Anonymous value added to stack
+    Push Ecx                            ; Anonymous value added to stack
     Push Edi                            ; Anonymous value added to stack
+    Push Esi                            ; Anonymous value added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
-    Push Edi                            ; Anonymous value added to stack
+    Push [Esp + 28D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
-    ; Caller restore registers Edi
+    ; Caller restore registers Edx, Ecx, Edi, Esi
+    Pop Esi                             ; Anonymous value removed from stack
     Pop Edi                             ; Anonymous value removed from stack
+    Pop Ecx                             ; Anonymous value removed from stack
+    Pop Edx                             ; Anonymous value removed from stack
     
     ; Output
     ; Prepare operand
@@ -1265,17 +1282,25 @@ label29:
     Push Ebx                            ; Linked variable added to stack
     ; Prepare operand
     Mov Eax, 3D
-    Mov Ecx, Addr str19                 ; assemble operand LITERAL
-    Push Ecx                            ; Linked variable added to stack
-    Mov Edx, [Esp + 4]                  ; Retrieve value from stack
-    Mov Esi, [Esp + 0]                  ; Retrieve value from stack
+    Mov Esi, Addr str19                 ; assemble operand LITERAL
+    Push Esi                            ; Linked variable added to stack
+    ; Caller save registers Edi, Ecx, Edx
+    Push Edi                            ; Anonymous value added to stack
+    Push Ecx                            ; Anonymous value added to stack
     Push Edx                            ; Anonymous value added to stack
-    Push Esi                            ; Anonymous value added to stack
+    Mov Edi, [Esp + 16D]                ; Retrieve value from stack
+    Mov Ecx, [Esp + 12D]                ; Retrieve value from stack
+    Push Edi                            ; Anonymous value added to stack
+    Push Ecx                            ; Anonymous value added to stack
     Call string_compare
-    Mov Edi, Eax
+    ; Caller restore registers Edi, Ecx, Edx
+    Pop Edx                             ; Anonymous value removed from stack
+    Pop Ecx                             ; Anonymous value removed from stack
+    Pop Edi                             ; Anonymous value removed from stack
+    Mov Ebx, Eax
     
-    Push Edi                            ; Linked variable added to stack
-    Cmp Edi, 0                          ; Prepare boolean to string
+    Push Ebx                            ; Linked variable added to stack
+    Cmp B[Esp + 0D], 0                  ; Prepare boolean to string
     Jz > label30
     Mov [tempGlobal], Addr trueString
     Mov Eax, 4
@@ -1284,51 +1309,73 @@ label30:
     Mov [tempGlobal], Addr falseString
     Mov Eax, 5
 label31:
-    ; Caller save registers Edi
+    Mov Esi, [tempGlobal]
+    Push Esi                            ; Linked variable added to stack
+    ; Caller save registers Edx, Ecx, Edi, Esi
+    Push Edx                            ; Anonymous value added to stack
+    Push Ecx                            ; Anonymous value added to stack
     Push Edi                            ; Anonymous value added to stack
+    Push Esi                            ; Anonymous value added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
-    Push [tempGlobal]                   ; Anonymous value added to stack
+    Push [Esp + 28D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
-    ; Caller restore registers Edi
+    ; Caller restore registers Edx, Ecx, Edi, Esi
+    Pop Esi                             ; Anonymous value removed from stack
     Pop Edi                             ; Anonymous value removed from stack
+    Pop Ecx                             ; Anonymous value removed from stack
+    Pop Edx                             ; Anonymous value removed from stack
     
     ; Output
     ; Prepare operand
     Mov Eax, 18D
     Mov Ebx, Addr str25                 ; assemble operand LITERAL
     Push Ebx                            ; Linked variable added to stack
-    ; Caller save registers Ebx
-    Push Ebx                            ; Anonymous value added to stack
+    ; Caller save registers Esi, Edi, Ecx, Edx
+    Push Esi                            ; Anonymous value added to stack
+    Push Edi                            ; Anonymous value added to stack
+    Push Ecx                            ; Anonymous value added to stack
+    Push Edx                            ; Anonymous value added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
-    Push Ebx                            ; Anonymous value added to stack
+    Push [Esp + 28D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
-    ; Caller restore registers Ebx
-    Pop Ebx                             ; Anonymous value removed from stack
+    ; Caller restore registers Esi, Edi, Ecx, Edx
+    Pop Edx                             ; Anonymous value removed from stack
+    Pop Ecx                             ; Anonymous value removed from stack
+    Pop Edi                             ; Anonymous value removed from stack
+    Pop Esi                             ; Anonymous value removed from stack
     
     ; Output
     ; Prepare operand
     Mov Eax, 1D
-    Mov Ecx, Addr str24                 ; assemble operand LITERAL
-    Push Ecx                            ; Linked variable added to stack
+    Mov Ebx, Addr str24                 ; assemble operand LITERAL
+    Push Ebx                            ; Linked variable added to stack
     ; Prepare operand
     Mov Eax, 3D
     Mov Edx, Addr str19                 ; assemble operand LITERAL
     Push Edx                            ; Linked variable added to stack
-    Mov Esi, [Esp + 4]                  ; Retrieve value from stack
-    Mov Edi, [Esp + 0]                  ; Retrieve value from stack
+    ; Caller save registers Ecx, Edi, Esi
+    Push Ecx                            ; Anonymous value added to stack
+    Push Edi                            ; Anonymous value added to stack
     Push Esi                            ; Anonymous value added to stack
+    Mov Ecx, [Esp + 16D]                ; Retrieve value from stack
+    Mov Edi, [Esp + 12D]                ; Retrieve value from stack
+    Push Ecx                            ; Anonymous value added to stack
     Push Edi                            ; Anonymous value added to stack
     Call string_compare
+    ; Caller restore registers Ecx, Edi, Esi
+    Pop Esi                             ; Anonymous value removed from stack
+    Pop Edi                             ; Anonymous value removed from stack
+    Pop Ecx                             ; Anonymous value removed from stack
     Mov Ebx, Eax
     
     Push Ebx                            ; Linked variable added to stack
-    Cmp Ebx, 0                          ; Prepare boolean to string
+    Cmp B[Esp + 0D], 0                  ; Prepare boolean to string
     Jz > label32
     Mov [tempGlobal], Addr trueString
     Mov Eax, 4
@@ -1337,37 +1384,51 @@ label32:
     Mov [tempGlobal], Addr falseString
     Mov Eax, 5
 label33:
-    ; Caller save registers Ebx
-    Push Ebx                            ; Anonymous value added to stack
+    Mov Edx, [tempGlobal]
+    Push Edx                            ; Linked variable added to stack
+    ; Caller save registers Esi, Edi, Ecx, Edx
+    Push Esi                            ; Anonymous value added to stack
+    Push Edi                            ; Anonymous value added to stack
+    Push Ecx                            ; Anonymous value added to stack
+    Push Edx                            ; Anonymous value added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
-    Push [tempGlobal]                   ; Anonymous value added to stack
+    Push [Esp + 28D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
-    ; Caller restore registers Ebx
-    Pop Ebx                             ; Anonymous value removed from stack
+    ; Caller restore registers Esi, Edi, Ecx, Edx
+    Pop Edx                             ; Anonymous value removed from stack
+    Pop Ecx                             ; Anonymous value removed from stack
+    Pop Edi                             ; Anonymous value removed from stack
+    Pop Esi                             ; Anonymous value removed from stack
     
     ; Output
     ; Prepare operand
     Mov Eax, 1D
-    Mov Ecx, Addr str14                 ; assemble operand LITERAL
-    Push Ecx                            ; Linked variable added to stack
-    ; Caller save registers Ecx
+    Mov Ebx, Addr str14                 ; assemble operand LITERAL
+    Push Ebx                            ; Linked variable added to stack
+    ; Caller save registers Edx, Ecx, Edi, Esi
+    Push Edx                            ; Anonymous value added to stack
     Push Ecx                            ; Anonymous value added to stack
+    Push Edi                            ; Anonymous value added to stack
+    Push Esi                            ; Anonymous value added to stack
     Push 0                              ; Anonymous value added to stack
     Push Addr tempGlobal                ; Anonymous value added to stack
     Push Eax                            ; Anonymous value added to stack
-    Push Ecx                            ; Anonymous value added to stack
+    Push [Esp + 28D]                    ; Anonymous value added to stack
     Push [outputHandle]                 ; Anonymous value added to stack
     Call WriteConsoleA
-    ; Caller restore registers Ecx
+    ; Caller restore registers Edx, Ecx, Edi, Esi
+    Pop Esi                             ; Anonymous value removed from stack
+    Pop Edi                             ; Anonymous value removed from stack
     Pop Ecx                             ; Anonymous value removed from stack
+    Pop Edx                             ; Anonymous value removed from stack
     
-    Push [Esp + 308]                    ; Anonymous value added to stack
+    Push [Esp + 360D]                   ; Anonymous value added to stack
     Push [heapHandle]                   ; Anonymous value added to stack
     Call free_heap_allocations
-    Add Esp, 316                        ; Close scope
+    Add Esp, 368D                       ; Close scope
     
     Ret                                 ; Program finish
     

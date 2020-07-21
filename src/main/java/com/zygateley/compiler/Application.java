@@ -28,8 +28,9 @@ public class Application {
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws Exception {
-		//String sourceFile = FileIO.getAbsolutePath(".test/test.fnc");
-		String sourceFile = FileIO.getAbsolutePath("Examples/Example1/Example1.fnc");
+		String sourceFile;
+		//sourceFile = FileIO.getAbsolutePath(".test/test.fnc");
+		sourceFile = FileIO.getAbsolutePath("Examples/Example1/Example1.fnc");
 		PushbackReader pushbackReader = FileIO.getReader(sourceFile);
 		
 		String baseName = sourceFile.substring(0, sourceFile.lastIndexOf('.'));
