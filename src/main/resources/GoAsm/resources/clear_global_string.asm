@@ -10,17 +10,17 @@ clear_global_string:
 	Mov Ecx, 0
 	Mov Edx, [Ebp + 4]
 	
-clear_global_string_loop:
+.loop:
 	Cmp Ecx, Edx
-	Jz > clear_global_string_next
+	Jz > .next
 	
 	Mov B[Eax], 0
 	Add Eax, 4
 	Add Ecx, 1
 	
-	Jmp < clear_global_string_loop
+	Jmp < .loop
 
-clear_global_string_next:
+.next:
 	Pop Ebp				; Original base pointer
 	Pop Ecx				; Return address
 	Add Esp, 8			; Consume parameters
