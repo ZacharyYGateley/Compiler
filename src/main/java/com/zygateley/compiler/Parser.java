@@ -841,7 +841,7 @@ public class Parser {
 	}
 	
 	private void log(Node node) throws IOException {
-		if (!this.verbose || this.logFileWriter == null) return;
+		if (!this.verbose && this.logFileWriter == null) return;
 		
 		boolean isTerminal = node.getToken() != null;
 		
@@ -861,7 +861,7 @@ public class Parser {
 	}
 	
 	private void log(String message) throws IOException {
-		if (!this.verbose || this.logFileWriter == null) return;
+		if (!this.verbose && this.logFileWriter == null) return;
 		
 		StringBuilder output = new StringBuilder();
 		for (int i = 0; i < depth; i++) output.append("  ");

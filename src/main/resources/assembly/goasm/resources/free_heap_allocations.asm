@@ -1,3 +1,4 @@
+
 free_heap_allocations:
 	Push Ebp			; Realign base address to first parameter
 	Mov Ebp, Esp
@@ -56,4 +57,3 @@ free_heap_allocations:
 	Push Edx
 	
 	Ret
-	

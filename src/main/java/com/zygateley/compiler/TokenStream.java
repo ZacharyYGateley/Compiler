@@ -15,7 +15,6 @@ public class TokenStream {
 	private ArrayList<Token> tokens;
 	private int leftIndex = 0;
 	private int rightIndexExcl = 0;
-	private int capacity = 0;
 	 
 	public TokenStream() {
 		this.tokens = new ArrayList<Token>();
@@ -37,12 +36,10 @@ public class TokenStream {
 	public void write(Terminal token, Symbol symbol, String value) {
 		this.tokens.add(new Token(token, symbol, value));
 		this.rightIndexExcl++;
-		this.capacity++;
 	}
 	public void writeRight(Token si) {
 		this.tokens.add(si);
 		this.rightIndexExcl++;
-		this.capacity++;
 	}
 	 
 	public Token readLeft() {

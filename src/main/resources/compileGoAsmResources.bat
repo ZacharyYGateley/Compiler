@@ -1,7 +1,7 @@
 @echo off
 
 REM Output file
-SET file=resources
+SET file=com.zygateley.compiler
 REM Creating a Newline variable (the two blank lines are required!)
 set NLM=^
 
@@ -22,12 +22,11 @@ move %file%.tmp %file%.asm
 
 
 REM Compile w/ GoAsm
-call "GoAsm/GoAsm" %file%.asm
-call "GoAsm/GoLink" /console /dll ./%file%.obj /fo GoAsm\resources.dll kernel32.dll
+call "GoAsm/GoAsm" /fo GoAsm\%file%.obj %file%.asm
+REM call "GoAsm/GoLink" /console /dll ./%file%.obj /fo GoAsm\%file%.dll kernel32.dll
 
 del %file%.asm
-del %file%.obj
 
 echo:
-echo Resource DLL compilation complete!
+echo Resource compilation complete!
 echo:

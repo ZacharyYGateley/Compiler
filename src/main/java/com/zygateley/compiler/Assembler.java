@@ -7,7 +7,6 @@ public class Assembler {
 	private Node parseTree;
 	private Writer io;
 	private AssyLanguage language;
-	private boolean verbose;
 	
 	public Assembler(Node parseTree, SymbolTable symbolTable, Class<? extends AssyLanguage> Language) throws Exception {
 		this(parseTree, symbolTable, Language, null);

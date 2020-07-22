@@ -14,15 +14,18 @@ public class GoAsm extends AssyLanguage {
 		super(io, symbolTable, new String[] { "Ebx", "Ecx", "Edx", "Esi", "Edi" });
 	}
 	
+	/**
+	 * This function is deprecated except for testing purposes and quick changes to asm helper files
+	 * @param procedure
+	 */
+	@Deprecated
 	public void addResource(String procedure) {
 		String resource = procedure + ".asm";
 		if (!resources.contains(resource)) {
 			resources.add(resource);
 		}
 	}
-	
 
-	
 	@Override
 	public Register assembleBooleanOperation(Construct type, Variable variable0, Variable variable1) throws Exception {
 		Register r0 = this.getRegister(variable0);
@@ -251,6 +254,7 @@ public class GoAsm extends AssyLanguage {
 			}
 		}
 		
+		/*
 		// Output includes
 		// From src/main/resources/
 		String basePath = FileIO.getAbsolutePath("src/main/resources/");
@@ -276,6 +280,7 @@ public class GoAsm extends AssyLanguage {
 			io.println();
 			io.print(file.toString());
 		}
+		*/
 		
 		return null;
 	}
@@ -1090,21 +1095,45 @@ public class GoAsm extends AssyLanguage {
 	@Override
 	public String compile(String assemblyFile, boolean verbose) throws IOException {
 		try {
-			String classPathName = FileIO.getAbsolutePath("");
-			File goAsmPath = new File(classPathName + "src/main/resources/GoAsm/");
+			// runtime exec path
+			File execPath;
+			
+			// Copy GoAsm files on first run
+			// Needed for running out of JAR
+			String runningLocation = assembly.goasm.Source.class.getResource("Source.class").toString();
+			boolean inJAR = !"file".equalsIgnoreCase(runningLocation.substring(0, runningLocation.indexOf(':')));
+			if (inJAR) {
+				String classPathName = FileIO.getAbsolutePath(assembly.goasm.Source.class, "");
+				execPath = new File(classPathName);
+				File goAsmPath = new File(classPathName + "GoAsm/");
+				boolean wrote = true;
+				wrote &= FileIO.writeResource(assembly.goasm.Source.class, "GoAsm.exe", goAsmPath);
+				wrote &= FileIO.writeResource(assembly.goasm.Source.class, "GoLink.exe", goAsmPath);
+				wrote &= FileIO.writeResource(assembly.goasm.Source.class, "com.zygateley.compiler.obj", goAsmPath);
+				if (wrote) System.out.println("\nGoAsm compiler and linker unzipped to directory \"GoAsm/\"");
+			}
+			else {
+				runningLocation = runningLocation.substring(0, runningLocation.lastIndexOf('/'));
+				runningLocation = runningLocation.substring(0, runningLocation.lastIndexOf('/'));
+				execPath = new File(
+					FileIO.clipDiskName(
+						runningLocation.substring(runningLocation.indexOf(':') + 1)
+					).replaceAll("%20",  " ")
+				);
+			}
 			
 			// Remove disk name prefix from assemblyFile if it exists
 			String assemblyPathName = assemblyFile.substring(0, assemblyFile.lastIndexOf('/') + 1);
 			String assemblyFileName = assemblyFile.substring(assemblyFile.lastIndexOf('/') + 1);
-			assemblyPathName = FileIO.truncateDiskName(assemblyPathName);
+			assemblyPathName = FileIO.clipDiskName(assemblyPathName);
 			
 			Runtime runtime = Runtime.getRuntime();
 			// Create object file
-			String goAsm = "GoAsm.exe";
+			String goAsm = "GoAsm\\GoAsm.exe";
 			String objectFileName = assemblyFileName.replace(".asm", ".obj");
 			assemblyFile = assemblyPathName + assemblyFileName;
 			String[] objectFileCommands = new String[] { "cmd", "/c", String.format("%s /fo %s \"%s\"", goAsm, objectFileName, assemblyFile) };
-			Process p1 = runtime.exec(objectFileCommands, null, goAsmPath);
+			Process p1 = runtime.exec(objectFileCommands, null, execPath);
 			// Must complete build of object file before it can link
 			p1.waitFor();
 			if (verbose) {
@@ -1114,10 +1143,10 @@ public class GoAsm extends AssyLanguage {
 			}
 			
 			// Link kernel libraries
-			String goLink = "GoLink.exe";
+			String goLink = "GoAsm\\GoLink.exe";
 			String executableFile = assemblyPathName + assemblyFileName.replace(".asm", ".exe");
-			String[] linkedFileCommands = new String[] { "cmd", "/c", String.format("%s /console /fo \"%s\" %s kernel32.dll", goLink, executableFile, objectFileName) };
-			Process p2 = runtime.exec(linkedFileCommands, null, goAsmPath);
+			String[] linkedFileCommands = new String[] { "cmd", "/c", String.format("%s /console /fo \"%s\" %s GoAsm\\com.zygateley.compiler.obj kernel32.dll", goLink, executableFile, objectFileName) };
+			Process p2 = runtime.exec(linkedFileCommands, null, execPath);
 			// Allow completion of executable before deleting temporary .obj file
 			p2.waitFor();
 			if (verbose) {
@@ -1127,8 +1156,8 @@ public class GoAsm extends AssyLanguage {
 			}
 			
 			// Delete temporary .obj file
-			File objectFile = new File(goAsmPath + "/" + objectFileName);
-			if (objectFile.delete()) {
+			File objectFile = new File(execPath + "/" + objectFileName);
+			if (objectFile.delete() && verbose) {
 				System.out.println("Temporary file "+ objectFileName + " has been deleted");
 			}
 			
@@ -1136,6 +1165,8 @@ public class GoAsm extends AssyLanguage {
 		}
 		catch (Exception err) {
 			System.out.println("Failed to compile");
+			System.out.println(err.getMessage());
+			err.printStackTrace();
 			return null;
 		}
 	}

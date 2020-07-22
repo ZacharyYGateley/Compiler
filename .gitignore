@@ -1,6 +1,8 @@
 # Build file
 target/*
 bin/*
+# Compilation executables, automatically created by JAR execution
+GoAsm/*
 # Test native, python, and assembly output
 .test/*
 *.s

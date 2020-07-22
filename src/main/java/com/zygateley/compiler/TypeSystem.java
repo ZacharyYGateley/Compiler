@@ -1,7 +1,5 @@
 package com.zygateley.compiler;
 
-import static org.junit.Assert.assertNull;
-
 public enum TypeSystem {
 	BOOLEAN,
 	INTEGER,

@@ -1,9 +1,5 @@
 package com.zygateley.compiler;
 
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
 /**
  * Basic assembly element for parse tree.
  * 

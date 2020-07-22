@@ -221,8 +221,6 @@ public class Optimizer {
 	}
 	
 	private void crawlAndApplyReflow(Node optimizedNode) throws Exception {
-		if (!this.verbose || this.logFileWriter == null) return;
-		
 		for (Node child : optimizedNode) {
 			// Execute reflow on this node, if it applies
 			// Does not apply to REFLOW_LIMIT
@@ -437,97 +435,14 @@ public class Optimizer {
 		return nextNode;
 	}
 	
-
-	/**
-	 * Output the XML structure of this tree in indented format. <br />
-	 * Depends on Optimizer.depth to be accurate.
-	 * 
-	 * @param optimizedNode node corresponding to root of subtree in optimized tree 
-	 * @param showToken true: show Terminal or NonTerminal which correspond to node
-	 * @throws IOException
-	 */
-	/*
 	private void logTree(Node optimizedNode, boolean showToken) throws IOException {
-		if (!this.verbose || this.logFileWriter == null) return;
-		
-		for (Node child : optimizedNode) {
-			if (child.getChildCount() == 0) {
-				// Leave node
-				log(child, showToken);
-			}
-			else {
-				// Open branch
-				log(child, true, showToken);
-				depth++;
-				logTree(child, showToken);
-				depth--;
-				// Close branch
-				log(child, false, showToken);
-			}
-		}
-	}
-	
-	private void log(Node optimizedNode, boolean showToken) throws IOException {
-		// Terminal node
-		log(optimizedNode, true, true, showToken);
-	}
-	private void log(Node optimizedNode, boolean openNode, boolean showToken) throws IOException {
-		// NonTerminal node
-		log(optimizedNode, openNode, false, showToken);
-	}
-	private void log(Node optimizedNode, boolean openNode, boolean noChildren, boolean showToken) throws IOException {
-		if (!this.verbose || this.logFileWriter == null) return;
-		
-		Element element = optimizedNode.getElementType();
-		if (!openNode) {
-			this.log("</" + element + ">");
-			return;
-		}
-		
-		StringBuilder output = new StringBuilder();
-		output.append("<" + optimizedNode.getElementType());
-		if (Element.OPERATION.equals(element)) {
-			// Show specific operation
-			Terminal terminal = optimizedNode.getToken();
-			if (terminal != null && terminal.basicElement != null) {
-				output.append(Node.getParameterString("operation", terminal.basicElement + ""));
-			}
-		}
-		if (showToken) {
-			String tokenName = "";
-			String tokenValue = "";
-			NonTerminal nonTerminal = optimizedNode.getRule();
-			if (nonTerminal != null) {
-				tokenName = "NonTerminal";
-				tokenValue = nonTerminal + "";
-			}
-			Terminal terminal = optimizedNode.getToken();
-			if (terminal != null) {
-				tokenName = "Terminal";
-				tokenValue = terminal + "";
-			}
-			if (!tokenName.isBlank()) {
-				output.append(Node.getParameterString(tokenName, tokenValue));
-			}
-		}
-		output.append(optimizedNode.getStringAllParameters());
-		if (noChildren) {
-			output.append(" /");
-		}
-		output.append(">");
-		this.log(output.toString());
-	}
-
-	*/
-	
-	private void logTree(Node optimizedNode, boolean showToken) throws IOException {
-		if (!this.verbose || this.logFileWriter == null) return;
+		if (!this.verbose && this.logFileWriter == null) return;
 		
 		this.log(optimizedNode.asXMLTree(0, showToken));
 	}
 	
 	private void log(String message) throws IOException {
-		if (!this.verbose || this.logFileWriter == null) return;
+		if (!this.verbose && this.logFileWriter == null) return;
 		
 		StringBuilder output = new StringBuilder();
 		for (int i = 0; i < depth; i++) output.append("  ");

@@ -25,7 +25,7 @@ selection_2 = _selection_ + "second.";
 
 // Function calls include parentheses
 // If there are parameters, they are comma delimited
-// Arguments may be expressions instead of just literals or variables
+// Arguments may be expressions instead of simply literals or variables
 console_out(selection_1, selection_2, "\nWe " + "don't know what that is.", which);
 
 // There exist few operators, but for those that are included,

@@ -134,6 +134,7 @@ public class PythonTranslator {
 
 				// Body
 				depth++;
+				nextChild = node.getLastChild();
 				if (nextChild.getChildCount() == 0) {
 					print("pass");
 				}
@@ -189,6 +190,10 @@ public class PythonTranslator {
 				println(" = input()");
 				break;
 			case OPERATION:
+			case OR: case AND:
+			case ADD: case SUB: case MULT: case INTDIV:
+			case EQEQ: case NEQ: case LT: case LTEQ: case GT: case GTEQ:
+			case NOT:
 				if (nextChild == null) {
 					// Unary
 					printTerminal(node.getToken());
@@ -196,12 +201,49 @@ public class PythonTranslator {
 				}
 				else {
 					// Binary
+					TypeSystem nodeType = node.getType();
+					TypeSystem type0 = firstChild.getType();
+					TypeSystem type1 = nextChild.getType();
+					TypeSystem string = TypeSystem.STRING;
+					
 					print("(");
-					translateNode(firstChild);
+					boolean needStringConversion = nodeType == string && type0 != string;
+					if (needStringConversion) {
+						print("str(");
+						translateNode(firstChild);
+						print(")");
+					}
+					else {
+						translateNode(firstChild);
+					}
 					print(" ");
-					printTerminal(node.getToken());
+					switch (element) {
+					case OR: print("or"); break;
+					case AND: print("and"); break;
+					case ADD: print("+"); break;
+					case SUB: print("-"); break;
+					case MULT: print("*"); break;
+					case INTDIV: print("//"); break;
+					case EQEQ: print("=="); break;
+					case NEQ: print("!="); break;
+					case LT: print("<"); break;
+					case LTEQ: print("<="); break;
+					case GT: print(">"); break;
+					case GTEQ: print(">="); break;
+					default:
+						printTerminal(node.getToken());
+						break;
+					}
 					print(" ");
-					translateNode(nextChild);
+					needStringConversion = nodeType == string && type1 != string;
+					if (needStringConversion) {
+						print("str(");
+						translateNode(nextChild);
+						print(")");
+					}
+					else {
+						translateNode(nextChild);
+					}
 					print(")");
 				}
 				break;
