@@ -3,7 +3,7 @@ package com.zygateley.compiler;
 import java.io.*;
 
 public class Application {
-	private static final String version = "0.95";
+	private static final String version = "v0.9.0-beta";
 	private static FileWriter logFile = null;
 	private static boolean writeLogFile = false;
 	private static boolean verbose = false;
@@ -31,14 +31,14 @@ public class Application {
 	 */
 	private static void help(String cause) {
 		final String help = "com.zygateley.compiler version " + version + " Copyright Zachary Gateley 2020\n\n"+
-				"java -jar zyg_compile.jar [-alpvx] path/to/inputFile.fnc\n\n"+
+				"java -jar zyg_compile.jar [-alnpv] path/to/inputFile.fnc\n\n"+
 				"Flags:\n" +
 				"\ta\tKeep the assembly file after compilation (writes to inputFile.asm)\n"+
 				"\th\tShow this help screen\n"+
 				"\tl\tWrite log file to inputFile_log.txt\n"+
+				"\tn\tDo not create executable\n"+
 				"\tp\tTranslate the code to python (writes to inputFile.py)\n"+
-				"\tv\tVerbose output\n"+
-				"\tx\tDo not create executable\n\n";
+				"\tv\tVerbose output\n\n";
 		System.out.println("\n");
 		if (cause != null && !cause.isBlank()) {
 			System.out.println(cause + "\n\n");
@@ -112,9 +112,9 @@ public class Application {
 				// Flags are first argument
 				keepAssembly = args[0].indexOf('a') > 0;
 				writeLogFile = args[0].indexOf('l') > 0;
+				createExecutable = args[0].indexOf('n') < 0;
 				translateToPython = args[0].indexOf('p') > 0;
 				verbose = args[0].indexOf('v') > 0;
-				createExecutable = args[0].indexOf('x') < 0;
 				
 				// Source file is second argument
 				sourceFile = args[1];
