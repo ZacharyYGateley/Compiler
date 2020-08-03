@@ -31,7 +31,7 @@ public class Application {
 	 */
 	private static void help(String cause) {
 		final String help = "com.zygateley.compiler version " + version + " Copyright Zachary Gateley 2020\n\n"+
-				"java -jar zyg_compile.jar [-alnpv] path/to/inputFile.fnc\n\n"+
+				"java -jar zyg_compile.jar [-ahlnpv] path/to/inputFile.fnc\n\n"+
 				"Flags:\n" +
 				"\ta\tKeep the assembly file after compilation (writes to inputFile.asm)\n"+
 				"\th\tShow this help screen\n"+
