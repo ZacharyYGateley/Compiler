@@ -1,14 +1,6 @@
 # Multi-Pass Compiler / Python Transpiler
 
-The first and main goal of this project is to present a working compiler from a simple made-up language. To such an end, there is a **front end**, a **middle stage**, and a **back end**. 
-
-The **front end** is composed of a <u>lexer</u> and a <u>parser</u>. The lexer reads predefined tokens from a file and builds a stream that the parser can read. Additionally, any variables or string literals found are added to a symbol table that is used throughout the compilation process. The parser reads through the token stream and builds a syntax tree out of the stream. There are two different sets of rules for the parser. One set is a context free grammar (CFG), which relies on first-token sets that dictate unique left-to-right pathways through any valid token stream. The other set is also a CFG, but it is instead dictated by unique middle tokens. This second set allows for appropriate application of precedence rules in expressions.
-
-The **middle stage** crawls the bulky syntax tree that results from the parser and builds an optimized, bare-bones syntax tree that represents the entirety of the program without containing any elements that will not be used by the back end. This is achieved by binding predefined elements that will be used by the compiler with different parse rules and tokens. In this way, the syntax tree can be crawled to find these basic elements, building a valid, optimized tree meanwhile. To accommodate grammar rules that do not lend themselves easily to syntax trees as the back-end expects them, the language can define reflow rules adjust the primary syntax tree to the final optimized counterpart. 
-
-The **back end** is composed of an <u>assembler</u> and an interface with the <u>compiler of the assembler</u>. For an up-to-date demonstration of the currently-available backend functionalities, [please see Example1](Examples/Example1 "Demonstration of currently-available backend functionalities"). At the moment, the aim is to create a generalized assembler with links to assembly language Java classes, which with carefully chosen methods can output the code from the assembler without knowing the specific assembly language in question. Finally, the assembly language in question will indicate the assembly compiler command-line directives, which will generate the final executable file.
-
-To assist in development, there is also a Python translator, which is equivalent in all major ways. Scoping rules and other details may be different.
+The first and main goal of this project is to present a working compiler from a simple made-up language. To such an end, there is a **front end**, a **middle stage**, and a **back end**, all described in greater detail in the sections below. For an up-to-date demonstration of the currently-available backend functionalities, [please see Example1](Examples/Example1 "Demonstration of currently-available backend functionalities").
 
 <br />
 
@@ -62,9 +54,7 @@ Notice! Running this JAR file will unpack the GoAsm executables and a custom ass
 
 For the following [example](Examples/Example0/), you may imagine that the following command line code was executed
 
-```
-java -jar zyg_compile.jar -alpv Example0.fnc
-```
+![](README/Images/CommandLine.png)
 
 
 
