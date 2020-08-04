@@ -2,7 +2,7 @@
 
 The first and main goal of this project is to present a working compiler from a simple made-up language. To such an end, there is a **front end**, a **middle stage**, and a **back end**, all described in greater detail in the sections below. For an up-to-date demonstration of the currently-available backend functionalities, [please see Example1](Examples/Example1 "Demonstration of currently-available backend functionalities").
 
-<br />
+
 
 ## (Some) Highlights
 
@@ -29,10 +29,6 @@ Below are listed the goals of the program.
 2. Add support for more complex language constructs such as functions and arrays.
 3. Allow for custom-designing of language plug-ins, so that the compiler can work with any language, given a properly-designed plug-in. Ideally, at least a simple form of almost any language could be built as a language plugin for this compiler.
 4. Allow for the selection of any back-end compiler (e.g. MIPS, Masm, etc.), given a properly-created assembly language plug-in.
-
-<br />
-
-
 
 
 
@@ -142,7 +138,7 @@ That is a bulky structure for such a simple program! However, this is an unambig
 
 For more information on the grammar, see the [prepackaged language information](README/LANGUAGE.md "Prepackaged Language Information") page.
 
-<br />
+
 
 ## Middle Stage
 
@@ -206,7 +202,7 @@ Finally, the optimizer removes any basic elements that are labeled as temporary.
 
 What an improvement over the raw syntax tree that resulted directly from the parser! This tree is ready to go on to the next stage.
 
-<br />
+
 
 ## Back End
 
